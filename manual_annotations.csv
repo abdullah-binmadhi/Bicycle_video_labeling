@@ -1,0 +1,9 @@
+video,timestamp,x,y,w,h,label,confidence
+/Users/abdullahbinmadhi/Desktop/Bicycle Video ML Model/Project Surface Detection/LM-17.06/876ED8BA-AF81-4DCD-9A29-8702D236B21D/bicycle ride.mov,0.000,0,0,480,640,pothole,1.0
+/Users/abdullahbinmadhi/Desktop/Bicycle Video ML Model/Project Surface Detection/LM-17.06/876ED8BA-AF81-4DCD-9A29-8702D236B21D/bicycle ride.mov,0.000,148,237,438,526,pothole,1.0
+/Users/abdullahbinmadhi/Desktop/Bicycle Video ML Model/Project Surface Detection/LM-17.06/876ED8BA-AF81-4DCD-9A29-8702D236B21D/bicycle ride.mov,123.047,614,322,196,385,pothole,1.0
+/Users/abdullahbinmadhi/Desktop/Bicycle Video ML Model/Project Surface Detection/LM-17.06/876ED8BA-AF81-4DCD-9A29-8702D236B21D/bicycle ride.mov,123.047,597,304,285,510,pothole,1.0
+/Users/abdullahbinmadhi/Desktop/Bicycle Video ML Model/Project Surface Detection/LM-17.06/876ED8BA-AF81-4DCD-9A29-8702D236B21D/bicycle ride.mov,123.047,480,0,480,640,car,1.0
+/Users/abdullahbinmadhi/Desktop/Bicycle Video ML Model/Project Surface Detection/LM-17.06/876ED8BA-AF81-4DCD-9A29-8702D236B21D/bicycle ride.mov,3.566,480,640,480,640,bicycle,1.0
+/Users/abdullahbinmadhi/Desktop/Bicycle Video ML Model/Project Surface Detection/LM-17.06/876ED8BA-AF81-4DCD-9A29-8702D236B21D/bicycle ride.mov,3.566,423,675,151,302,bicycle,1.0
+/Users/abdullahbinmadhi/Desktop/Bicycle Video ML Model/Project Surface Detection/LM-17.06/876ED8BA-AF81-4DCD-9A29-8702D236B21D/bicycle ride.mov,3.566,548,408,476,754,bicycle,1.0

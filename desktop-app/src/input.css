@@ -1,0 +1,7 @@
+@import "tailwindcss";
+@plugin "daisyui";
+
+/* Tailwind v4 theme configuration */
+@theme {
+  --color-primary: oklch(0.65 0.25 250);
+}

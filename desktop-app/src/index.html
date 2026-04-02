@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' media:; script-src 'self' 'unsafe-inline'; media-src 'self' file: data: blob:;">
+    <link rel="stylesheet" type="text/css" href="../public/output.css">
+    <title>CycleSafe ML Studio</title>
+    <style>
+      .hidden-view { display: none !important; }
+      #console-output {
+        overflow-y: auto;
+        white-space: pre-wrap;
+        font-family: monospace;
+      }
+      /* Custom deep sleek bg */
+      body {
+        background: radial-gradient(circle at top left, #1e293b, #0f172a 50%, #020617);
+        color: #f8fafc;
+      }
+      /* Glassmorphism utility */
+      .border border-[#222] bg-[#0c0c0c] p-8 {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      }
+    </style>
+    <link rel="stylesheet" href="../node_modules/leaflet/dist/leaflet.css">
+  <link rel="stylesheet" href="./patches.css">
+</head>
+  <body class="h-screen w-screen flex flex-col pt-0 text-slate-200">
+    
+    <!-- Navbar -->
+    <div class="navbar border border-[#222] bg-[#0c0c0c] p-8 border-b border-[#222] z-20 sticky top-0 px-4">
+      <div class="flex-1 flex items-center gap-3">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M16 12l-4-4-4 4M12 8v8"></path></svg>
+        <a class="text-xl font-normal tracking-tight tracking-tight text-white drop-">CycleSafe Studio</a>
+      </div>
+      <div class="flex-none gap-4">
+        
+        <progress id="global-progress" class="progress progress-success w-32 hidden transition-all duration-300" value="0" max="100"></progress>
+        <button id="btn-abort" class="btn btn-error btn-sm hidden drop-shadow-md text-white font-medium mr-2" onclick="killProcess()">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd" /></svg>
+          Abort Process
+        </button>
+        
+        <progress id="global-progress" class="progress progress-success w-32 hidden transition-all duration-300" value="0" max="100"></progress>
+        <button id="btn-abort" class="btn btn-error btn-sm hidden drop-shadow-md text-white font-medium mr-2" onclick="killProcess()">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd" /></svg>
+          Abort Process
+        </button>
+        <span class="badge badge-success badge-sm py-3 px-3 gap-2 bg-success/20 text-success border-0" id="status-badge">
+          <div class="w-1.5 h-1.5 bg-success rounded-none  hidden" id="status-indicator-active"></div>
+          <div class="w-1.5 h-1.5 bg-success rounded-none" id="status-indicator-idle"></div>
+          <span id="status-text" class="text-xs font-semibold uppercase tracking-wider">Ready</span>
+        </span>
+        <button class="btn btn-circle btn-ghost btn-sm text-[#888888] hover:bg-[#1a1a1a] hover:text-white transition-colors rounded-none" onclick="toggleSettings()">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content Layout -->
+    <div class="flex-1 flex overflow-hidden relative">
+      <!-- Sidebar -->
+      <ul class="menu text-[#888] text-[#888] w-64 p-4 gap-2 border-r border-[#222] bg-[#0a0a0a]/40 backdrop-blur-sm z-10 font-medium">
+        <li class="menu text-[#888] text-[#888]-title text-slate-500 uppercase tracking-widest text-[10px]"><span>Getting Started</span></li>
+        <li><a id="nav-instructions" class="active hover:bg-[#1a1a1a] hover:text-white transition-colors rounded-none" onclick="switchView('instructions')">
+          <svg class="h-4 w-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          Overview & Docs
+        </a></li>
+        <li><a id="nav-sota" class="hover:bg-[#1a1a1a] hover:text-white transition-colors rounded-none text-emerald-100" onclick="switchView('sota')">
+          <svg class="h-4 w-4 text-[#e0e0e0] opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+          SOTA Comparison
+        </a></li>
+        <li class="menu text-[#888] text-[#888]-title mt-4 text-slate-500 uppercase tracking-widest text-[10px]"><span>Pipeline Operations</span></li>
+        <li><a id="nav-extract" class="hover:bg-[#1a1a1a] hover:text-white transition-colors rounded-none" onclick="switchView('extract')">
+          <svg class="h-4 w-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+          1. Frame Extraction
+        </a></li>
+        <li><a id="nav-data" class="hover:bg-[#1a1a1a] hover:text-white transition-colors rounded-none" onclick="switchView('data')">
+          <svg class="h-4 w-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+          2. Auto Annotation (CLIP)
+        </a></li>
+        <li><a id="nav-manual" class="hover:bg-[#1a1a1a] hover:text-white transition-colors rounded-none" onclick="switchView('manual')">
+          <svg class="h-4 w-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+          3. Manual Annotation
+        </a></li>
+        <li><a id="nav-sync" class="hover:bg-[#1a1a1a] hover:text-white transition-colors rounded-none" onclick="switchView('sync')">
+          <svg class="h-4 w-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+          4. Synchronization
+        </a></li>
+        <li><a id="nav-train" class="hover:bg-[#1a1a1a] hover:text-white transition-colors rounded-none" onclick="switchView('train')">
+          <svg class="h-4 w-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+          5. Model Training
+        </a></li>
+        <li class="menu text-[#888] text-[#888]-title mt-4 text-slate-500 uppercase tracking-widest text-[10px]"><span>Analysis Results</span></li>
+        <li><a id="nav-inference" class="hover:bg-[#1a1a1a] hover:text-white transition-colors rounded-none text-white font-semibold" onclick="switchView('inference')">
+          <svg class="h-4 w-4 text-purple-400 drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+          6. Real-Time Inference
+        </a></li>
+        <li><a id="nav-analytics" class="hover:bg-[#1a1a1a] hover:text-white transition-colors rounded-none text-white font-semibold" onclick="switchView('analytics')">
+          <svg class="h-4 w-4 text-[#e0e0e0] drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+          7. Model Analytics
+        </a></li>
+      </ul>
+
+      <!-- Settings Side Panel (Absolute/Overlay) -->
+      <div id="settings-panel" class="absolute top-0 right-0 h-full w-[400px] border border-[#222] bg-[#0c0c0c] p-8 z-50 transform translate-x-full transition-transform duration-300 border-l border-[#333] flex flex-col">
+        <div class="flex justify-between items-center p-5 border-b border-[#222]">
+          <h2 class="text-lg font-medium text-white">Global Configuration</h2>
+          <button onclick="toggleSettings()" class="btn btn-ghost btn-xs btn-circle text-[#888888]">✕</button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-6 space-y-8">
+          
+          <!-- Hyperparameters -->
+          <div>
+            <h3 class="text-xs uppercase tracking-widest text-[#e0e0e0] font-medium mb-4">Hyperparameters</h3>
+            <div class="space-y-3">
+              <div>
+                <label class="text-xs text-[#888888]">Learning Rate</label>
+                <input type="number" step="0.001" id="confLR" class="input input-sm w-full bg-[#0a0a0a]/50 border border-[#333] text-white focus:border-emerald-500" />
+              </div>
+              <div>
+                <label class="text-xs text-[#888888]">Batch Size</label>
+                <input type="number" id="confBatch" class="input input-sm w-full bg-[#0a0a0a]/50 border border-[#333] text-white focus:border-emerald-500" />
+              </div>
+              <div>
+                <label class="text-xs text-[#888888]">Epochs</label>
+                <input type="number" id="confEpochs" class="input input-sm w-full bg-[#0a0a0a]/50 border border-[#333] text-white focus:border-emerald-500" />
+              </div>
+              <div>
+                <label class="text-xs text-[#888888]">Sequence Length (Frames)</label>
+                <input type="number" id="confSeq" class="input input-sm w-full bg-[#0a0a0a]/50 border border-[#333] text-white focus:border-emerald-500" />
+              </div>
+            </div>
+          </div>
+
+          <!-- END Hyperparameters -->
+
+        </div>
+        <div class="p-4 border-t border-[#222] bg-black">
+          <button class="btn btn-primary w-full bg-gradient-to-r from-blue-600 to-emerald-600 border-0 text-white " onclick="saveConfiguration()">
+            Save config.yaml Configuration
+          </button>
+        </div>
+      </div>
+
+      <!-- Content Area -->
+      <main class="flex-1 flex flex-col overflow-hidden relative z-0">
+        <!-- Scrolling Views Wrapper -->
+        <div class="flex-1 p-8 overflow-y-auto flex flex-col gap-8">
+        
+        <!-- View: Instructions -->
+          <div id="view-instructions" class="flex flex-col gap-8 w-full max-w-6xl mx-auto pb-16 ">
+            <!-- Hero Header -->
+            <div class="mb-4 relative rounded-none p-8 overflow-hidden bg-gradient-to-br from-slate-900 to-black border border-[#222] ">
+              
+              
+              <div class="relative z-10">
+                <h1 class="text-4xl lg:text-5xl font-normal tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-purple-400 tracking-tight drop-shadow-md mb-2">CycleSafe Studio</h1>
+                <p class="text-lg text-[#888888] max-w-3xl leading-relaxed">
+                  Your professional workbench for Multi-Dimensional Sensor Fusion. Transform raw telemetry streams and video into deployment-ready PyTorch neural networks.
+                </p>
+                <div class="flex gap-3 mt-6">
+                    <span class="badge bg-emerald-500/20 text-[#e0e0e0] border border-emerald-500/30 py-3 px-4 font-mono font-medium tracking-widest text-xs">v2.0.0 ENGINE UPDATE</span>
+                    <span class="badge bg-purple-500/20 text-purple-400 border border-purple-500/30 py-3 px-4 font-mono font-medium tracking-widest text-xs">LIVE TELEMETRY</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Training Pipeline Steps -->
+
+            <div class="border border-[#222] bg-[#0c0c0c] p-8 mt-4 bg-[#0a0a0a]/30 mb-8 mt-6">
+              <h2 class="text-xl font-medium border-b border-[#333] pb-3 mb-6 text-white text-sm tracking-widest uppercase">Training Pipeline Roadmap</h2>
+              <ul class="steps steps-vertical w-full text-[#888888]">
+                <li class="step step-neutral">
+                  <div class="text-left w-full pl-6 py-3">
+                    <h4 class="font-medium text-lg text-white">1. Frame Extraction</h4>
+                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Cameras record at 30Hz, while sensors record at 50Hz. Extract precise frames tied to UNIX timestamps.</p>
+                  </div>
+                </li>
+                <li class="step step-neutral">
+                  <div class="text-left w-full pl-6 py-3">
+                    <h4 class="font-medium text-lg text-white">2. Auto-Annotation (CLIP)</h4>
+                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Automated HuggingFace Zero-Shot tagging across the frame directory.</p>
+                  </div>
+                </li>
+                <li class="step step-neutral">
+                  <div class="text-left w-full pl-6 py-3">
+                    <h4 class="font-medium text-lg text-white">3. Manual Feature Refinement</h4>
+                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Review frames and manually draw missed bounding boxes through interactive Video-Canvas alignment.</p>
+                  </div>
+                </li>
+                <li class="step step-neutral">
+                  <div class="text-left w-full pl-6 py-3">
+                    <h4 class="font-medium text-lg text-white">4. High-Frequency Temporal Sync</h4>
+                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Weave video ground truth against sliding windows of purely 1-D physics telemetry streams.</p>
+                  </div>
+                </li>
+                <li class="step">
+                  <div class="text-left w-full pl-6 py-3">
+                    <h4 class="font-medium text-lg text-white">5. Core Physics Transformer Model</h4>
+                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">PyTorch training utilizing high-batch sizes and validation slicing to yield absolute road classifications.</p>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          
+<!-- Features Grid -->
+
+            <div>
+                <h2 class="text-2xl font-medium border-b border-[#333] pb-3 mb-6 text-white tracking-widest uppercase text-sm">Next-Generation Capabilities</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Feature: GPS Velocity Fusion -->
+                    <div class="border border-[#222] bg-[#0c0c0c] p-8 p-6 rounded-none border border-[#222] hover:border-blue-500/30 transition-all duration-300 group">
+                        <div class="w-10 h-10 rounded-none bg-blue-500/20 text-[#e0e0e0] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-white mb-2">GPS Velocity Fusion</h3>
+                        <p class="text-sm text-[#888888] leading-relaxed">
+                            Mitigates static oscillation errors by mapping real-time speed over IMU coordinates. Ensures the system easily distinguishes driving fast on dirt from driving slowly on cobblestone.
+                        </p>
+                    </div>
+
+                    <!-- Feature: OOD Anomaly Gate -->
+                    <div class="border border-[#222] bg-[#0c0c0c] p-8 p-6 rounded-none border border-[#222] hover:border-orange-500/30 transition-all duration-300 group">
+                        <div class="w-10 h-10 rounded-none bg-orange-500/20 text-orange-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-white mb-2">Anomaly Gate (OOD)</h3>
+                        <p class="text-sm text-[#888888] leading-relaxed">
+                            Actively drops frames lacking rotational biking kinematics. If a rider steps off the bike and walks, the Out-of-Distribution safety net immediately isolates the signal logic to prevent false positives.
+                        </p>
+                    </div>
+
+                    <!-- Feature: Active Learning Routing -->
+                    <div class="border border-[#222] bg-[#0c0c0c] p-8 p-6 rounded-none border border-[#222] hover:border-rose-500/30 transition-all duration-300 group">
+                        <div class="w-10 h-10 rounded-none bg-rose-500/20 text-rose-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-white mb-2">Active Learning Routing</h3>
+                        <p class="text-sm text-[#888888] leading-relaxed">
+                            Accelerate model refinement. Discover false predictions during inference and click a button to immediately package the 50Hz physics array & camera frame back into your local Annotation staging queue.
+                        </p>
+                    </div>
+
+                    <!-- Feature: 3D Tracking -->
+                    <div class="border border-[#222] bg-[#0c0c0c] p-8 p-6 rounded-none border border-[#222] hover:border-purple-500/30 transition-all duration-300 group">
+                        <div class="w-10 h-10 rounded-none bg-purple-500/20 text-purple-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-white mb-2">WebGL Digital Twin</h3>
+                        <p class="text-sm text-[#888888] leading-relaxed">
+                            Watch the actual structural vibrations map into a 3D simulation powered by Three.js. Visually diagnose pitch, yaw, and rapid Z-axis jolts during playback.
+                        </p>
+                    </div>
+
+                    <!-- Feature: Diagnostics -->
+                    <div class="border border-[#222] bg-[#0c0c0c] p-8 p-6 rounded-none border border-[#222] hover:border-emerald-500/30 transition-all duration-300 group">
+                        <div class="w-10 h-10 rounded-none bg-emerald-500/20 text-[#e0e0e0] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002-2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-white mb-2">Diagnostic Analytics</h3>
+                        <p class="text-sm text-[#888888] leading-relaxed">
+                            Interactive cross-session Matrix and drift diagnostics directly within the UI. Generate rigorous, one-click PDF validation reports of the model's accuracy.
+                        </p>
+                    </div>
+
+                    <!-- Feature: Sync Scrubber -->
+                    <div class="border border-[#222] bg-[#0c0c0c] p-8 p-6 rounded-none border border-[#222] hover:border-indigo-500/30 transition-all duration-300 group">
+                        <div class="w-10 h-10 rounded-none bg-indigo-500/20 text-indigo-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-white mb-2">Video/Sensor Scrubber</h3>
+                        <p class="text-sm text-[#888888] leading-relaxed">
+                            Scrub back and forth through hours of video utilizing a tightly coupled time domain synchronization engine—instantly updating Maps, FFT Spectrograms, and 3D scenes.
+                        </p>
+                    </div>
+
+                    <!-- Feature: Dual-Stream Fusion -->
+                    <div class="border border-[#222] bg-[#0c0c0c] p-8 p-6 rounded-none border border-[#222] hover:border-teal-500/30 transition-all duration-300 group">
+                        <div class="w-10 h-10 rounded-none bg-teal-500/20 text-teal-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-white mb-2">Dual-Stream Fusion</h3>
+                        <p class="text-sm text-[#888888] leading-relaxed">
+                            Split your inputs so the model evaluates speed/GPS independently from the raw IMU shudder, then merges their insights.
+                        </p>
+                    </div>
+
+                    <!-- Feature: Physics-Based Filtering -->
+                    <div class="border border-[#222] bg-[#0c0c0c] p-8 p-6 rounded-none border border-[#222] hover:border-amber-500/30 transition-all duration-300 group">
+                        <div class="w-10 h-10 rounded-none bg-amber-500/20 text-amber-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/></svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-white mb-2">Physics-Based Filtering</h3>
+                        <p class="text-sm text-[#888888] leading-relaxed">
+                            Use traditional DSP (Digital Signal Processing) to remove the "bicycle's signature" (tire bounce rate) from the IMU data so only the "road's signature" remains.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            </div>
+
+                    <!-- View: SOTA Comparison -->
+          <div id="view-sota" class="hidden-view flex flex-col gap-8 w-full max-w-6xl mx-auto pb-16 ">
+            <div class="mb-4 relative rounded-none p-8 overflow-hidden bg-black border border-emerald-500/20 ">
+              <div class="absolute right-0 top-0 w-1/3 h-full bg-gradient-to-l from-emerald-500/10 to-transparent"></div>
+              <div class="relative z-10 flex items-start gap-6">
+                <div class="w-16 h-16 rounded-none bg-emerald-500/20 text-[#e0e0e0] flex items-center justify-center shrink-0 border border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+                    <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                </div>
+                <div>
+                  <h1 class="text-3xl lg:text-4xl font-normal tracking-tight text-white tracking-tight mb-2">State-of-the-Art (SOTA) Analysis</h1>
+                  <p class="text-[#888888] max-w-4xl leading-relaxed text-sm">
+                    A peer-reviewed architectural derivation highlighting critical divergences between the <strong class="text-[#e0e0e0]">CycleSafe Multimodal framework</strong> and contemporary baseline methodologies within micro-mobility surface classification literature.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-6">
+                <!-- SOTA 1 -->
+                <div class="border border-[#222] bg-[#0c0c0c] p-8 p-8 rounded-none border border-[#222] flex flex-col md:flex-row gap-6 hover:border-emerald-500/20 transition-all duration-300 group">
+                    <div class="w-12 h-12 rounded-none bg-rose-500/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform border border-rose-500/20">
+                        <svg class="w-6 h-6 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-medium text-white mb-2">1. Resolution of the "Visual-Blindness" Paradigm</h3>
+                        <p class="text-[#888888] text-sm leading-relaxed mb-4">
+                            <span class="badge badge-sm bg-rose-500/20 text-rose-400 border-none mr-2 font-medium tracking-widest text-[10px]">THE SOTA FLAW</span>
+                            Contemporary road classification models heavily depend on active Computer Vision pipelines (e.g., YOLO/CNN configurations mounted on handlebars). These fail precipitously under sub-optimal parameters: twilight operations, lens occlusions from mud, or solar glare. Continuous real-time visual processing also incurs high computational overhead, degrading battery endurance.
+                        </p>
+                        <div class="bg-emerald-500/5 rounded-none p-4 border border-emerald-500/10 ">
+                            <p class="text-emerald-200/90 text-sm leading-relaxed flex items-start gap-2">
+                                <svg class="w-5 h-5 text-[#e0e0e0] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                <span><strong class="text-[#e0e0e0] font-medium">CycleSafe Methodology:</strong> We execute an architectural inversion. Computer Vision (CLIP/App-Based Annotator) is strictly relegated to offline preprocessing to automate ground truth assignment. Real-time inference executes "blindly" via a `PhysicsTransformer` analyzing purely 1-Dimensional IMU telemetry, achieving zero-degradation performance during total visual occlusion.</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SOTA 2 -->
+                <div class="border border-[#222] bg-[#0c0c0c] p-8 p-8 rounded-none border border-[#222] flex flex-col md:flex-row gap-6 hover:border-emerald-500/20 transition-all duration-300 group">
+                    <div class="w-12 h-12 rounded-none bg-blue-500/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform border border-blue-500/20">
+                        <svg class="w-6 h-6 text-[#e0e0e0]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-medium text-white mb-2">2. Kinematic Velocity Fusion Framework</h3>
+                        <p class="text-[#888888] text-sm leading-relaxed mb-4">
+                            <span class="badge badge-sm bg-rose-500/20 text-rose-400 border-none mr-2 font-medium tracking-widest text-[10px]">THE SOTA FLAW</span>
+                            Legacy IMU models operate on crude heuristic thresholds, primarily tracking raw vertical Z-axis amplitude. This creates a "Vibration-Velocity Illusion," where high-speed smooth terrain (e.g., 30 MPH on hard dirt) mimics the absolute vibrational footprint of low-speed harsh terrain (e.g., 5 MPH on cobblestone), inducing chronic misclassification logic.
+                        </p>
+                        <div class="bg-emerald-500/5 rounded-none p-4 border border-emerald-500/10 ">
+                            <p class="text-emerald-200/90 text-sm leading-relaxed flex items-start gap-2">
+                                <svg class="w-5 h-5 text-[#e0e0e0] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                <span><strong class="text-[#e0e0e0] font-medium">CycleSafe Methodology:</strong> Our network mathematically fuses concurrent GPS velocity coordinate measurements over the sliding 50Hz IMU spatial window. By integrating velocity vectors directly into the neural layers, the transformer contextualizes physical amplitudes against temporal speed, breaking the heuristic illusion.</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SOTA 3 -->
+                <div class="border border-[#222] bg-[#0c0c0c] p-8 p-8 rounded-none border border-[#222] flex flex-col md:flex-row gap-6 hover:border-emerald-500/20 transition-all duration-300 group">
+                    <div class="w-12 h-12 rounded-none bg-orange-500/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform border border-orange-500/20">
+                        <svg class="w-6 h-6 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-medium text-white mb-2">3. Out-of-Distribution (OOD) Rejection Tolerance</h3>
+                        <p class="text-[#888888] text-sm leading-relaxed mb-4">
+                            <span class="badge badge-sm bg-rose-500/20 text-rose-400 border-none mr-2 font-medium tracking-widest text-[10px]">THE SOTA FLAW</span>
+                            Standard classifiers utilize closed-loop softmax mapping configurations. Should a bicyclist dismount and transition into pedestrian movement, these networks mathematically hallucinate predictions—categorizing organic footfalls as "Severe Cobblestone"—corrupting the subsequent data aggregations.
+                        </p>
+                        <div class="bg-emerald-500/5 rounded-none p-4 border border-emerald-500/10 ">
+                            <p class="text-emerald-200/90 text-sm leading-relaxed flex items-start gap-2">
+                                <svg class="w-5 h-5 text-[#e0e0e0] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                <span><strong class="text-[#e0e0e0] font-medium">CycleSafe Methodology:</strong> We integrate an active Isolation Forest protocol acting as a pre-inference algorithmic gate. It demands continuous rotational kinematics characteristics matching established biking profiles. Disconnected locomotion instantly triggers a hard OOD dataset rejection.</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- END SOTA Comparison -->
+            </div>
+        </div>
+
+        <!-- View: Frame Extraction -->
+        <div id="view-extract" class="hidden-view flex flex-col gap-6 w-full max-w-4xl mx-auto pb-10">
+          <div>
+            <h2 class="text-3xl font-medium text-white tracking-tight">Frame Extraction</h2>
+            <p class="text-[#888888] mt-1">Disassemble 30fps .mp4 files into exact timestamped images.</p>
+          </div>
+
+          <!-- Video Preview Utility -->
+          <div class="border border-[#222] bg-[#0c0c0c] p-8 rounded-none p-6 hidden" id="ext-video-preview-card">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-lg font-medium text-[#e0e0e0] flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                Visual Debugger
+              </h3>
+              <div class="badge badge-outline text-[#888888] border-white/20">Source Loaded</div>
+            </div>
+            <video id="ext-video-player" controls class="w-full rounded-none bg-black/50 aspect-video  outline-none"></video>
+            <div class="flex justify-between items-center mt-3">
+              <p class="text-xs text-[#888888] font-mono tracking-wide truncate flex-1" id="ext-video-path-label"></p>
+              <button onclick="captureCurrentVideoTime()" class="btn btn-xs rounded-none bg-white/10 hover:bg-emerald-500/20 text-[#e0e0e0] border-0 ml-4 ">
+                Grab Current Timestamp 
+              </button>
+            </div>
+          </div>
+
+          <div class="border border-[#222] bg-[#0c0c0c] p-8 relative overflow-hidden">
+            
+            <h3 class="text-lg font-medium text-white mb-6">Extraction Engine</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="flex flex-col">
+                <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2">Video File</label>
+                <div class="join w-full">
+                    <button class="btn btn-md join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600" onclick="chooseVideoFile()">Choose File</button>
+                    <input type="text" placeholder="Select video file..." class="input input-md join-item w-full bg-black border-[#333] focus:border-blue-400 text-white font-mono text-sm" id="extractVideoPath" onchange="previewExtractVideo()" />
+                  </div>
+              </div>
+                <div class="flex flex-col">
+                  <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2">Custom Output Path (Optional)</label>
+                  <div class="join w-full">
+                    <button class="btn btn-md join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600" onclick="chooseOutputDir()">Choose Path</button>
+                    <input type="text" placeholder="Defaults to ./VideoFrames if blank" class="input input-md join-item w-full bg-black border-[#333] focus:border-blue-400 text-white font-mono text-sm" id="extractCustomOutPath" />
+                  </div>
+                </div>
+
+                <div class="flex flex-col md:col-span-2">
+                  <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2">Base UNIX Timestamp (Override)</label>
+                  <input type="text" placeholder="e.g. 1718614287.261" class="input input-md w-1/2 bg-black border-[#333] text-white font-mono text-sm" id="extractStartTime" />
+                  <p class="text-xs text-slate-500 mt-2">Required if the original filename is missing UNIX time metadata.</p>
+                </div>
+            </div>
+
+              <div class="card-actions flex justify-between items-center mt-8 border-t border-[#222] pt-6">
+                <div id="extract-progress-container" class="hidden flex items-center gap-3 text-[#e0e0e0] font-mono text-sm bg-[#111] px-4 py-2 rounded border border-emerald-500/50">
+                  <span class="loading-ring"></span>
+                  <div class="flex flex-col gap-1 w-48">
+                    <span id="extract-progress-text" class="text-xs font-medium">Generating...</span>
+                    <progress id="extract-progress-bar" class="progress progress-success w-full hidden" value="0" max="100"></progress>
+                  </div>
+                </div>
+                <div class="flex gap-3 ml-auto">
+                  <button class="btn border-0 bg-red-600/80 hover:bg-red-500 text-white px-6  hidden" onclick="stopProcess()" id="btn-stop-extract">
+                    Stop Task
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd" /></svg>
+                  </button>
+                  <button class="btn border border-transparent bg-[#e0e0e0] hover:bg-white text-black rounded-none px-8  shadow-blue-900/20" onclick="runScript('extract')" id="btn-extract">
+                    Execute Disassembly
+                    <span class="loading loading-spinner hidden w-4 h-4" id="spinner-extract"></span>
+                  </button>
+                </div>
+            </div>
+          </div>
+        </div>
+
+
+
+        <!-- View: Data & Annotation -->
+        <div id="view-data" class="hidden-view flex flex-col gap-6 w-full max-w-4xl mx-auto pb-10">
+          <div>
+            <h2 class="text-3xl font-medium text-white tracking-tight">Zero-Shot Vision (Auto Annotation)</h2>
+            <p class="text-[#888888] mt-1">Leverage CLIP to auto-generate bounding boxes across an entire extracted dataset.</p>
+          </div>
+
+          <div class="border border-[#222] bg-[#0c0c0c] p-8 relative overflow-hidden">
+            <h3 class="text-lg font-medium text-white mb-6">Target Configuration</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div class="flex flex-col md:col-span-2">
+                <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2">1. Image Extracted Folder</label>
+                <div class="join w-full">
+                    <button class="btn btn-md join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600" onclick="chooseAnnoDir()">Choose Folder</button>
+                    <input type="text" placeholder="Select image folder..." class="input input-md join-item w-full bg-black border-[#333] focus:border-blue-400 text-white font-mono text-sm" id="annoDirPath" onchange="setDirectory()" />
+                  </div>
+                <div class="mt-3 text-xs font-mono text-[#e0e0e0]/80 truncate bg-emerald-400/10 p-2 rounded hidden" id="selectedDirLabel"></div>
+              </div>
+
+              <!-- General Config -->
+              <div class="flex flex-col md:col-span-2 mt-2">
+                <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2">2. Custom Annotations/Output Folder</label>
+                <div class="join w-full">
+                  <button class="btn btn-md join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600" onclick="chooseClipOutDir()">Choose Folder</button>
+                  <input type="text" placeholder="Defaults back to the native BicycleData folder if blank..." class="input input-md join-item w-full bg-black border-[#333] focus:border-blue-400 text-white font-mono text-sm" id="clipCustomOutPath" />
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-8 border-t border-[#222] pt-6">
+              <h3 class="text-sm font-semibold mb-2">Select Target Classes</h3>
+              <div class="flex items-center mb-4 gap-2">
+                <input type="checkbox" id="btn-select-all" class="checkbox checkbox-sm checkbox-primary" />
+                <label for="btn-select-all" class="text-sm cursor-pointer">Select All 100 Classes</label>
+              </div>
+              <div id="clip-classes-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-64 overflow-y-auto mb-6 p-4 bg-black/20 rounded-lg border border-[#222]">
+                <!-- Checkboxes will be dynamically inserted here -->
+              </div>
+            </div>
+
+            <div class="card-actions justify-end mt-4 flex gap-4">
+              <button class="btn btn-error btn-outline  bg-red-900/20" onclick="stopActiveProcess()" id="btn-stop-clip">
+                Stop Process
+              </button>
+              <button class="btn border-0 bg-indigo-600 hover:bg-indigo-500 text-white px-8  shadow-indigo-900/20 flex gap-2" onclick="runScript('clip')" id="btn-clip">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                Auto-Compute Entire Folder
+                <span class="loading loading-spinner hidden w-4 h-4" id="spinner-clip"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- View: Manual Annotation -->
+        <div id="view-manual" class="hidden-view flex flex-col gap-6 w-full max-w-4xl mx-auto pb-10">
+          <div>
+            <h2 class="text-3xl font-medium text-white tracking-tight">App-Based Annotation</h2>
+            <p class="text-[#888888] mt-1">Manually pinpoint anomalies. Draw missed hazards directly or execute pinpoint interactive queries on custom master video frames.</p>
+          </div>
+
+          <div class="border border-[#222] bg-[#0c0c0c] p-8 hidden" id="video-preview-card">
+            <div class="p-6">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="font-medium text-[#e0e0e0] flex items-center gap-2">
+                  <span class="relative flex h-3 w-3"><span class=" absolute inline-flex h-full w-full rounded-none bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-none h-3 w-3 bg-emerald-500"></span></span>
+                  Source File Linked
+                </h3>
+                <div class="join" id="manual-annotation-tools">
+                    <button id="btn-toggle-annotation" class="btn btn-sm join-item border border-[#444] bg-transparent hover:bg-[#222] text-[#e0e0e0] rounded-none">Annotation: OFF</button>
+                    <button id="btn-set-capture-folder" class="btn btn-sm join-item border border-[#444] bg-transparent hover:bg-[#222] text-[#e0e0e0] rounded-none">Set Output Folder</button>
+                    <button id="btn-capture-frame" class="btn btn-sm join-item border border-transparent bg-[#e0e0e0] hover:bg-white text-black rounded-none">Capture Frame</button>
+                </div>
+              </div>
+              
+              <!-- Hybrid Video + Canvas Container -->
+              <div class="relative w-full aspect-video rounded-none bg-black  border border-[#222] overflow-hidden group">
+                  <video id="video-player" controls class="absolute inset-0 w-full h-full outline-none"></video>
+                  <!-- Canvas sits purely over the video with exactly the same dimensions -->
+                  <canvas id="annotation-layer" class="absolute inset-0 w-full h-full cursor-crosshair pointer-events-none " z-index="50"></canvas>
+              </div>
+
+              <div class="mt-4 flex flex-col gap-4">
+                  <p class="text-xs text-slate-500 font-mono break-all" id="video-path-label"></p>
+                  
+                  <div class="flex flex-col gap-2">
+                      <label class="text-xs uppercase tracking-widest font-medium text-[#e0e0e0]">Interactive Prompt Querying</label>
+                      <div class="join w-full">
+                          <input type="text" placeholder="e.g. 'A small pothole on the asphalt surface'" class="input input-sm join-item w-full bg-black border-white/20 text-white font-mono" id="interactive-clip-prompt" />
+                          <button class="btn btn-sm join-item bg-emerald-600 hover:bg-emerald-500 border-0 text-white" onclick="triggerInteractiveClip()" id="btn-clip-interactive">
+                              Search Frame
+                              <span class="loading loading-spinner hidden w-3 h-3" id="spinner-clip-interactive"></span>
+                          </button>
+                      </div>
+                      <p class="text-[10px] text-slate-500 italic">This will execute inference locally against the active video frame timestamp.</p>
+                  </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="border border-[#222] bg-[#0c0c0c] p-8 relative overflow-hidden">
+            <h3 class="text-lg font-medium text-white mb-6">Select Master Visuals</h3>
+            <div class="flex flex-col">
+              <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2">Master Video File</label>
+              <div class="join w-full">
+                  <button class="btn btn-md join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600" onclick="chooseAnnoVideo()">Choose File</button>
+                  <input type="text" placeholder="Select master video..." class="input input-md join-item w-full bg-black border-[#333] focus:border-blue-400 text-white font-mono text-sm" id="annoVideoPath" onchange="setVideoFile()" />
+              </div>
+            </div>
+          </div>
+
+          <div class="border border-[#222] bg-[#0c0c0c] p-8 relative overflow-hidden mt-6" id="dataset-gallery-container">
+            <h3 class="text-xl font-light tracking-wide text-white mb-4">Auto-Generated Dataset Review</h3>
+            <p class="text-[#888888] mb-6">Upload an auto-generated dataset folder to manually review, annotate, and save overwrites to frames.</p>
+            
+            <button id="btn-upload-auto-dataset" class="btn border border-[#444] bg-transparent hover:bg-[#222] text-[#e0e0e0] rounded-none mb-6">
+              [UPLOAD] Select Folder
+            </button>
+            <div id="dataset-path-label" class="text-xs text-[#888888] font-mono break-all mb-4"></div>
+
+            <div id="dataset-gallery-view" class="hidden flex flex-col gap-4">
+              <div class="relative w-full aspect-video rounded-none bg-black border border-[#222] overflow-hidden group">
+                <img id="dataset-preview-img" class="absolute inset-0 w-full h-full object-contain outline-none drag-none select-none" draggable="false" />
+                <canvas id="dataset-annotation-canvas" class="absolute inset-0 w-full h-full cursor-crosshair z-50 pointer-events-auto "></canvas>
+              </div>
+
+              <div class="flex justify-between items-center">
+                <div class="join">
+                  <button id="btn-dataset-prev" class="btn btn-sm join-item border border-[#444] bg-transparent hover:bg-[#222] text-[#e0e0e0] rounded-none">PREV</button>
+                  <div class="btn btn-sm join-item border-y border-[#444] bg-transparent text-[#888888] rounded-none pointer-events-none">
+                    <span id="dataset-counter">0 / 0</span>
+                  </div>
+                  <button id="btn-dataset-next" class="btn btn-sm join-item border border-[#444] bg-transparent hover:bg-[#222] text-[#e0e0e0] rounded-none">NEXT</button>
+                </div>
+                
+                <button id="btn-dataset-save" class="btn btn-sm border border-transparent bg-[#e0e0e0] hover:bg-white text-black rounded-none">
+                  [SAVE] Overwrite Frame
+                </button>
+              </div>
+              <div class="flex gap-2 mt-2 items-center flex-wrap">
+                 <div class="dropdown dropdown-top">
+                   <div tabindex="0" role="button" id="btn-tool-rect" class="btn border border-[#444] bg-transparent hover:bg-[#222] text-[#e0e0e0] rounded-none btn-sm bg-[#111]">
+                     Tools
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 inline ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
+                   </div>
+                   <ul tabindex="0" class="dropdown-content z-[50] menu shadow bg-[#111] border border-[#444] rounded-none w-52 mb-2 p-2">
+                     <li class="menu-title text-[#888] text-[10px] uppercase px-2 py-1">Highlight Shapes</li>
+                     <li><a class="active bg-[#333] hover:bg-[#444] text-[#e0e0e0]">Rectangle</a></li>
+                     <li><a class="hover:bg-[#444] text-[#e0e0e0]">Polygon</a></li>
+                     <li><a class="hover:bg-[#444] text-[#e0e0e0]">Circle</a></li>
+                     <div class="divider my-0 border-[#333]"></div>
+                     <li class="menu-title text-[#888] text-[10px] uppercase px-2 py-1">Highlight Methods</li>
+                     <li><a class="active bg-[#333] hover:bg-[#444] text-[#e0e0e0]">Line Only</a></li>
+                     <li><a class="hover:bg-[#444] text-[#e0e0e0]">Segmentation Mask</a></li>
+                   </ul>
+                 </div>
+                 <button id="btn-tool-clear" class="btn border border-[#444] bg-transparent hover:bg-[#222] text-[#e0e0e0] rounded-none btn-sm">Clear Canvas</button>
+                 <select id="dataset-label-select" class="select select-sm select-bordered border-[#444] bg-black text-[#e0e0e0] rounded-none ml-2">
+                 </select>
+                 <div class="flex items-center gap-1 ml-2">
+                    <label class="text-xs text-[#888]">Box Color:</label>
+                    <input type="color" id="dataset-color-box" value="#F43F5E" class="w-6 h-6 p-0 border-0 bg-transparent cursor-pointer">
+                 </div>
+                 <div class="flex items-center gap-1 ml-2">
+                    <label class="text-xs text-[#888]">Font Color:</label>
+                    <input type="color" id="dataset-color-font" value="#000000" class="w-6 h-6 p-0 border-0 bg-transparent cursor-pointer">
+                 </div>
+                 <div class="flex items-center gap-2 ml-2">
+                    <label class="text-xs text-[#888]">Thickness:</label>
+                    <input type="range" id="dataset-slider-thickness" min="1" max="10" value="2" class="range range-xs range-primary w-24">
+                 </div>
+                 <div class="flex items-center gap-2 ml-2">
+                    <label class="text-xs text-[#888]">Opacity %:</label>
+                    <input type="number" id="dataset-slider-opacity" min="0" max="1000" value="100" class="input input-xs input-bordered border-[#444] bg-black text-[#e0e0e0] w-16 px-1 text-center rounded-none font-mono">
+                 </div>
+                 <button id="btn-dataset-delete-selected" class="btn border border-[#F43F5E] bg-transparent hover:bg-[#F43F5E] text-[#e0e0e0] rounded-none btn-sm ml-auto">Delete Selected box</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- View: Synchronization -->
+        <div id="view-sync" class="hidden-view flex flex-col gap-6 w-full max-w-4xl mx-auto pb-10">
+          <div>
+            <h2 class="text-3xl font-medium text-white tracking-tight">Temporal Alignment</h2>
+            <p class="text-[#888888] mt-1">Bind the 50Hz Accel/Gyro Streams mathematically to the high-confidence Visual predictions via native UTC timeline matching.</p>
+          </div>
+
+          <div class="border border-[#222] bg-[#0c0c0c] p-8 flex flex-col items-center justify-center text-center py-16">
+            <div class="w-20 h-20 rounded-none bg-gradient-to-tr from-cyan-500 to-emerald-500 flex items-center justify-center text-white  shadow-emerald-900/30 mb-6">
+              <svg class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+            </div>
+            <h3 class="text-2xl font-normal tracking-tight text-white">Pandas ASOF Merge</h3>
+            <p class="text-[#888888] mt-2 max-w-md mx-auto">This process builds the master `aligned_dataset.csv`. Ensure you have run both the Frame Extraction and Zero-Shot logic steps before syncing.</p>
+
+            <div class="flex flex-col w-full max-w-md mt-6 text-left">
+              <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2">Custom Root Data Folder (Optional)</label>
+              <div class="join w-full">
+                <button class="btn btn-md join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600" onclick="chooseSyncDir()">Choose Folder</button>
+                <input type="text" placeholder="Defaults to BicycleData..." class="input input-md join-item w-full bg-black border-[#333] focus:border-blue-400 text-white font-mono text-sm" id="syncDataPath" />
+              </div>
+            </div>
+
+            <!-- Actionable DSP Filter Toggle -->
+            <div class="mt-4 bg-black border border-[#333] p-4 rounded-none flex items-center gap-4 text-left w-full max-w-md ">
+                <div class="w-10 h-10 rounded-none bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/></svg>
+                </div>
+                <div class="flex-1">
+                    <h4 class="text-white font-medium text-sm tracking-wide">Apply Quarter-Car DSP</h4>
+                    <p class="text-[10px] text-[#888888] mt-0.5 leading-snug">Mathematical frequency cut isolating Road Resonance from frame bounce.</p>
+                </div>
+                <input type="checkbox" class="toggle toggle-warning" id="toggle-dsp" checked />
+            </div>
+
+            <button class="btn border-0 bg-white text-slate-900 hover:bg-slate-200 px-10 mt-8 rounded-none  font-medium tracking-wide" onclick="runScript('sync')" id="btn-sync">
+              Initiate Vector Synchronization
+              <span class="loading loading-spinner hidden w-4 h-4 border-slate-900" id="spinner-sync"></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- View: Training -->
+        <div id="view-train" class="hidden-view flex flex-col gap-6 w-full max-w-4xl mx-auto pb-10">
+          <div class="flex justify-between items-end">
+            <div>
+              <h2 class="text-3xl font-medium text-white tracking-tight">Transformer Training</h2>
+              <div class="flex items-center gap-4 mt-1">
+                  <p class="text-[#888888]">Initialize the PyTorch Engine. Gradients are adjusted across <span id="trainConfNum">epochs</span>.</p>
+                  
+                  <!-- Actionable Dual-Stream Toggle -->
+                  <div class="bg-black border border-[#333] p-2 px-3 rounded-none flex items-center gap-3 ml-4 ">
+                      <div class="w-6 h-6 rounded-none bg-teal-500/20 text-teal-400 flex items-center justify-center shrink-0 border border-teal-500/30">
+                          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                      </div>
+                      <div class="mr-2">
+                          <h4 class="text-white font-medium text-[11px] tracking-wide">Dual-Stream Meta-Fusion</h4>
+                          <p class="text-[9px] text-[#888888] leading-none">2-Tower Transformer Logic</p>
+                      </div>
+                      <input type="checkbox" class="toggle toggle-info toggle-sm ml-2" id="toggle-dual" checked />
+                  </div>
+              </div>
+            </div>
+            <button class="btn border-0 bg-rose-600 hover:bg-rose-500 text-white px-8  shadow-rose-900/30" onclick="runScript('train')" id="btn-train">
+              <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              Burn Neural Weights
+              <span class="loading loading-spinner hidden w-4 h-4" id="spinner-train"></span>
+            </button>
+          </div>
+
+          <div class="flex flex-col w-full max-w-xl text-left bg-[#0a0a0a]/40 p-4 rounded-none border border-[#222] ">
+            <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2">Target Aligned Dataset (CSV)</label>
+            <div class="join w-full">
+              <button class="btn btn-sm join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600" onclick="chooseTrainData()">Choose File</button>
+              <input type="text" placeholder="Defaults to config.yaml target..." class="input input-sm join-item w-full bg-slate-950/50 border-[#333] focus:border-rose-400 text-white font-mono text-xs" id="trainDataPath" />
+            </div>
+          </div>
+
+          <!-- Chart.js and Live Data Canvas -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-2 hidden" id="training-stats">
+            <!-- Small Stat Cards -->
+            <div class="col-span-1 space-y-4">
+              <div class="border border-[#222] bg-[#0c0c0c] p-8 rounded-none p-5 border border-[#333] border-l-4 border-l-blue-500">
+                <p class="text-[10px] uppercase font-medium text-[#888888] tracking-widest">Epoch</p>
+                <p class="text-3xl font-normal tracking-tight text-white mt-1 font-mono" id="stat-epoch">0.0</p>
+              </div>
+              <div class="border border-[#222] bg-[#0c0c0c] p-8 rounded-none p-5 border border-[#333] border-l-4 border-l-rose-500">
+                <p class="text-[10px] uppercase font-medium text-[#888888] tracking-widest">Val Loss (MSE)</p>
+                <p class="text-3xl font-normal tracking-tight text-white mt-1 font-mono" id="stat-loss">0.00</p>
+              </div>
+            </div>
+            
+            <!-- Beautiful Canvas Render -->
+              <div class="col-span-3 border border-[#222] bg-[#0c0c0c] p-8 rounded-none p-5 border border-[#333] relative h-[250px]">
+                <p class="absolute top-4 left-6 text-xs uppercase font-medium text-[#888888] tracking-widest z-10 hidden" id="chart-title">Loss Trajectory</p>
+                <canvas id="lossChart" class="w-full h-full"></canvas>
+              </div>
+            </div>
+          </div> <!-- End view-train -->
+
+          <!-- View: Inference -->
+      <div id="view-inference" class="hidden-view p-8 space-y-6 flex flex-col gap-6 w-full max-w-5xl mx-auto pb-10">
+        <div>
+          <h1 class="text-3xl font-normal tracking-tight text-white tracking-tight">Live Test Execution</h1>
+          <p class="text-sm text-[#888888] mt-2">Simulate real-time prediction by passing video and IMU arrays to your best mathematical artifact.</p>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="border border-[#222] bg-[#0c0c0c] p-8 p-6 rounded-none border border-[#222]  space-y-4">
+             <h3 class="text-purple-400 font-medium tracking-widest text-xs uppercase mb-4">Playback Setup</h3>
+             <label class="text-xs text-[#888888] mb-1 block">Compiled Checkpoint (.pth)</label>
+               <div class="join w-full mb-3">
+                 <button class="btn btn-sm join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600" onclick="chooseInfModel()">Choose Model</button>
+                 <input type="text" placeholder="best_model.pth..." class="input input-sm join-item w-full bg-black border-[#333] text-white font-mono text-xs" id="infModelPath" />
+               </div>
+               
+               <label class="text-xs text-[#888888] mb-1 block">Target Evaluation Dataset (.csv)</label>
+               <div class="join w-full mb-3">
+                 <button class="btn btn-sm join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600" onclick="chooseInfCsv()">Choose Dataset</button>
+                 <input type="text" placeholder="aligned_dataset.csv..." class="input input-sm join-item w-full bg-black border-[#333] text-white font-mono text-xs" id="infCsvPath" />
+               </div>
+
+               <label class="text-xs text-[#888888] mb-1 block">Reference Video (.mp4)</label>
+               <div class="join w-full">
+                 <button class="btn btn-sm join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600" onclick="chooseInfVideo()">Choose Video</button>
+                 <input type="text" placeholder="Session Video File..." class="input input-sm join-item w-full bg-black border-[#333] text-white font-mono text-xs" id="infVideoPath" />
+               </div>
+               
+               <button class="btn btn-secondary border-0 bg-purple-600 hover:bg-purple-500 text-white btn-sm w-full mt-6" id="btn-run-inference" onclick="_runScript('inference')">
+                 Generate Inference Predictions
+                 <span class="loading loading-spinner hidden w-4 h-4" id="spinner-inference"></span>
+               </button>
+
+               <button class="btn btn-primary btn-sm w-full mt-2 hidden" id="btn-run-inf" onclick="startAIOverlay()">
+                  <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path></svg>
+                  Launch Visualization
+               </button>
+             <div class="mt-4 pt-4 border-t border-[#333]">
+                 <p class="text-[10px] text-slate-500 uppercase tracking-wide">Detection Pipeline</p>
+                 <div class="flex gap-2 mt-2">
+                     <span class="badge badge-sm border border-emerald-500/30 text-[#e0e0e0] bg-emerald-500/10">Physics Engine</span>
+                     <span class="badge badge-sm border border-purple-500/30 text-purple-400 bg-purple-500/10">Computer Vision UI</span>
+                 </div>
+             </div>
+          </div>
+          
+          <div class="border border-[#222] bg-[#0c0c0c] p-8 p-4 rounded-none border border-[#222]  flex flex-col items-center justify-center relative min-h-[350px] bg-black overflow-hidden">
+             <video id="inf-video" class="w-full h-full object-cover hidden rounded" controls muted></video>
+             
+             <div id="inf-overlay" class="absolute bottom-16 transform transition-all duration-300 scale-95 opacity-0 flex flex-col items-center">
+                 <div class="bg-black/80 backdrop-blur-md px-8 py-3 rounded-none border border-white/20 shadow-[0_0_20px_rgba(0,0,0,0.8)]">
+                    <span id="inf-pred-text" class="text-2xl font-black tracking-widest text-[#e0e0e0]">SMOOTH TARMAC</span>
+                 </div>
+             </div>
+             
+             <p id="inf-idle-msg" class="text-slate-500 font-medium text-sm flex gap-2 items-center">
+                <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                Waiting for dataset...
+             </p>
+          </div>
+        </div>
+
+        
+          <!-- Live Dual-Stream Array Results -->
+          <div class="grid grid-cols-1 gap-6 mt-6">
+              <div class="border border-[#222] bg-[#0c0c0c] p-8 p-6 rounded-none border border-[#333]  relative overflow-hidden bg-gradient-to-r from-slate-900 to-black">
+                  
+                  <div class="flex justify-between items-center mb-6 relative z-10 border-b border-[#222] pb-4">
+                      <div>
+                          <h3 class="text-[#e0e0e0] font-medium tracking-widest text-sm uppercase flex items-center gap-2">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                              TEST PHASE: Dual-Stream Physics Engine
+                          </h3>
+                          <p class="text-xs text-[#888888]">Processing LM-17.06_multi_sensor_aligned.csv Output</p>
+                      </div>
+                      <button id="btn-run-testing" class="btn btn-sm btn-outline text-[#e0e0e0] border-emerald-500/50 hover:bg-emerald-500 hover:text-white" onclick="startTestingSimulation()">
+                          Execute Local Inference
+                      </button>
+                  </div>
+                  
+                  <div class="grid grid-cols-3 gap-6 relative z-10">
+                      <!-- Stream 1 -->
+                      <div class="space-y-1">
+                          <p class="text-[10px] text-slate-500 uppercase tracking-widest">Stream 1: IMU Core Payload</p>
+                          <p class="text-sm font-mono text-blue-300" id="testing-imu-state">Awaiting Feed...</p>
+                      </div>
+                      
+                      <!-- Stream 2 -->
+                      <div class="space-y-1">
+                          <p class="text-[10px] text-slate-500 uppercase tracking-widest">Stream 2: 3.0Hz DSP Kinematic</p>
+                          <p class="text-sm font-mono text-purple-300" id="testing-dsp-state">Awaiting Feed...</p>
+                      </div>
+                      
+                      <!-- Final Classification -->
+                      <div class="space-y-1 bg-black/40 p-3 rounded-none border border-[#222]">
+                          <p class="text-[10px] text-[#e0e0e0]/70 uppercase tracking-widest">Live Meta-Classification</p>
+                          <p class="text-2xl font-black text-[#e0e0e0]" id="testing-prediction">STANDBY</p>
+                          <p class="text-[10px] text-[#888888] font-mono mt-1" id="testing-confidence">Conf: 0.00%</p>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          <!-- NEW: Real-Time Advanced Telemetry Array (Features 3, 4, 5) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6  mt-6">
+          <!-- Feature 4: Velocity Fusion -->
+          <div class="border border-[#222] bg-[#0c0c0c] p-8 p-5 rounded-none border border-[#222]  flex flex-col justify-between relative overflow-hidden group">
+            
+            <h3 class="text-[#e0e0e0] font-medium tracking-widest text-[10px] uppercase mb-4 flex items-center justify-between z-10">
+              <span>GPS Velocity Fusion</span>
+              <input type="checkbox" id="vel-fusion-toggle" class="toggle toggle-info toggle-sm" checked />
+            </h3>
+            <div class="flex-1 flex flex-col items-center justify-center py-2 z-10">
+              <div class="radial-progress text-[#e0e0e0] font-medium bg-[#0a0a0a] border-[6px] border-slate-900 drop-shadow-[0_0_15px_rgba(59,130,246,0.2)] transition-all duration-300" id="speed-indicator" style="--value:0; --size:8rem; --thickness: 0.6rem;" role="progressbar">
+                <div class="flex flex-col items-center justify-center mt-2">
+                    <span id="speed-text" class="text-4xl text-white tracking-tighter">0</span>
+                    <span class="text-[10px] text-slate-500 font-medium uppercase tracking-widest mt-1">MPH</span>
+                </div>
+              </div>
+            </div>
+            <p class="text-[10px] text-center text-slate-500 mt-4 border-t border-[#222] pt-3 leading-tight block z-10">
+              Normalizes IMU amplitude vectors via coordinate velocity mapping to prevent static oscillation errors.
+            </p>
+          </div>
+
+          <!-- Feature 3: OOD / Anomaly Rejection -->
+          <div class="border border-[#222] bg-[#0c0c0c] p-8 p-5 rounded-none border border-[#222]  flex flex-col justify-between relative overflow-hidden group">
+            
+            <div class="w-full flex items-center gap-2 mb-4 justify-between z-10">
+                <h3 class="text-orange-400 font-medium tracking-widest text-[10px] uppercase">Anomaly Gate (OOD)</h3>
+                <span id="ood-status" class="badge badge-sm bg-emerald-500/10 text-[#e0e0e0] border border-emerald-500/20 text-[9px] px-2 shadow-[0_0_8px_rgba(16,185,129,0.2)]">RIDING PROFILE</span>
+            </div>
+            <p class="text-[10px] text-[#888888] mb-6 leading-tight z-10">
+              A parallel isolation forest network flags inputs lacking typical rotational biking kinematics (e.g. Walking).
+            </p>
+            <div class="flex-1 flex flex-col justify-end gap-4 w-full z-10">
+              <div class="mb-1">
+                 <div class="flex justify-between text-xs text-[#888888] mb-2">
+                    <span class="font-medium text-[10px] uppercase tracking-wide">Gate Threshold</span>
+                    <span id="ood-val-text" class="font-mono text-white text-[10px] bg-[#0a0a0a] px-1.5 py-0.5 rounded border border-[#333]">80%</span>
+                 </div>
+                 <input type="range" min="50" max="99" value="80" class="range range-xs range-warning opacity-80 hover:opacity-100 transition-opacity" id="ood-slider" oninput="document.getElementById('ood-val-text').innerText = this.value + '%'" />
+              </div>
+              <div class="p-2.5 bg-slate-950 rounded border border-[#222] relative overflow-hidden flex items-center h-9 ">
+                <div id="ood-bar" class="absolute top-0 left-0 h-full bg-emerald-500/20 transition-all duration-300" style="width: 85%;"></div>
+                <div class="relative z-10 flex justify-between w-full font-mono px-1 items-center">
+                  <span class="text-[#888888] text-[9px] uppercase tracking-widest flex items-center gap-1">
+                     <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                     Signal Map
+                  </span>
+                  <span id="ood-signal-text" class="text-[#e0e0e0] font-medium text-xs tracking-wider">85%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Feature 5: Active Learning Loop -->
+          <div class="border border-[#222] bg-[#0c0c0c] p-8 p-5 rounded-none border border-[#222]  flex flex-col justify-between relative overflow-hidden group">
+            
+            <div class="z-10">
+                <h3 class="text-rose-400 font-medium tracking-widest text-[10px] uppercase mb-2">Active Learning Routing</h3>
+                <p class="text-[10px] text-[#888888] mb-4 leading-relaxed">
+                  Capture severe model drift. Clicking packages the current 50Hz sliding 1D physics array & target video frame back into the local auto-annotation staging queue.
+                </p>
+            </div>
+            <div class="flex flex-col gap-3 mt-auto z-10">
+               <button id="btn-flag-fp" class="btn btn-sm h-11 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 w-full flex items-center justify-center gap-2 transition-all group-hover:border-rose-500/50  group-hover:shadow-[0_0_15px_rgba(225,29,72,0.15)]" onclick="flagFalsePositive()">
+                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" /></svg>
+                 Flag Sub-Optimal Prediction
+               </button>
+               <div class="flex justify-between items-center px-1 border-t border-[#222] pt-3">
+                 <span class="text-slate-500 text-[10px]">Pipeline Queue: <span id="fp-queue-count" class="text-white font-medium font-mono ml-1 px-1.5 py-0.5 bg-rose-500/20 text-rose-400 rounded text-[10px] border border-rose-500/20">0</span></span>
+                 <button class="text-rose-400 hover:text-white uppercase text-[9px] font-medium tracking-wide transition-colors flex items-center gap-1 group/btn">
+                     Review Pool
+                     <svg class="w-3 h-3 transform group-hover/btn:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                 </button>
+               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+        
+        <!-- View: Analytics (Feature 4, 8) -->
+        <div id="view-analytics" class="hidden-view p-8 space-y-6 flex flex-col gap-6 w-full max-w-5xl mx-auto pb-10">
+          <div class="flex justify-between items-center">
+            <div>
+              <h1 class="text-3xl font-normal tracking-tight text-white tracking-tight">Post-Training Analytics</h1>
+              <p class="text-sm text-[#888888] mt-2">Confusion matrices, cross-session validations, and precision diagnostics.</p>
+            </div>
+            <button class="btn btn-outline border-white/20 text-[#e0e0e0] hover:bg-blue-500 hover:text-white" onclick="generatePDFReport()">
+              <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              Export PDF Report
+            </button>
+          </div>
+          
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="border border-[#222] bg-[#0c0c0c] p-8 p-6 rounded-none border border-[#222]  flex flex-col items-center min-h-[350px]">
+               <h3 class="text-[#e0e0e0] font-medium tracking-widest text-xs uppercase self-start mb-4 w-full border-b border-[#333] pb-2">Confusion Matrix (Validation)</h3>
+               <canvas id="confusion-canvas" class="w-full h-full"></canvas>
+            </div>
+            <div class="border border-[#222] bg-[#0c0c0c] p-8 p-6 rounded-none border border-[#222]  flex flex-col items-center min-h-[350px]">
+               <h3 class="text-rose-400 font-medium tracking-widest text-xs uppercase self-start mb-4 w-full border-b border-[#333] pb-2">Precision / Recall Radar</h3>
+               <canvas id="radar-canvas" class="w-full h-full"></canvas>
+            </div>
+          </div>
+          
+          <div class="border border-[#222] bg-[#0c0c0c] p-8 p-6 rounded-none border border-[#222]  w-full">
+            <h3 class="text-[#e0e0e0] font-medium tracking-widest text-xs uppercase mb-4 w-full border-b border-[#333] pb-2">Session Generalization (Drift)</h3>
+            <div class="flex gap-4 mb-4">
+                <select class="select select-bordered select-sm flex-1 bg-[#0a0a0a] border-[#333] text-[#888888]">
+                    <option>iOS Run A</option>
+                </select>
+                <span class="text-slate-500 font-medium my-auto">VS</span>
+                <select class="select select-bordered select-sm flex-1 bg-[#0a0a0a] border-[#333] text-[#888888]">
+                    <option>Android Run B</option>
+                </select>
+                <button class="btn btn-sm btn-primary">Compare Overlap</button>
+            </div>
+            <div class="w-full h-[250px]">
+                <canvas id="drift-canvas" class="w-full h-full"></canvas>
+            </div>
+          </div>
+        </div>
+        
+</div> <!-- End Scrolling Views Wrapper -->
+
+<!-- Global Console Output -->
+          <div class="w-full flex-shrink-0 z-20 border-t border-[#333] bg-slate-950/80 backdrop-blur-3xl shadow-[0_-20px_40px_-15px_rgba(0,0,0,0.7)]">
+            <div class="w-full max-w-5xl mx-auto">
+            <div class="border border-[#222] bg-[#0c0c0c] p-8 rounded-none border border-[#333] overflow-hidden shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.5)] bg-slate-950/80 backdrop-blur-3xl">
+              <div class="flex items-center justify-between px-4 py-3 border-b border-[#222] bg-black/20 cursor-pointer hover:bg-white/5 transition-colors" onclick="toggleConsole()">
+                <div class="text-xs font-medium uppercase tracking-widest text-[#888888] flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[#e0e0e0]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M4 15V9a2 2 0 012-2h12a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2z" /></svg>
+                  System Kernel Output
+                </div>
+                <svg id="console-chevron" class="w-4 h-4 text-slate-500 transform transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
+              </div>
+              
+              <!-- Start Open inside wrapper -->
+              <div id="console-wrapper" class="transition-all duration-300 h-[220px]">
+                <div id="console-output" class="p-4 h-full overflow-y-auto whitespace-pre-wrap font-mono text-[13px] leading-relaxed text-[#888888]"><span class="text-[#e0e0e0] font-medium">$ Engine Matrix Loaded. Welcome to CycleSafe Studio.</span><br/></div>
+              </div>
+            </div>
+            </div>
+          </div>
+
+        </main>
+      </div> <!-- End Content & Layout -->
+
+    <!-- Inject JS libraries -->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+      <script src="../node_modules/leaflet/dist/leaflet.js"></script>
+      <script src="../node_modules/three/build/three.min.js"></script>
+    <script src="../node_modules/chart.js/dist/chart.umd.js"></script>
+    <script src="../node_modules/js-yaml/dist/js-yaml.min.js"></script>
+    <script src="./renderer.js"></script>
+    <!-- Toast Container --><div id="toast-container" class="toast toast-bottom toast-end z-[100] p-5"></div>
+  </body>
+</html>

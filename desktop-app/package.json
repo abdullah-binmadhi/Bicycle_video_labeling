@@ -1,0 +1,29 @@
+{
+  "name": "desktop-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron .",
+    "build:css": "tailwindcss -i src/input.css -o public/output.css",
+    "build": "npm run build:css && rm -rf \"CycleSafe Studio.app\" && npx electron-packager . \"CycleSafe Studio\" --platform=darwin --arch=arm64 --icon=assets/icon.icns --out=./build --overwrite && mv \"build/CycleSafe Studio-darwin-arm64/CycleSafe Studio.app\" ./ && rm -rf build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@tailwindcss/cli": "^4.2.2",
+    "chart.js": "^4.5.1",
+    "daisyui": "^5.5.19",
+    "electron": "^41.0.4",
+    "js-yaml": "^4.1.1",
+    "leaflet": "^1.9.4",
+    "tailwindcss": "^4.2.2",
+    "three": "^0.183.2"
+  },
+  "devDependencies": {
+    "electron-packager": "^17.1.2"
+  }
+}

@@ -1,0 +1,21 @@
+checkpoints/
+models/
+processed_data/
+weights/
+.DS_Store
+__pycache__/
+*.pth
+*.pt
+*.h5
+*.save
+Project Surface Detection/
+Road Surface Detection Papers/
+.env
+.venv
+venv/
+env/
+
+
+*.app/
+
+node_modules/

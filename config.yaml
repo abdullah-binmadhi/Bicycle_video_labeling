@@ -1,0 +1,32 @@
+data_paths:
+  # Base directory containing raw sensor recordings
+  sensor_data_dir: "/Users/abdullahbinmadhi/Desktop/Bicycle Video ML Model/Project Surface Detection/hinterrad/"
+  # Output directory for synchronized and processed datasets
+  processed_dir: "processed_data/"
+  # Example video paths (for future use)
+  video_dir: "VideoData/"
+
+sensor_rates:
+  # Expected sampling rates for various sensors (in Hz)
+  imu_hz: 50
+  gnss_hz: 60
+  video_hz: 30
+  lidar_hz: 10
+
+hyperparameters:
+  batch_size: 32
+  learning_rate: 0.001
+  epochs: 50
+  # At 50Hz, sequence_length of 50 equals exactly 1 second of data
+  sequence_length: 50  
+
+model_settings:
+  # Modality feature flags (allows graceful degradation)
+  use_vision: false
+  use_imu: true
+  use_lidar: false
+  
+  # Sensor-specific architectural settings
+  # E.g., Accel (3) + Gyro (3) = 6 features
+  imu_features: 6 
+  num_classes: 3  # Target classes: e.g., smooth_road, rough_road, pothole

@@ -1,0 +1,502 @@
+{
+    "0 - bicycle": [
+        "a first-person POV video from a bicycle riding near bicycle",
+        "looking down at bicycle on the street from a bike",
+        "a dashboard camera view of bicycle on the road"
+    ],
+    "1 - potholes": [
+        "a first-person POV video from a bicycle riding near potholes",
+        "looking down at potholes on the street from a bike",
+        "a dashboard camera view of potholes on the road"
+    ],
+    "2 - manhole": [
+        "a first-person POV video from a bicycle riding near manhole",
+        "looking down at manhole on the street from a bike",
+        "a dashboard camera view of manhole on the road"
+    ],
+    "3 - water_puddle": [
+        "a first-person POV video from a bicycle riding near water puddle",
+        "looking down at water puddle on the street from a bike",
+        "a dashboard camera view of water puddle on the road"
+    ],
+    "4 - uneven_surface": [
+        "a first-person POV video from a bicycle riding near uneven surface",
+        "looking down at uneven surface on the street from a bike",
+        "a dashboard camera view of uneven surface on the road"
+    ],
+    "5 - speed_bump": [
+        "a first-person POV video from a bicycle riding near speed bump",
+        "looking down at speed bump on the street from a bike",
+        "a dashboard camera view of speed bump on the road"
+    ],
+    "6 - drain": [
+        "a first-person POV video from a bicycle riding near drain",
+        "looking down at drain on the street from a bike",
+        "a dashboard camera view of drain on the road"
+    ],
+    "7 - crack": [
+        "a first-person POV video from a bicycle riding near crack",
+        "looking down at crack on the street from a bike",
+        "a dashboard camera view of crack on the road"
+    ],
+    "8 - gravel": [
+        "a first-person POV video from a bicycle riding near gravel",
+        "looking down at gravel on the street from a bike",
+        "a dashboard camera view of gravel on the road"
+    ],
+    "9 - sand": [
+        "a first-person POV video from a bicycle riding near sand",
+        "looking down at sand on the street from a bike",
+        "a dashboard camera view of sand on the road"
+    ],
+    "10 - mud": [
+        "a first-person POV video from a bicycle riding near mud",
+        "looking down at mud on the street from a bike",
+        "a dashboard camera view of mud on the road"
+    ],
+    "11 - wet_leaves": [
+        "a first-person POV video from a bicycle riding near wet leaves",
+        "looking down at wet leaves on the street from a bike",
+        "a dashboard camera view of wet leaves on the road"
+    ],
+    "12 - dry_leaves": [
+        "a first-person POV video from a bicycle riding near dry leaves",
+        "looking down at dry leaves on the street from a bike",
+        "a dashboard camera view of dry leaves on the road"
+    ],
+    "13 - branches": [
+        "a first-person POV video from a bicycle riding near branches",
+        "looking down at branches on the street from a bike",
+        "a dashboard camera view of branches on the road"
+    ],
+    "14 - ice": [
+        "a first-person POV video from a bicycle riding near ice",
+        "looking down at ice on the street from a bike",
+        "a dashboard camera view of ice on the road"
+    ],
+    "15 - snow": [
+        "a first-person POV video from a bicycle riding near snow",
+        "looking down at snow on the street from a bike",
+        "a dashboard camera view of snow on the road"
+    ],
+    "16 - glass": [
+        "a first-person POV video from a bicycle riding near glass",
+        "looking down at glass on the street from a bike",
+        "a dashboard camera view of glass on the road"
+    ],
+    "17 - metal_plate": [
+        "a first-person POV video from a bicycle riding near metal plate",
+        "looking down at metal plate on the street from a bike",
+        "a dashboard camera view of metal plate on the road"
+    ],
+    "18 - rail_tracks": [
+        "a first-person POV video from a bicycle riding near rail tracks",
+        "looking down at rail tracks on the street from a bike",
+        "a dashboard camera view of rail tracks on the road"
+    ],
+    "19 - cobblestone": [
+        "a first-person POV video from a bicycle riding near cobblestone",
+        "looking down at cobblestone on the street from a bike",
+        "a dashboard camera view of cobblestone on the road"
+    ],
+    "20 - brick_paving": [
+        "a first-person POV video from a bicycle riding near brick paving",
+        "looking down at brick paving on the street from a bike",
+        "a dashboard camera view of brick paving on the road"
+    ],
+    "21 - concrete_pavers": [
+        "a first-person POV video from a bicycle riding near concrete pavers",
+        "looking down at concrete pavers on the street from a bike",
+        "a dashboard camera view of concrete pavers on the road"
+    ],
+    "22 - tree_root": [
+        "a first-person POV video from a bicycle riding near tree root",
+        "looking down at tree root on the street from a bike",
+        "a dashboard camera view of tree root on the road"
+    ],
+    "23 - painted_lines": [
+        "a first-person POV video from a bicycle riding near painted lines",
+        "looking down at painted lines on the street from a bike",
+        "a dashboard camera view of painted lines on the road"
+    ],
+    "24 - road_marking": [
+        "a first-person POV video from a bicycle riding near road marking",
+        "looking down at road marking on the street from a bike",
+        "a dashboard camera view of road marking on the road"
+    ],
+    "25 - crosswalk": [
+        "a first-person POV video from a bicycle riding near crosswalk",
+        "looking down at crosswalk on the street from a bike",
+        "a dashboard camera view of crosswalk on the road"
+    ],
+    "26 - pedestrian": [
+        "a first-person POV video from a bicycle riding near pedestrian",
+        "looking down at pedestrian on the street from a bike",
+        "a dashboard camera view of pedestrian on the road"
+    ],
+    "27 - dog": [
+        "a first-person POV video from a bicycle riding near dog",
+        "looking down at dog on the street from a bike",
+        "a dashboard camera view of dog on the road"
+    ],
+    "28 - cat": [
+        "a first-person POV video from a bicycle riding near cat",
+        "looking down at cat on the street from a bike",
+        "a dashboard camera view of cat on the road"
+    ],
+    "29 - squirrel": [
+        "a first-person POV video from a bicycle riding near squirrel",
+        "looking down at squirrel on the street from a bike",
+        "a dashboard camera view of squirrel on the road"
+    ],
+    "30 - car": [
+        "a first-person POV video from a bicycle riding near car",
+        "looking down at car on the street from a bike",
+        "a dashboard camera view of car on the road"
+    ],
+    "31 - motorcycle": [
+        "a first-person POV video from a bicycle riding near motorcycle",
+        "looking down at motorcycle on the street from a bike",
+        "a dashboard camera view of motorcycle on the road"
+    ],
+    "32 - truck": [
+        "a first-person POV video from a bicycle riding near truck",
+        "looking down at truck on the street from a bike",
+        "a dashboard camera view of truck on the road"
+    ],
+    "33 - bus": [
+        "a first-person POV video from a bicycle riding near bus",
+        "looking down at bus on the street from a bike",
+        "a dashboard camera view of bus on the road"
+    ],
+    "34 - scooter": [
+        "a first-person POV video from a bicycle riding near scooter",
+        "looking down at scooter on the street from a bike",
+        "a dashboard camera view of scooter on the road"
+    ],
+    "35 - e-scooter": [
+        "a first-person POV video from a bicycle riding near e-scooter",
+        "looking down at e-scooter on the street from a bike",
+        "a dashboard camera view of e-scooter on the road"
+    ],
+    "36 - traffic_cone": [
+        "a first-person POV video from a bicycle riding near traffic cone",
+        "looking down at traffic cone on the street from a bike",
+        "a dashboard camera view of traffic cone on the road"
+    ],
+    "37 - bollard": [
+        "a first-person POV video from a bicycle riding near bollard",
+        "looking down at bollard on the street from a bike",
+        "a dashboard camera view of bollard on the road"
+    ],
+    "38 - construction_barrier": [
+        "a first-person POV video from a bicycle riding near construction barrier",
+        "looking down at construction barrier on the street from a bike",
+        "a dashboard camera view of construction barrier on the road"
+    ],
+    "39 - fallen_tree": [
+        "a first-person POV video from a bicycle riding near fallen tree",
+        "looking down at fallen tree on the street from a bike",
+        "a dashboard camera view of fallen tree on the road"
+    ],
+    "40 - debris": [
+        "a first-person POV video from a bicycle riding near debris",
+        "looking down at debris on the street from a bike",
+        "a dashboard camera view of debris on the road"
+    ],
+    "41 - plastic_bag": [
+        "a first-person POV video from a bicycle riding near plastic bag",
+        "looking down at plastic bag on the street from a bike",
+        "a dashboard camera view of plastic bag on the road"
+    ],
+    "42 - trash_can": [
+        "a first-person POV video from a bicycle riding near trash can",
+        "looking down at trash can on the street from a bike",
+        "a dashboard camera view of trash can on the road"
+    ],
+    "43 - standing_water": [
+        "a first-person POV video from a bicycle riding near standing water",
+        "looking down at standing water on the street from a bike",
+        "a dashboard camera view of standing water on the road"
+    ],
+    "44 - oil_spill": [
+        "a first-person POV video from a bicycle riding near oil spill",
+        "looking down at oil spill on the street from a bike",
+        "a dashboard camera view of oil spill on the road"
+    ],
+    "45 - smooth_asphalt": [
+        "a first-person POV video from a bicycle riding near smooth asphalt",
+        "looking down at smooth asphalt on the street from a bike",
+        "a dashboard camera view of smooth asphalt on the road"
+    ],
+    "46 - rough_asphalt": [
+        "a first-person POV video from a bicycle riding near rough asphalt",
+        "looking down at rough asphalt on the street from a bike",
+        "a dashboard camera view of rough asphalt on the road"
+    ],
+    "47 - grate": [
+        "a first-person POV video from a bicycle riding near grate",
+        "looking down at grate on the street from a bike",
+        "a dashboard camera view of grate on the road"
+    ],
+    "48 - tactile_paving": [
+        "a first-person POV video from a bicycle riding near tactile paving",
+        "looking down at tactile paving on the street from a bike",
+        "a dashboard camera view of tactile paving on the road"
+    ],
+    "49 - curb": [
+        "a first-person POV video from a bicycle riding near curb",
+        "looking down at curb on the street from a bike",
+        "a dashboard camera view of curb on the road"
+    ],
+    "50 - shadow": [
+        "a first-person POV video from a bicycle riding near shadow",
+        "looking down at shadow on the street from a bike",
+        "a dashboard camera view of shadow on the road"
+    ],
+    "51 - street_light": [
+        "a first-person POV video from a bicycle riding near street light",
+        "looking down at street light on the street from a bike",
+        "a dashboard camera view of street light on the road"
+    ],
+    "52 - traffic_light": [
+        "a first-person POV video from a bicycle riding near traffic light",
+        "looking down at traffic light on the street from a bike",
+        "a dashboard camera view of traffic light on the road"
+    ],
+    "53 - stop_sign": [
+        "a first-person POV video from a bicycle riding near stop sign",
+        "looking down at stop sign on the street from a bike",
+        "a dashboard camera view of stop sign on the road"
+    ],
+    "54 - yield_sign": [
+        "a first-person POV video from a bicycle riding near yield sign",
+        "looking down at yield sign on the street from a bike",
+        "a dashboard camera view of yield sign on the road"
+    ],
+    "55 - speed_limit_sign": [
+        "a first-person POV video from a bicycle riding near speed limit sign",
+        "looking down at speed limit sign on the street from a bike",
+        "a dashboard camera view of speed limit sign on the road"
+    ],
+    "56 - bus_stop": [
+        "a first-person POV video from a bicycle riding near bus stop",
+        "looking down at bus stop on the street from a bike",
+        "a dashboard camera view of bus stop on the road"
+    ],
+    "57 - train_station": [
+        "a first-person POV video from a bicycle riding near train station",
+        "looking down at train station on the street from a bike",
+        "a dashboard camera view of train station on the road"
+    ],
+    "58 - parked_car": [
+        "a first-person POV video from a bicycle riding near parked car",
+        "looking down at parked car on the street from a bike",
+        "a dashboard camera view of parked car on the road"
+    ],
+    "59 - moving_car": [
+        "a first-person POV video from a bicycle riding near moving car",
+        "looking down at moving car on the street from a bike",
+        "a dashboard camera view of moving car on the road"
+    ],
+    "60 - turning_car": [
+        "a first-person POV video from a bicycle riding near turning car",
+        "looking down at turning car on the street from a bike",
+        "a dashboard camera view of turning car on the road"
+    ],
+    "61 - reversing_car": [
+        "a first-person POV video from a bicycle riding near reversing car",
+        "looking down at reversing car on the street from a bike",
+        "a dashboard camera view of reversing car on the road"
+    ],
+    "62 - emergency_vehicle": [
+        "a first-person POV video from a bicycle riding near emergency vehicle",
+        "looking down at emergency vehicle on the street from a bike",
+        "a dashboard camera view of emergency vehicle on the road"
+    ],
+    "63 - construction_vehicle": [
+        "a first-person POV video from a bicycle riding near construction vehicle",
+        "looking down at construction vehicle on the street from a bike",
+        "a dashboard camera view of construction vehicle on the road"
+    ],
+    "64 - farm_vehicle": [
+        "a first-person POV video from a bicycle riding near farm vehicle",
+        "looking down at farm vehicle on the street from a bike",
+        "a dashboard camera view of farm vehicle on the road"
+    ],
+    "65 - delivery_truck": [
+        "a first-person POV video from a bicycle riding near delivery truck",
+        "looking down at delivery truck on the street from a bike",
+        "a dashboard camera view of delivery truck on the road"
+    ],
+    "66 - garbage_truck": [
+        "a first-person POV video from a bicycle riding near garbage truck",
+        "looking down at garbage truck on the street from a bike",
+        "a dashboard camera view of garbage truck on the road"
+    ],
+    "67 - street_sweeper": [
+        "a first-person POV video from a bicycle riding near street sweeper",
+        "looking down at street sweeper on the street from a bike",
+        "a dashboard camera view of street sweeper on the road"
+    ],
+    "68 - snow_plow": [
+        "a first-person POV video from a bicycle riding near snow plow",
+        "looking down at snow plow on the street from a bike",
+        "a dashboard camera view of snow plow on the road"
+    ],
+    "69 - tow_truck": [
+        "a first-person POV video from a bicycle riding near tow truck",
+        "looking down at tow truck on the street from a bike",
+        "a dashboard camera view of tow truck on the road"
+    ],
+    "70 - flatbed_truck": [
+        "a first-person POV video from a bicycle riding near flatbed truck",
+        "looking down at flatbed truck on the street from a bike",
+        "a dashboard camera view of flatbed truck on the road"
+    ],
+    "71 - semi_truck": [
+        "a first-person POV video from a bicycle riding near semi truck",
+        "looking down at semi truck on the street from a bike",
+        "a dashboard camera view of semi truck on the road"
+    ],
+    "72 - box_truck": [
+        "a first-person POV video from a bicycle riding near box truck",
+        "looking down at box truck on the street from a bike",
+        "a dashboard camera view of box truck on the road"
+    ],
+    "73 - pickup_truck": [
+        "a first-person POV video from a bicycle riding near pickup truck",
+        "looking down at pickup truck on the street from a bike",
+        "a dashboard camera view of pickup truck on the road"
+    ],
+    "74 - van": [
+        "a first-person POV video from a bicycle riding near van",
+        "looking down at van on the street from a bike",
+        "a dashboard camera view of van on the road"
+    ],
+    "75 - minivan": [
+        "a first-person POV video from a bicycle riding near minivan",
+        "looking down at minivan on the street from a bike",
+        "a dashboard camera view of minivan on the road"
+    ],
+    "76 - suv": [
+        "a first-person POV video from a bicycle riding near suv",
+        "looking down at suv on the street from a bike",
+        "a dashboard camera view of suv on the road"
+    ],
+    "77 - jeep": [
+        "a first-person POV video from a bicycle riding near jeep",
+        "looking down at jeep on the street from a bike",
+        "a dashboard camera view of jeep on the road"
+    ],
+    "78 - crossover": [
+        "a first-person POV video from a bicycle riding near crossover",
+        "looking down at crossover on the street from a bike",
+        "a dashboard camera view of crossover on the road"
+    ],
+    "79 - sedan": [
+        "a first-person POV video from a bicycle riding near sedan",
+        "looking down at sedan on the street from a bike",
+        "a dashboard camera view of sedan on the road"
+    ],
+    "80 - coupe": [
+        "a first-person POV video from a bicycle riding near coupe",
+        "looking down at coupe on the street from a bike",
+        "a dashboard camera view of coupe on the road"
+    ],
+    "81 - convertible": [
+        "a first-person POV video from a bicycle riding near convertible",
+        "looking down at convertible on the street from a bike",
+        "a dashboard camera view of convertible on the road"
+    ],
+    "82 - hatchback": [
+        "a first-person POV video from a bicycle riding near hatchback",
+        "looking down at hatchback on the street from a bike",
+        "a dashboard camera view of hatchback on the road"
+    ],
+    "83 - station_wagon": [
+        "a first-person POV video from a bicycle riding near station wagon",
+        "looking down at station wagon on the street from a bike",
+        "a dashboard camera view of station wagon on the road"
+    ],
+    "84 - sports_car": [
+        "a first-person POV video from a bicycle riding near sports car",
+        "looking down at sports car on the street from a bike",
+        "a dashboard camera view of sports car on the road"
+    ],
+    "85 - luxury_car": [
+        "a first-person POV video from a bicycle riding near luxury car",
+        "looking down at luxury car on the street from a bike",
+        "a dashboard camera view of luxury car on the road"
+    ],
+    "86 - classic_car": [
+        "a first-person POV video from a bicycle riding near classic car",
+        "looking down at classic car on the street from a bike",
+        "a dashboard camera view of classic car on the road"
+    ],
+    "87 - antique_car": [
+        "a first-person POV video from a bicycle riding near antique car",
+        "looking down at antique car on the street from a bike",
+        "a dashboard camera view of antique car on the road"
+    ],
+    "88 - muscle_car": [
+        "a first-person POV video from a bicycle riding near muscle car",
+        "looking down at muscle car on the street from a bike",
+        "a dashboard camera view of muscle car on the road"
+    ],
+    "89 - electric_car": [
+        "a first-person POV video from a bicycle riding near electric car",
+        "looking down at electric car on the street from a bike",
+        "a dashboard camera view of electric car on the road"
+    ],
+    "90 - hybrid_car": [
+        "a first-person POV video from a bicycle riding near hybrid car",
+        "looking down at hybrid car on the street from a bike",
+        "a dashboard camera view of hybrid car on the road"
+    ],
+    "91 - diesel_car": [
+        "a first-person POV video from a bicycle riding near diesel car",
+        "looking down at diesel car on the street from a bike",
+        "a dashboard camera view of diesel car on the road"
+    ],
+    "92 - gas_car": [
+        "a first-person POV video from a bicycle riding near gas car",
+        "looking down at gas car on the street from a bike",
+        "a dashboard camera view of gas car on the road"
+    ],
+    "93 - hydrogen_car": [
+        "a first-person POV video from a bicycle riding near hydrogen car",
+        "looking down at hydrogen car on the street from a bike",
+        "a dashboard camera view of hydrogen car on the road"
+    ],
+    "94 - fuel_cell_car": [
+        "a first-person POV video from a bicycle riding near fuel cell car",
+        "looking down at fuel cell car on the street from a bike",
+        "a dashboard camera view of fuel cell car on the road"
+    ],
+    "95 - solar_car": [
+        "a first-person POV video from a bicycle riding near solar car",
+        "looking down at solar car on the street from a bike",
+        "a dashboard camera view of solar car on the road"
+    ],
+    "96 - flying_car": [
+        "a first-person POV video from a bicycle riding near flying car",
+        "looking down at flying car on the street from a bike",
+        "a dashboard camera view of flying car on the road"
+    ],
+    "97 - hover_car": [
+        "a first-person POV video from a bicycle riding near hover car",
+        "looking down at hover car on the street from a bike",
+        "a dashboard camera view of hover car on the road"
+    ],
+    "98 - submarine_car": [
+        "a first-person POV video from a bicycle riding near submarine car",
+        "looking down at submarine car on the street from a bike",
+        "a dashboard camera view of submarine car on the road"
+    ],
+    "99 - boat_car": [
+        "a first-person POV video from a bicycle riding near boat car",
+        "looking down at boat car on the street from a bike",
+        "a dashboard camera view of boat car on the road"
+    ]
+}

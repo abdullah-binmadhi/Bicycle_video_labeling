@@ -19,3 +19,4 @@ env/
 *.app/
 
 node_modules/
+desktop-app/*.app/

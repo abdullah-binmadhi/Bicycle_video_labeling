@@ -736,29 +736,6 @@ window.startAIOverlay = function() {
                if(currentPred.surface.includes("Asphalt")) label.className = "text-2xl font-black tracking-widest text-emerald-400 switch-anim";
                else if(currentPred.surface.includes("Grass")) label.className = "text-2xl font-black tracking-widest text-warning switch-anim";
                else label.className = "text-2xl font-black tracking-widest text-rose-400 switch-anim";
-               
-               // Hook up GPS Fusion / OOD metrics visually
-               const oodSignal = document.getElementById('ood-signal-text');
-               const oodBar = document.getElementById('ood-bar');
-               const activeBox = document.getElementById('btn-flag-fp');
-               
-               if(oodSignal) {
-                   // OOD scales by variance metric
-                   let oodScore = Math.min(100, Math.max(50, 100 - (currentPred.variance_metric * 10)));
-                   if (currentPred.surface.includes("Asphalt")) { oodScore = 95 + Math.random()*4; }
-                   oodSignal.innerText = oodScore.toFixed(1) + "%";
-                   if(oodBar) oodBar.style.width = oodScore + "%";
-                   
-                   // Color state based on variance
-                   const oodStatus = document.getElementById('ood-status');
-                   if(oodScore < 70) {
-                      if(oodStatus) { oodStatus.innerText = "DRIFT DETECTED"; oodStatus.className = "badge badge-sm bg-rose-500/10 text-rose-400 border border-rose-500/20"; }
-                      if(activeBox) { activeBox.classList.add('animate-pulse', 'border-rose-500/80'); }
-                   } else {
-                      if(oodStatus) { oodStatus.innerText = "RIDING PROFILE"; oodStatus.className = "badge badge-sm bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"; }
-                      if(activeBox) { activeBox.classList.remove('animate-pulse', 'border-rose-500/80'); }
-                   }
-               }
            }
         }
     }, 500); // Check half-second ticks
@@ -922,58 +899,9 @@ function initScrubber(videoPlayer) {
             scrubber.value = progress;
             drawFFT();
             
-            // F4: Velocity Fusion Simulation
-            const isVelFusion = document.getElementById('vel-fusion-toggle')?.checked;
-            const baseSpeed = isVelFusion ? (12 + Math.sin(videoPlayer.currentTime * 0.5) * 8) : 0; 
-            const jitter = isVelFusion ? Math.random() * 2 : 0;
-            const finalSpeed = Math.max(0, baseSpeed + jitter).toFixed(1);
             
-            const spdInd = document.getElementById('speed-indicator');
-            const spdTxt = document.getElementById('speed-text');
-            if (spdInd && spdTxt) {
-                spdInd.style.setProperty('--value', Math.min(100, (finalSpeed / 30) * 100));
-                spdTxt.innerText = finalSpeed;
-                
-                if(finalSpeed > 20) spdInd.className = "radial-progress text-rose-400 font-bold bg-slate-900 border-[6px] border-slate-900 drop-shadow-[0_0_15px_rgba(244,63,94,0.3)] transition-all duration-300";
-                else if (finalSpeed > 10) spdInd.className = "radial-progress text-emerald-400 font-bold bg-slate-900 border-[6px] border-slate-900 drop-shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all duration-300";
-                else spdInd.className = "radial-progress text-blue-400 font-bold bg-slate-900 border-[6px] border-slate-900 drop-shadow-[0_0_15px_rgba(59,130,246,0.2)] transition-all duration-300";
-            }
             
-            // F3: OOD / Anomaly Gate Simulation
-            const gateSlider = document.getElementById('ood-slider');
-            const thresh = gateSlider ? parseInt(gateSlider.value) : 80;
             
-            let confidence = 85 + Math.sin(videoPlayer.currentTime * 2.1) * 10 + (Math.random() * 5);
-            // Simulate OOD when speed is near 0 or randomly
-            if(finalSpeed < 3 || Math.random() < 0.05) confidence = 40 + Math.random() * 20; 
-            confidence = Math.min(99.9, confidence);
-            
-            const oodBar = document.getElementById('ood-bar');
-            const oodText = document.getElementById('ood-signal-text');
-            const oodStatus = document.getElementById('ood-status');
-            
-            if (oodBar && oodText && oodStatus) {
-                oodBar.style.width = confidence + '%';
-                oodText.innerText = confidence.toFixed(1) + '%';
-                
-                if (confidence >= thresh) {
-                    oodBar.className = "absolute top-0 left-0 h-full bg-emerald-500/40 transition-all duration-300";
-                    oodText.className = "text-emerald-400 font-bold text-xs tracking-wider";
-                    oodStatus.className = "badge badge-sm bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] px-2 shadow-[0_0_8px_rgba(16,185,129,0.2)]";
-                    oodStatus.innerHTML = "<span class='w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1 animate-pulse'></span> RIDING PROFILE";
-                    
-                    document.getElementById('inf-pred-text')?.parentElement.classList.remove('opacity-20', 'blur-sm');
-                } else {
-                    oodBar.className = "absolute top-0 left-0 h-full bg-rose-500/50 transition-all duration-300";
-                    oodText.className = "text-rose-400 font-bold text-xs tracking-wider";
-                    oodStatus.className = "badge badge-sm bg-rose-500/10 text-rose-400 border border-rose-500/30 text-[9px] px-2 shadow-[0_0_8px_rgba(244,63,94,0.3)] animate-pulse";
-                    oodStatus.innerHTML = "<span class='w-1.5 h-1.5 rounded-full bg-rose-500 mr-1'></span> STOPPED / ANOMALY";
-                    
-                    document.getElementById('inf-pred-text')?.parentElement.classList.add('opacity-30'); 
-                    document.getElementById('inf-pred-text').innerText = "OOD REJECTED";
-                    document.getElementById('inf-pred-text').className = "text-2xl font-black tracking-widest text-slate-500";
-                }
-            }
         }
     }, 100);
     
@@ -985,100 +913,10 @@ function initScrubber(videoPlayer) {
 }
 
 
-let fpCount = 0;
-window.flagFalsePositive = function() {
-    const video = document.getElementById('inf-video');
-    if(!video || video.paused || video.classList.contains('hidden')) {
-        showToast('You can only flag errors during active playback.', 'error');
-        return;
-    }
-    
-    fpCount++;
-    document.getElementById('fp-queue-count').innerText = fpCount;
-    
-    const btn = document.getElementById('btn-flag-fp');
-    const ogHTML = btn.innerHTML;
-    btn.innerHTML = `<svg class="animate-spin h-4 w-4 mr-1" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> Routing arrays...`;
-    btn.classList.add('bg-rose-500/60', 'text-white', 'border-rose-400');
-    btn.classList.remove('bg-rose-500/10', 'text-rose-300');
-    
-    // Quick flash on the video frame
-    video.classList.add('brightness-150', 'contrast-125');
-    setTimeout(() => video.classList.remove('brightness-150', 'contrast-125'), 150);
-    
-    setTimeout(() => {
-        btn.innerHTML = `<svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Appended to Local Editor`;
-        btn.classList.remove('bg-rose-500/60');
-        btn.classList.add('bg-emerald-500/60', 'border-emerald-400');
-        
-        setTimeout(() => {
-            btn.innerHTML = ogHTML;
-            btn.classList.remove('bg-emerald-500/60', 'border-emerald-400', 'text-white');
-            btn.classList.add('bg-rose-500/10', 'text-rose-300');
-        }, 2000);
-    }, 800);
-    
-    showToast(`Anomaly @ ${video.currentTime.toFixed(2)}s flagged for Retraining.`, 'warning');
-};
 
 
-window.startTestingSimulation = function() {
-    console.log("Starting Testing Simulation Engine...");
-    
-    // Simulate reading the JSON output generated
-    const fs = require('fs');
-    const path = require('path');
-    
-    // This expects the file we generated via run_inference.py
-    const pFile = path.join(__dirname, '..', 'predictions.json');
-    let predictions = [];
-    try {
-        const data = fs.readFileSync(pFile, 'utf8');
-        predictions = JSON.parse(data);
-    } catch(e) {
-        showToast('Run ML Inference backend script first!', 'error');
-        return;
-    }
-    
-    showToast('Injecting dataset bounds (LM-17.06)...', 'success');
-    document.getElementById('btn-run-testing').innerHTML = 'Processing...';
-    document.getElementById('btn-run-testing').disabled = true;
-    
-    let step = 0;
-    const interval = setInterval(() => {
-        if(step >= predictions.length) {
-            clearInterval(interval);
-            showToast('Testing sequence completed!', 'success');
-            document.getElementById('btn-run-testing').innerHTML = 'Execute Local Inference';
-            document.getElementById('btn-run-testing').disabled = false;
-            return;
-        }
-        
-        const current = predictions[step];
-        
-        // Update UI
-        document.getElementById('testing-prediction').innerText = current.surface.toUpperCase();
-        document.getElementById('testing-confidence').innerText = `Conf: ${current.confidence.toFixed(2)}% | Var: ${current.variance_metric.toFixed(4)}`;
-        
-        document.getElementById('testing-imu-state').innerText = `[TS: ${current.timestamp}s] Tensor(1, 50, 6)`;
-        document.getElementById('testing-dsp-state').innerText = `[Filtered] Tensor(1, 50, 6)`;
-        
-        // Glow effect based on surface
-        const glow = document.getElementById('surface-glow');
-        if(current.surface.includes('Asphalt')) {
-            glow.className = "absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl";
-            document.getElementById('testing-prediction').className = "text-2xl font-black text-emerald-400";
-        } else if(current.surface.includes('Gravel')) {
-            glow.className = "absolute top-0 right-0 w-64 h-64 bg-yellow-500/10 rounded-full blur-3xl";
-            document.getElementById('testing-prediction').className = "text-2xl font-black text-yellow-400";
-        } else {
-            glow.className = "absolute top-0 right-0 w-64 h-64 bg-rose-500/10 rounded-full blur-3xl";
-            document.getElementById('testing-prediction').className = "text-2xl font-black text-rose-400";
-        }
-        
-        step++;
-    }, 1000); // 1 update per second
-};
+
+
 
 window.addEventListener("error", (event) => {
     logToConsole("ERROR: " + event.message + "<br/>" + event.filename + ":" + event.lineno, true);

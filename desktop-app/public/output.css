@@ -45,6 +45,7 @@
     --color-purple-400: oklch(71.4% 0.203 305.504);
     --color-purple-500: oklch(62.7% 0.265 303.9);
     --color-purple-600: oklch(55.8% 0.288 302.321);
+    --color-fuchsia-400: oklch(74% 0.238 322.16);
     --color-rose-300: oklch(81% 0.117 11.638);
     --color-rose-400: oklch(71.2% 0.194 13.428);
     --color-rose-500: oklch(64.5% 0.246 16.439);
@@ -2574,6 +2575,9 @@
   .h-\[250px\] {
     height: 250px;
   }
+  .h-\[300px\] {
+    height: 300px;
+  }
   .h-full {
     height: 100%;
   }
@@ -2582,6 +2586,9 @@
   }
   .max-h-48 {
     max-height: calc(var(--spacing) * 48);
+  }
+  .min-h-\[300px\] {
+    min-height: 300px;
   }
   .min-h-\[350px\] {
     min-height: 350px;
@@ -3857,6 +3864,9 @@
   }
   .text-error {
     color: var(--color-error);
+  }
+  .text-fuchsia-400 {
+    color: var(--color-fuchsia-400);
   }
   .text-green-400 {
     color: var(--color-green-400);

@@ -886,6 +886,8 @@ function initAnalytics() {
             maxZoom: 19
         }).addTo(analyticsMap);
 
+        geoLayerGroup = L.layerGroup().addTo(analyticsMap);
+
         // Generate synthetic initial map data
         const base_lat = 52.5200;
         const base_lon = 13.4050;
@@ -919,7 +921,7 @@ function initAnalytics() {
             .bindTooltip(`<b>${surface}</b><br/><span class="font-mono text-xs">${plusCode}</span>`, {
                 className: 'bg-[#111] text-white border-[#333]'
             })
-            .addTo(analyticsMap);
+            .addTo(geoLayerGroup);
         }
         
         // Force Leaflet to recalculate its CSS rendering area since it gets 
@@ -960,6 +962,147 @@ window.generatePDFReport = function() {
 };
 
 window.currentGeoData = [];
+
+window.scrapeGeospatialFolder = async function() {
+    const { ipcRenderer } = require('electron');
+    const { opendirSync, statSync, readFileSync } = require('fs');
+    const { join } = require('path');
+    
+    const folderPath = await ipcRenderer.invoke('dialog:openDirectory');
+    if (!folderPath) return;
+
+    window.currentGeoData = [];
+    if (geoLayerGroup) {
+        analyticsMap.removeLayer(geoLayerGroup);
+    }
+    geoLayerGroup = L.layerGroup().addTo(analyticsMap);
+
+    // Provide a status update to the user
+    const statsText = document.getElementById('geo-stats-text');
+    if (statsText) statsText.innerText = `Scraping GNSS files...`;
+
+    let totalPoints = 0;
+    
+    // Recursive folder scan
+    function scanDirectory(dir) {
+        try {
+            const dirEntries = require('fs').readdirSync(dir, { withFileTypes: true });
+            
+            for (const dirent of dirEntries) {
+                const res = join(dir, dirent.name);
+                if (dirent.isDirectory()) {
+                    scanDirectory(res);
+                } else if (dirent.isFile() && dirent.name.toLowerCase().endsWith('.csv') && res.toLowerCase().includes('gnss')) {
+                    // It's a GNSS CSV file, read it
+                    processCSV(res);
+                }
+            }
+        } catch (e) {
+            console.error('Error scanning folder:', e);
+        }
+    }
+    
+    function processCSV(filePath) {
+        try {
+            const data = readFileSync(filePath, 'utf-8');
+            const lines = data.trim().split('\n');
+            if (lines.length < 2) return;
+            
+            const parseCSVLine = (line) => {
+                const cols = [];
+                let inside = false;
+                let current = '';
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"') {
+                        inside = !inside;
+                    } else if (char === ',' && !inside) {
+                        cols.push(current.trim().replace(/^"|"$/g, ''));
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                cols.push(current.trim().replace(/^"|"$/g, ''));
+                return cols;
+            };
+            
+            let headers = parseCSVLine(lines[0]).map(h => h.toLowerCase());
+            let latIdx = headers.findIndex(h => h.includes('lat'));
+            let lonIdx = headers.findIndex(h => h.includes('lon') || h.includes('lng'));
+            let classIdx = headers.findIndex(h => h.includes('class') || h.includes('surface') || h.includes('type'));
+            
+            if (latIdx === -1 || lonIdx === -1) return;
+            
+            const olcLocalInstance = new OpenLocationCode();
+            
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const cols = parseCSVLine(lines[i]);
+                if (cols.length <= Math.max(latIdx, lonIdx)) continue;
+                
+                const lat = parseFloat(cols[latIdx]);
+                const lon = parseFloat(cols[lonIdx]);
+                
+                // Avoid zeroes and invalid numbers created from bad parses
+                if (isNaN(lat) || isNaN(lon) || lat === 0 || lon === 0) continue;
+                
+                // If it doesn't exist, log as Unknown
+                let surfaceType = classIdx !== -1 && cols[classIdx] ? cols[classIdx] : 'Unknown';
+                
+                let plusCode = 'N/A';
+                try {
+                    plusCode = olcLocalInstance.encode(lat, lon);
+                } catch(e) {}
+                
+                window.currentGeoData.push({
+                    lat: lat,
+                    lon: lon,
+                    surface: surfaceType, // Match the key used in exporting
+                    plusCode: plusCode
+                });
+                
+                let color = '#3b82f6'; // default blue for raw data
+                let sLow = surfaceType.toLowerCase();
+                if (sLow.includes('asphalt') || sLow.includes('tarmac')) color = '#10b981';
+                else if (sLow.includes('gravel')) color = '#f59e0b';
+                else if (sLow.includes('cobble')) color = '#3b82f6';
+                else if (sLow.includes('pothole') || sLow.includes('crack')) color = '#ef4444';
+                else if (surfaceType === 'Unknown') color = '#ccc';
+                
+                L.circleMarker([lat, lon], {
+                    radius: 3,
+                    fillColor: color,
+                    color: color,
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).bindTooltip(`<b>${surfaceType}</b><br/><span class="font-mono text-xs">${plusCode}</span>`, {
+                    className: 'bg-[#111] text-white border-[#333]'
+                }).addTo(geoLayerGroup);
+                
+                totalPoints++;
+            }
+        } catch (e) {
+            console.error('Error reading CSV:', filePath, e);
+        }
+    }
+
+    // Ensure map is initialized
+    if (!analyticsMap) initAnalytics();
+
+    scanDirectory(folderPath);
+
+    if (window.currentGeoData.length > 0) {
+        // Fit map bounds to the markers
+        const bounds = L.latLngBounds(window.currentGeoData.map(d => [d.lat, d.lon]));
+        analyticsMap.fitBounds(bounds, { padding: [50, 50] });
+    }
+    
+    if (statsText) {
+        statsText.innerText = `Scraped ${totalPoints} GPS points.`;
+    }
+}
 
 window.loadGeospatialCSV = async function() {
     const { ipcRenderer } = require('electron');

@@ -47,6 +47,15 @@ ipcMain.handle('dialog:openCSV', async () => {
   if (canceled) { return null; } else { return filePaths[0]; }
 });
 
+ipcMain.handle('dialog:saveCSV', async () => {
+  const { canceled, filePath } = await dialog.showSaveDialog({
+    title: 'Export GPS CSV',
+    defaultPath: 'gps_classifications.csv',
+    filters: [{ name: 'CSV Files', extensions: ['csv'] }]
+  });
+  if (canceled) { return null; } else { return filePath; }
+});
+
 ipcMain.handle('dialog:openModel', async () => {
   const { canceled, filePaths } = await dialog.showOpenDialog({
     properties: ['openFile'],

@@ -768,6 +768,11 @@ window.setProcessStatus = function(running, scriptKey) {
 let confChart = null, classBarChart = null, convergenceChart = null, stabilityChart = null, distributionChart = null;
 let scrubberInterval = null;
 
+let analyticsMap = null;
+let geoLayerGroup = null;
+const { OpenLocationCode } = require('open-location-code');
+const olcInstance = new OpenLocationCode();
+
 function initAnalytics() {
     // 1. Confusion Matrix
     const ctxConf = document.getElementById('confusion-canvas');
@@ -867,13 +872,71 @@ function initAnalytics() {
             options: { responsive: true, maintainAspectRatio: false }
         });
     }
+
+    // 6. Geospatial Map
+    const mapDiv = document.getElementById('analytics-map');
+    if (mapDiv && !analyticsMap && typeof L !== 'undefined') {
+        analyticsMap = L.map('analytics-map', {
+            zoomControl: false,
+            attributionControl: false
+        }).setView([52.5200, 13.4050], 13);
+        
+        // Use a dark-themed tile layer 
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19
+        }).addTo(analyticsMap);
+
+        // Generate synthetic initial map data
+        const base_lat = 52.5200;
+        const base_lon = 13.4050;
+        const surfaces = ['Asphalt', 'Gravel', 'Cobble', 'Pothole'];
+        const color_map = {
+            'Asphalt': '#10b981',
+            'Gravel': '#f59e0b',
+            'Cobble': '#3b82f6',
+            'Pothole': '#ef4444'
+        };
+        
+        window.currentGeoData = [];
+        
+        for (let i = 0; i < 50; i++) {
+            const lat = base_lat + (Math.random() * 0.05 - 0.025);
+            const lon = base_lon + (Math.random() * 0.05 - 0.025);
+            const surface = surfaces[Math.floor(Math.random() * surfaces.length)];
+            const plusCode = olcInstance.encode(lat, lon);
+            
+            window.currentGeoData.push({lat, lon, surface, plusCode});
+            const markerColor = color_map[surface];
+            
+            L.circleMarker([lat, lon], {
+                radius: 5,
+                fillColor: markerColor,
+                color: markerColor,
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8
+            })
+            .bindTooltip(`<b>${surface}</b><br/><span class="font-mono text-xs">${plusCode}</span>`, {
+                className: 'bg-[#111] text-white border-[#333]'
+            })
+            .addTo(analyticsMap);
+        }
+        
+        // Force Leaflet to recalculate its CSS rendering area since it gets 
+        // instantiated inside a hidden tab and will layout incorrectly.
+        setTimeout(() => {
+            analyticsMap.invalidateSize();
+        }, 300);
+    } else if (analyticsMap) {
+        setTimeout(() => analyticsMap.invalidateSize(), 300);
+    }
 }
 
 // Ensure it initializes when switching tabs
 const oldSwitchView = window.switchView;
 window.switchView = function(viewId) {
     oldSwitchView(viewId);
-    if(viewId === 'view-analytics') {
+    if(viewId === 'analytics') {
         setTimeout(initAnalytics, 100);
     }
 }
@@ -894,6 +957,102 @@ window.generatePDFReport = function() {
     html2pdf().set(opt).from(elem).save().then(() => {
         showToast('PDF Exported Successfully!', 'success');
     });
+};
+
+window.currentGeoData = [];
+
+window.loadGeospatialCSV = async function() {
+    const { ipcRenderer } = require('electron');
+    const filePath = await ipcRenderer.invoke('dialog:openCSV');
+    if (!filePath) return;
+    
+    try {
+        const data = require('fs').readFileSync(filePath, 'utf-8');
+        const lines = data.trim().split('\n');
+        if (lines.length < 2) return;
+        
+        let headers = lines[0].toLowerCase().split(',');
+        let latIdx = headers.findIndex(h => h.includes('lat'));
+        let lonIdx = headers.findIndex(h => h.includes('lon') || h.includes('lng'));
+        let classIdx = headers.findIndex(h => h.includes('class') || h.includes('surface') || h.includes('type'));
+        
+        // Ensure map is initialized
+        if (!analyticsMap) initAnalytics();
+        
+        if (geoLayerGroup) {
+            analyticsMap.removeLayer(geoLayerGroup);
+        }
+        geoLayerGroup = L.featureGroup().addTo(analyticsMap);
+        
+        const bounds = [];
+        window.currentGeoData = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+            let row = lines[i].split(',');
+            if (row.length < 3) continue;
+            
+            let lat = parseFloat(row[latIdx !== -1 ? latIdx : 0]);
+            let lon = parseFloat(row[lonIdx !== -1 ? lonIdx : 1]);
+            let surface = classIdx !== -1 ? row[classIdx].trim() : 'Unknown';
+            
+            if (isNaN(lat) || isNaN(lon)) continue;
+            
+            bounds.push([lat, lon]);
+            const plusCode = olcInstance.encode(lat, lon);
+            window.currentGeoData.push({lat, lon, surface, plusCode});
+            
+            let color = '#ccc'; // Default
+            let sLow = surface.toLowerCase();
+            if (sLow.includes('asphalt') || sLow.includes('tarmac')) color = '#10b981';
+            else if (sLow.includes('gravel')) color = '#f59e0b';
+            else if (sLow.includes('cobble')) color = '#3b82f6';
+            else if (sLow.includes('pothole') || sLow.includes('crack')) color = '#ef4444';
+            
+            L.circleMarker([lat, lon], {
+                radius: 6,
+                fillColor: color,
+                color: color,
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8
+            })
+            .bindTooltip(`<b>${surface}</b><br/><span class="font-mono text-xs">${plusCode}</span>`, {
+                className: 'bg-[#111] text-white border-[#333]'
+            })
+            .addTo(geoLayerGroup);
+        }
+        
+        if (bounds.length > 0) {
+            analyticsMap.fitBounds(bounds, { padding: [20, 20] });
+            document.getElementById('geo-stats-text').innerText = `Loaded ${bounds.length} waypoints via +Codes`;
+        }
+        
+    } catch (err) {
+        showToast('Error reading GPS CSV: ' + err.message, 'error');
+    }
+};
+
+window.exportGeospatialCSV = async function() {
+    const { ipcRenderer } = require('electron');
+    if (!window.currentGeoData || window.currentGeoData.length === 0) {
+        showToast('No geospatial data to export!', 'error');
+        return;
+    }
+    
+    try {
+        let csvContent = 'Latitude,Longitude,Surface,PlusCode\n';
+        for (const pt of window.currentGeoData) {
+            csvContent += `${pt.lat},${pt.lon},${pt.surface},${pt.plusCode}\n`;
+        }
+        
+        const savePath = await ipcRenderer.invoke('dialog:saveCSV');
+        if (!savePath) return; // User canceled
+        
+        require('fs').writeFileSync(savePath, csvContent, 'utf-8');
+        showToast('CSV Exported Successfully!', 'success');
+    } catch (err) {
+        showToast('Error saving CSV: ' + err.message, 'error');
+    }
 };
 
 // --- Scrubber & FFT Mock ---

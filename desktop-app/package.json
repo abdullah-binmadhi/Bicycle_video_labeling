@@ -20,6 +20,7 @@
     "electron": "^41.0.4",
     "js-yaml": "^4.1.1",
     "leaflet": "^1.9.4",
+    "open-location-code": "^1.0.3",
     "tailwindcss": "^4.2.2",
     "three": "^0.183.2"
   },

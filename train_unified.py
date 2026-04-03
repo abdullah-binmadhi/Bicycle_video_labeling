@@ -1,9 +1,11 @@
 import os
 import sys
+import json
 import torch
 import argparse
 import logging
 from pathlib import Path
+from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
 
 # Fix relative imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -65,10 +67,12 @@ def train_epoch(model: torch.nn.Module, dataloader: DataLoader, optimizer: torch
     avg_loss = running_loss / len(dataloader)
     return avg_loss
 
-def validate_epoch(model: torch.nn.Module, dataloader: DataLoader, device: torch.device) -> float:
+def validate_epoch(model: torch.nn.Module, dataloader: DataLoader, device: torch.device):
     """Evaluates the model without gradient tracking."""
     model.eval()
     running_loss = 0.0
+    all_targets = []
+    all_preds = []
     
     pbar = tqdm(dataloader, desc="Validation", leave=False)
     with torch.no_grad():
@@ -86,8 +90,13 @@ def validate_epoch(model: torch.nn.Module, dataloader: DataLoader, device: torch
             running_loss += loss.item()
             pbar.set_postfix({'val_loss': f"{loss.item():.4f}"})
             
+            # Assuming outputs are logits, get predictions
+            preds = torch.argmax(outputs, dim=1) if len(outputs.shape) > 1 else (outputs > 0.5).long()
+            all_targets.extend(targets.cpu().numpy())
+            all_preds.extend(preds.cpu().numpy())
+            
     avg_loss = running_loss / len(dataloader)
-    return avg_loss
+    return avg_loss, all_targets, all_preds
 
 def main():
     """Master executor routing config, data, model, and the training loop."""
@@ -171,17 +180,34 @@ def main():
         print(f"\n[{epoch+1}/{num_epochs}]")
         
         train_loss = train_epoch(model, train_loader, optimizer, device)
-        val_loss = validate_epoch(model, val_loader, device)
+        val_loss, all_targets, all_preds = validate_epoch(model, val_loader, device)
         
         logging.info(f"Epoch {epoch+1} Summary - Train Loss: {train_loss:.4f} | Validation Loss: {val_loss:.4f}")
+        
+        # Calculate specialized metrics
+        acc = accuracy_score(all_targets, all_preds)
+        f1 = f1_score(all_targets, all_preds, average='weighted', zero_division=0)
+        cm = confusion_matrix(all_targets, all_preds).tolist()
+        
+        metrics_dict = {
+            'epoch': epoch + 1,
+            'train_loss': train_loss,
+            'val_loss': val_loss,
+            'accuracy': acc,
+            'f1_score': f1,
+            'confusion_matrix': cm
+        }
         
         # Checkpointing logic
         is_best = val_loss < best_val_loss
         if is_best:
             best_val_loss = val_loss
             
-        import json
-        print(f"EPOCH_STATS:{json.dumps({'epoch': epoch + 1, 'train_loss': train_loss, 'val_loss': val_loss})}")
+            # Export metrics.json only on best validation
+            with open(checkpoint_dir / 'metrics.json', 'w') as f:
+                json.dump(metrics_dict, f, indent=4)
+            
+        print(f"EPOCH_STATS:{json.dumps(metrics_dict)}")
             
         save_checkpoint({
             'epoch': epoch + 1,

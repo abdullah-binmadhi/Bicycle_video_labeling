@@ -1011,14 +1011,40 @@
   </div>
   
   <!-- Charts Row -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
     <div class="border border-[#222] bg-[#0c0c0c] p-6 flex flex-col items-center min-h-[350px]">
        <h3 class="text-[#e0e0e0] font-medium tracking-widest text-xs uppercase self-start mb-4 w-full border-b border-[#333] pb-2">Confusion Matrix</h3>
-       <canvas id="confusion-canvas" class="w-full h-full"></canvas>
+       <div class="w-full h-full relative relative h-[300px]">
+         <canvas id="confusion-canvas" class="w-full h-full"></canvas>
+       </div>
     </div>
     <div class="border border-[#222] bg-[#0c0c0c] p-6 flex flex-col items-center min-h-[350px]">
        <h3 class="text-indigo-400 font-medium tracking-widest text-xs uppercase self-start mb-4 w-full border-b border-[#333] pb-2">Per-Class Accuracy</h3>
-       <canvas id="class-bar-canvas" class="w-full h-full"></canvas>
+       <div class="w-full h-full relative relative h-[300px]">
+         <canvas id="class-bar-canvas" class="w-full h-full"></canvas>
+       </div>
+    </div>
+  </div>
+
+  <!-- Advanced Analytics Row -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
+    <div class="border border-[#222] bg-[#0c0c0c] p-6 flex flex-col items-center min-h-[300px]">
+       <h3 class="text-emerald-400 font-medium tracking-widest text-xs uppercase self-start mb-4 w-full border-b border-[#333] pb-2">Loss Convergence Curve</h3>
+       <div class="w-full h-full relative relative h-[250px]">
+         <canvas id="convergence-canvas" class="w-full h-full"></canvas>
+       </div>
+    </div>
+    <div class="border border-[#222] bg-[#0c0c0c] p-6 flex flex-col items-center min-h-[300px]">
+       <h3 class="text-amber-400 font-medium tracking-widest text-xs uppercase self-start mb-4 w-full border-b border-[#333] pb-2">Temporal Stability (Flicker)</h3>
+       <div class="w-full h-full relative relative h-[250px]">
+         <canvas id="stability-canvas" class="w-full h-full"></canvas>
+       </div>
+    </div>
+    <div class="border border-[#222] bg-[#0c0c0c] p-6 flex flex-col items-center min-h-[300px]">
+       <h3 class="text-fuchsia-400 font-medium tracking-widest text-xs uppercase self-start mb-4 w-full border-b border-[#333] pb-2">Data Distribution</h3>
+       <div class="w-full h-full relative relative h-[250px]">
+         <canvas id="distribution-canvas" class="w-full h-full"></canvas>
+       </div>
     </div>
   </div>
   

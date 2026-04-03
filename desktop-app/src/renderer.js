@@ -765,15 +765,13 @@ window.setProcessStatus = function(running, scriptKey) {
 
 
 // --- Phase 1: Analytics & Reports ---
-let confChart = null, radarChart = null, driftChart = null;
+let confChart = null, classBarChart = null, convergenceChart = null, stabilityChart = null, distributionChart = null;
 let scrubberInterval = null;
 
 function initAnalytics() {
     // 1. Confusion Matrix
     const ctxConf = document.getElementById('confusion-canvas');
     if(ctxConf && !confChart) {
-        // Simple mock of a confusion matrix using a scatter/bubble or bar 
-        // For actual matrix we usually use a specialized plugin or a table, but a generic bar chart works for mockup
         confChart = new Chart(ctxConf, {
             type: 'bar',
             data: {
@@ -795,47 +793,75 @@ function initAnalytics() {
         });
     }
 
-    // 2. Radar Chart (Precision/Recall)
-    const ctxRadar = document.getElementById('radar-canvas');
-    if(ctxRadar && !radarChart) {
-        radarChart = new Chart(ctxRadar, {
-            type: 'radar',
+    // 2. Per-Class Accuracy
+    const ctxClassBar = document.getElementById('class-bar-canvas');
+    if(ctxClassBar && !classBarChart) {
+        classBarChart = new Chart(ctxClassBar, {
+            type: 'bar',
             data: {
-                labels: ['F1-Score', 'Precision', 'Recall', 'Latency', 'Robustness'],
+                labels: ['Tarmac', 'Gravel', 'Cobble', 'Pothole'],
                 datasets: [{
-                    label: 'CoreML Export (iOS)',
-                    data: [0.91, 0.88, 0.94, 0.99, 0.85],
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.2)'
-                }, {
-                    label: 'TorchScript (Android)',
-                    data: [0.89, 0.90, 0.86, 0.90, 0.88],
-                    borderColor: '#10b981',
-                    backgroundColor: 'rgba(16, 185, 129, 0.2)'
+                    label: 'Accuracy %',
+                    data: [98.0, 85.0, 92.0, 76.0],
+                    backgroundColor: 'rgba(99, 102, 241, 0.6)'
                 }]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                scales: { r: { angleLines: { color: 'rgba(255,255,255,0.1)' }, grid: { color: 'rgba(255,255,255,0.1)' } } }
+                scales: { y: { beginAtZero: true, max: 100 } }
             }
         });
     }
 
-    // 3. Drift Canvas
-    const ctxDrift = document.getElementById('drift-canvas');
-    if(ctxDrift && !driftChart) {
-        driftChart = new Chart(ctxDrift, {
+    // 3. Loss Convergence Curve
+    const ctxConv = document.getElementById('convergence-canvas');
+    if(ctxConv && !convergenceChart) {
+        convergenceChart = new Chart(ctxConv, {
             type: 'line',
             data: {
-                labels: Array.from({length: 50}, (_, i) => i),
+                labels: Array.from({length: 15}, (_, i) => `Epoch ${i+1}`),
                 datasets: [{
-                    label: 'Run A',
-                    data: Array.from({length: 50}, () => Math.random() * 2 + 1),
-                    borderColor: '#8b5cf6', borderWidth: 2, tension: 0.4
+                    label: 'Train Loss',
+                    data: Array.from({length: 15}, (_, i) => 1.5 * Math.exp(-0.3 * i) + Math.random() * 0.1),
+                    borderColor: '#3b82f6', borderWidth: 2, tension: 0.4
                 }, {
-                    label: 'Run B',
-                    data: Array.from({length: 50}, () => Math.random() * 2.2 + 0.8),
+                    label: 'Val Loss',
+                    data: Array.from({length: 15}, (_, i) => 1.6 * Math.exp(-0.25 * i) + Math.random() * 0.15),
                     borderColor: '#f43f5e', borderWidth: 2, tension: 0.4
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+
+    // 4. Temporal Stability (Flicker)
+    const ctxStab = document.getElementById('stability-canvas');
+    if(ctxStab && !stabilityChart) {
+        stabilityChart = new Chart(ctxStab, {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 20}, (_, i) => `${i}s`),
+                datasets: [{
+                    label: 'Confidence Score (Softmax)',
+                    data: Array.from({length: 20}, () => 0.8 + Math.random() * 0.15),
+                    borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.2)', fill: true, tension: 0.2
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 1.0 } } }
+        });
+    }
+
+    // 5. Data Distribution
+    const ctxDist = document.getElementById('distribution-canvas');
+    if(ctxDist && !distributionChart) {
+        distributionChart = new Chart(ctxDist, {
+            type: 'doughnut',
+            data: {
+                labels: ['Tarmac', 'Gravel', 'Cobble', 'Pothole'],
+                datasets: [{
+                    data: [1500, 800, 450, 200],
+                    backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'],
+                    borderWidth: 0
                 }]
             },
             options: { responsive: true, maintainAspectRatio: false }
@@ -1813,14 +1839,46 @@ window.chooseMetricsFile = async function() {
     const filePath = await ipcRenderer.invoke('dialog:openMetrics');
     if (filePath) {
         document.getElementById('analyticsFilePath').value = filePath;
-        showToast('Metrics loaded successfully! (mock display)', 'success');
-        // Here you would parse the JSON with Node's 'fs' module 
-        // and update the Chart.js instances / HTML text nodes!
-        document.getElementById('stat-accuracy').innerText = "94.2%";
-        document.getElementById('stat-f1').innerText = "0.93";
-        document.getElementById('stat-loss').innerText = "0.187";
-        document.getElementById('stat-speed').innerText = "8.4 ms/iter";
         
+        try {
+            const fs = require('fs');
+            const data = fs.readFileSync(filePath, 'utf-8');
+            const metrics = JSON.parse(data);
+
+            // Update KPI
+            document.getElementById('stat-accuracy').innerText = (metrics.accuracy * 100).toFixed(1) + "%";
+            document.getElementById('stat-f1').innerText = metrics.f1_score.toFixed(3);
+            document.getElementById('stat-loss').innerText = metrics.val_loss.toFixed(3);
+            
+            // Update Confusion Matrix if available
+            if (metrics.confusion_matrix && confChart) {
+                const cm = metrics.confusion_matrix;
+                // Assuming 4 classes match CM diagonal (TP) and off-diagonal (FN sum)
+                const tp = cm.map((row, i) => row[i] || 0);
+                const fn = cm.map((row, i) => row.reduce((sum, val) => sum + val, 0) - (row[i] || 0));
+                
+                confChart.data.datasets[0].data = tp;
+                confChart.data.datasets[1].data = fn;
+                confChart.update();
+                
+                // Update Per-Class Accuracy based on TP / (TP+FN)
+                if (classBarChart) {
+                    const acc = tp.map((val, i) => {
+                        const total = val + fn[i];
+                        return total > 0 ? (val / total) * 100 : 0;
+                    });
+                    classBarChart.data.datasets[0].data = acc;
+                    classBarChart.update();
+                }
+            }
+            
+            showToast('Metrics loaded & parsed successfully!', 'success');
+        } catch (e) {
+            console.error(e);
+            showToast('Error reading metrics file.', 'error');
+        }
+        
+        // Mock Misclassification Review Queue
         const tbody = document.getElementById('misclassification-tbody');
         if (tbody) {
             tbody.innerHTML = `

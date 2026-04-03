@@ -7,7 +7,7 @@ A desktop application for multimodal sensor fusion and bicycle video labeling, b
 ### Prerequisites
 Before you begin, ensure you have the following installed on your system:
 - [Node.js](https://nodejs.org/) (which includes `npm`)
-- Python 3.9+ (if you are running the ML pipeline components)
+- Python 3.9+ (if you are running the ML pipeline components)\n- `pip install ultralytics transformers torch torchvision opencv-python Pillow`
 
 ### Mac Installation
 

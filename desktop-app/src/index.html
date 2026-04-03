@@ -81,7 +81,7 @@
         </a></li>
         <li><a id="nav-data" class="hover:bg-[#1a1a1a] hover:text-white transition-colors rounded-none" onclick="switchView('data')">
           <svg class="h-4 w-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-          2. Auto Annotation (CLIP)
+          2. Auto Annotation
         </a></li>
         <li><a id="nav-manual" class="hover:bg-[#1a1a1a] hover:text-white transition-colors rounded-none" onclick="switchView('manual')">
           <svg class="h-4 w-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
@@ -178,78 +178,95 @@
                 <li class="step step-neutral">
                   <div class="text-left w-full pl-6 py-3">
                     <h4 class="font-medium text-lg text-white">1. Frame Extraction</h4>
-                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Cameras record at 30Hz, while sensors record at 50Hz. Extract precise frames tied to UNIX timestamps.</p>
+                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Cameras record at 30Hz, while IMU sensors record down to 50Hz. Python extracts precise RGB frames strictly tied to hardware UNIX timestamps.</p>
                   </div>
                 </li>
                 <li class="step step-neutral">
                   <div class="text-left w-full pl-6 py-3">
-                    <h4 class="font-medium text-lg text-white">2. Auto-Annotation (CLIP)</h4>
-                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Automated HuggingFace Zero-Shot tagging across the frame directory.</p>
+                    <h4 class="font-medium text-lg text-white">2. Automated Annotation (YOLO + CLIP)</h4>
+                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">100% automated offline pipeline. YOLO-World generates spatial bounding boxes from a custom vocabulary, before PIPING crops directly to CLIP for zero-shot text description profiling.</p>
                   </div>
                 </li>
                 <li class="step step-neutral">
                   <div class="text-left w-full pl-6 py-3">
                     <h4 class="font-medium text-lg text-white">3. Manual Feature Refinement</h4>
-                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Review frames and manually draw missed bounding boxes through interactive Video-Canvas alignment.</p>
+                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Scrub through the video dataset and manually draw bounding boxes through the interactive Canvas UI for the rarest edge-cases or missed items.</p>
                   </div>
                 </li>
                 <li class="step step-neutral">
                   <div class="text-left w-full pl-6 py-3">
-                    <h4 class="font-medium text-lg text-white">4. High-Frequency Temporal Sync</h4>
-                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Weave video ground truth against sliding windows of purely 1-D physics telemetry streams.</p>
+                    <h4 class="font-medium text-lg text-white">4. High-Frequency Synchronization</h4>
+                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">The backend matches disparate time-domains (33ms video vs 20ms physics) using Pandas <code>merge_asof</code>, applies SciPy Butterworth DSP filters, and drops anomalous gap data.</p>
+                  </div>
+                </li>
+                <li class="step step-neutral">
+                  <div class="text-left w-full pl-6 py-3">
+                    <h4 class="font-medium text-lg text-white">5. Core PyTorch Network Training</h4>
+                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Trains the LateFusionNetwork on processed datasets natively inside the application. Live JSON stdout telemetry feeds the real-time Dashboard Chart.js graphs.</p>
                   </div>
                 </li>
                 <li class="step">
                   <div class="text-left w-full pl-6 py-3">
-                    <h4 class="font-medium text-lg text-white">5. Core Physics Transformer Model</h4>
-                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">PyTorch training utilizing high-batch sizes and validation slicing to yield absolute road classifications.</p>
+                    <h4 class="font-medium text-lg text-white">6. Real-Time Inference</h4>
+                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Simulate predictions seamlessly utilizing PyTorch evaluation modes over unseen synchronized sensor feeds.</p>
                   </div>
                 </li>
               </ul>
             </div>
-          
-<!-- Features Grid -->
 
-            <div>
+            <!-- Features Grid -->
+            <div class="mt-8">
                 <h2 class="text-2xl font-medium border-b border-[#333] pb-3 mb-6 text-white tracking-widest uppercase text-sm">Next-Generation Capabilities</h2>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <!-- Feature: GPS Velocity Fusion -->
-                    <div class="border border-[#222] bg-[#0c0c0c] p-8 p-6 rounded-none border border-[#222] hover:border-blue-500/30 transition-all duration-300 group">
-                        <div class="w-10 h-10 rounded-none bg-blue-500/20 text-[#e0e0e0] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+
+                    <!-- Feature: Two Stage Auto -->
+                    <div class="border border-[#222] bg-[#0c0c0c] p-6 rounded-none hover:border-indigo-500/30 transition-all duration-300 group">
+                        <div class="w-10 h-10 rounded-none bg-indigo-500/20 text-indigo-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                         </div>
-                        <h3 class="text-lg font-medium text-white mb-2">GPS Velocity Fusion</h3>
+                        <h3 class="text-lg font-medium text-white mb-2">Automated Annotation Engine</h3>
                         <p class="text-sm text-[#888888] leading-relaxed">
-                            Mitigates static oscillation errors by mapping real-time speed over IMU coordinates. Ensures the system easily distinguishes driving fast on dirt from driving slowly on cobblestone.
+                            Two-stage foundational pipeline. YOLO-World scans the video for bounding boxes using any text, while CLIP analyzes the spatial crops to tag deep semantics like "smooth dry asphalt". 
                         </p>
                     </div>
 
-                    <!-- Feature: OOD Anomaly Gate -->
-                    <div class="border border-[#222] bg-[#0c0c0c] p-8 p-6 rounded-none border border-[#222] hover:border-orange-500/30 transition-all duration-300 group">
-                        <div class="w-10 h-10 rounded-none bg-orange-500/20 text-orange-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <!-- Feature: Input Parameters -->
+                    <div class="border border-[#222] bg-[#0c0c0c] p-6 rounded-none hover:border-purple-500/30 transition-all duration-300 group">
+                        <div class="w-10 h-10 rounded-none bg-purple-500/10 text-purple-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform border border-purple-500/20">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                         </div>
-                        <h3 class="text-lg font-medium text-white mb-2">Anomaly Gate (OOD)</h3>
+                        <h3 class="text-lg font-medium text-white mb-2">Input Parameters</h3>
                         <p class="text-sm text-[#888888] leading-relaxed">
-                            Actively drops frames lacking rotational biking kinematics. If a rider steps off the bike and walks, the Out-of-Distribution safety net immediately isolates the signal logic to prevent false positives.
+                            Camera-based latent vectors that can be safely toggled inside the Neural Training dashboard. It encodes road surface obstacles directly into the overarching transformer payload.
                         </p>
                     </div>
 
-                    <!-- Feature: Active Learning Routing -->
-                    <div class="border border-[#222] bg-[#0c0c0c] p-8 p-6 rounded-none border border-[#222] hover:border-rose-500/30 transition-all duration-300 group">
-                        <div class="w-10 h-10 rounded-none bg-rose-500/20 text-rose-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                    <!-- Feature: Temporal Logic -->
+                    <div class="border border-[#222] bg-[#0c0c0c] p-6 rounded-none hover:border-teal-500/30 transition-all duration-300 group">
+                        <div class="w-10 h-10 rounded-none bg-teal-500/10 text-teal-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform border border-teal-500/20">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
                         </div>
-                        <h3 class="text-lg font-medium text-white mb-2">Active Learning Routing</h3>
+                        <h3 class="text-lg font-medium text-white mb-2">Temporal Logic</h3>
                         <p class="text-sm text-[#888888] leading-relaxed">
-                            Accelerate model refinement. Discover false predictions during inference and click a button to immediately package the 50Hz physics array & camera frame back into your local Annotation staging queue.
+                            Interweaves 6-DoF Vibration Sequences (accelerometer and gyroscope). Includes interactive DSP Butterworth sliding parameters embedded natively inside the sync algorithms.
                         </p>
                     </div>
 
-                    <!-- Feature: 3D Tracking -->
-                    <div class="border border-[#222] bg-[#0c0c0c] p-8 p-6 rounded-none border border-[#222] hover:border-purple-500/30 transition-all duration-300 group">
-                        <div class="w-10 h-10 rounded-none bg-purple-500/20 text-purple-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <!-- Feature: Live Matrix / Charting -->
+                    <div class="border border-[#222] bg-[#0c0c0c] p-6 rounded-none hover:border-rose-500/30 transition-all duration-300 group">
+                        <div class="w-10 h-10 rounded-none bg-rose-500/10 text-rose-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform border border-rose-500/20">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-white mb-2">Hyperparameters</h3>
+                        <p class="text-sm text-[#888888] leading-relaxed">
+                            As your PyTorch gradients burn network weights, validation telemetry (e.g. MSE Loss, Epoch metrics) pipes through IPC into Electron to draw real-time interactive mapping lines.
+                        </p>
+                    </div>
+
+                    <!-- Feature: WebGL Digital Twin -->
+                    <div class="border border-[#222] bg-[#0c0c0c] p-6 rounded-none hover:border-purple-500/30 transition-all duration-300 group">
+                        <div class="w-10 h-10 rounded-none bg-purple-500/20 text-[#e0e0e0] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                         </div>
                         <h3 class="text-lg font-medium text-white mb-2">WebGL Digital Twin</h3>
@@ -259,54 +276,32 @@
                     </div>
 
                     <!-- Feature: Diagnostics -->
-                    <div class="border border-[#222] bg-[#0c0c0c] p-8 p-6 rounded-none border border-[#222] hover:border-emerald-500/30 transition-all duration-300 group">
+                    <div class="border border-[#222] bg-[#0c0c0c] p-6 rounded-none hover:border-emerald-500/30 transition-all duration-300 group">
                         <div class="w-10 h-10 rounded-none bg-emerald-500/20 text-[#e0e0e0] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002-2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                         </div>
                         <h3 class="text-lg font-medium text-white mb-2">Diagnostic Analytics</h3>
                         <p class="text-sm text-[#888888] leading-relaxed">
-                            Interactive cross-session Matrix and drift diagnostics directly within the UI. Generate rigorous, one-click PDF validation reports of the model's accuracy.
-                        </p>
-                    </div>
+                            Interactive cross-session Matrix and drift diagnostics directly within the UI. Analyze merged gap penalties, dataframe lengths, and class distributions visually via DOM nodes.
+                          </p>
+                      </div>
 
-                    <!-- Feature: Sync Scrubber -->
-                    <div class="border border-[#222] bg-[#0c0c0c] p-8 p-6 rounded-none border border-[#222] hover:border-indigo-500/30 transition-all duration-300 group">
-                        <div class="w-10 h-10 rounded-none bg-indigo-500/20 text-indigo-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-                        </div>
-                        <h3 class="text-lg font-medium text-white mb-2">Video/Sensor Scrubber</h3>
-                        <p class="text-sm text-[#888888] leading-relaxed">
-                            Scrub back and forth through hours of video utilizing a tightly coupled time domain synchronization engine—instantly updating Maps, FFT Spectrograms, and 3D scenes.
-                        </p>
-                    </div>
+                      <!-- Feature: Fast-Track Training Checkpoints -->
+                      <div class="border border-[#222] bg-[#0c0c0c] p-6 rounded-none border border-[#222] hover:border-amber-500/30 transition-all duration-300 group">
+                          <div class="w-10 h-10 rounded-none bg-amber-500/10 text-amber-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                          </div>
+                          <h3 class="text-lg font-medium text-white mb-2">Fast-Track Checkpoints</h3>
+                          <p class="text-sm text-[#888888] leading-relaxed">
+                              Bypass cold-start parameters by injecting prior `.pth` artifacts directly into the PyTorch state dictionary. Resume crashed epochs instantly or effortlessly fine-tune models.
+                          </p>
+                      </div>
 
-                    <!-- Feature: Dual-Stream Fusion -->
-                    <div class="border border-[#222] bg-[#0c0c0c] p-8 p-6 rounded-none border border-[#222] hover:border-teal-500/30 transition-all duration-300 group">
-                        <div class="w-10 h-10 rounded-none bg-teal-500/20 text-teal-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                        </div>
-                        <h3 class="text-lg font-medium text-white mb-2">Dual-Stream Fusion</h3>
-                        <p class="text-sm text-[#888888] leading-relaxed">
-                            Split your inputs so the model evaluates speed/GPS independently from the raw IMU shudder, then merges their insights.
-                        </p>
-                    </div>
-
-                    <!-- Feature: Physics-Based Filtering -->
-                    <div class="border border-[#222] bg-[#0c0c0c] p-8 p-6 rounded-none border border-[#222] hover:border-amber-500/30 transition-all duration-300 group">
-                        <div class="w-10 h-10 rounded-none bg-amber-500/20 text-amber-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/></svg>
-                        </div>
-                        <h3 class="text-lg font-medium text-white mb-2">Physics-Based Filtering</h3>
-                        <p class="text-sm text-[#888888] leading-relaxed">
-                            Use traditional DSP (Digital Signal Processing) to remove the "bicycle's signature" (tire bounce rate) from the IMU data so only the "road's signature" remains.
-                        </p>
-                    </div>
                 </div>
             </div>
+        </div>
 
-            </div>
-
-                    <!-- View: SOTA Comparison -->
+        <!-- View: SOTA Comparison --><!-- View: SOTA Comparison -->
           <div id="view-sota" class="hidden-view flex flex-col gap-8 w-full max-w-6xl mx-auto pb-16 ">
             <div class="mb-4 relative rounded-none p-8 overflow-hidden bg-black border border-emerald-500/20 ">
               <div class="absolute right-0 top-0 w-1/3 h-full bg-gradient-to-l from-emerald-500/10 to-transparent"></div>
@@ -467,57 +462,102 @@
         <!-- View: Data & Annotation -->
         <div id="view-data" class="hidden-view flex flex-col gap-6 w-full max-w-4xl mx-auto pb-10">
           <div>
-            <h2 class="text-3xl font-medium text-white tracking-tight">Zero-Shot Vision (Auto Annotation)</h2>
-            <p class="text-[#888888] mt-1">Leverage CLIP to auto-generate bounding boxes across an entire extracted dataset.</p>
+            <h2 class="text-3xl font-medium text-white tracking-tight">Automated Annotation</h2>
+            <p class="text-[#888888] mt-2 text-sm leading-relaxed max-w-3xl">
+               Automate your dataset labeling using a state-of-the-art hybrid vision pipeline. 
+               <br><br>
+               <strong class="text-indigo-400">1. YOLO-World:</strong> Scans the video frames for bounding boxes based on the target vocabulary. It operates zero-shot, meaning it can detect items based purely on text prompts without fine-tuning.
+               <br><br>
+               <strong class="text-emerald-400">2. CLIP (Contrastive Language-Image Pretraining):</strong> Acts as a semantic refinement layer. The cropped objects from YOLO are passed into CLIP, which reads the visual texture and matches it to detailed descriptive text (e.g., distinguishing a "dry pothole" from a "puddle").
+            </p>
           </div>
 
-          <div class="border border-[#222] bg-[#0c0c0c] p-8 relative overflow-hidden">
-            <h3 class="text-lg font-medium text-white mb-6">Target Configuration</h3>
+          <div class="border border-[#222] bg-[#0c0c0c] p-8 relative overflow-hidden shadow-xl">
+            <h3 class="text-lg font-medium text-white mb-6 flex items-center gap-2">
+                <svg class="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+                Pipeline Configuration
+            </h3>
+            
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <!-- Directory Settings -->
               <div class="flex flex-col md:col-span-2">
-                <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2">1. Image Extracted Folder</label>
-                <div class="join w-full">
-                    <button class="btn btn-md join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600" onclick="chooseAnnoDir()">Choose Folder</button>
-                    <input type="text" placeholder="Select image folder..." class="input input-md join-item w-full bg-black border-[#333] focus:border-blue-400 text-white font-mono text-sm" id="annoDirPath" onchange="setDirectory()" />
+                <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2">1. Input Image Folder (Extracted Frames)</label>
+                <div class="join w-full shadow-inner">
+                    <button class="btn btn-sm h-10 join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600" onclick="chooseAnnoDir()">Choose Folder</button>
+                    <input type="text" placeholder="Select image folder..." class="input input-sm h-10 join-item w-full bg-black border-[#333] focus:border-indigo-400 text-white font-mono text-sm" id="annoDirPath" onchange="setDirectory()" />
                   </div>
-                <div class="mt-3 text-xs font-mono text-[#e0e0e0]/80 truncate bg-emerald-400/10 p-2 rounded hidden" id="selectedDirLabel"></div>
+                <div class="mt-2 text-[10px] font-mono text-[#e0e0e0]/80 truncate bg-emerald-400/10 p-1.5 rounded hidden" id="selectedDirLabel"></div>
               </div>
 
-              <!-- General Config -->
-              <div class="flex flex-col md:col-span-2 mt-2">
-                <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2">2. Custom Annotations/Output Folder</label>
-                <div class="join w-full">
-                  <button class="btn btn-md join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600" onclick="chooseClipOutDir()">Choose Folder</button>
-                  <input type="text" placeholder="Defaults back to the native BicycleData folder if blank..." class="input input-md join-item w-full bg-black border-[#333] focus:border-blue-400 text-white font-mono text-sm" id="clipCustomOutPath" />
+              <!-- Output Configuration -->
+              <div class="flex flex-col md:col-span-2">
+                <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2">2. CSV Output & Checkpoints Folder</label>
+                <div class="join w-full shadow-inner">
+                  <button class="btn btn-sm h-10 join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600" onclick="chooseClipOutDir()">Choose Output</button>
+                  <input type="text" placeholder="Defaults to dataset source folder if blank..." class="input input-sm h-10 join-item w-full bg-black border-[#333] focus:border-indigo-400 text-white font-mono text-sm" id="clipCustomOutPath" />
                 </div>
               </div>
             </div>
 
+            <!-- Model Selection & Classes -->
             <div class="mt-8 border-t border-[#222] pt-6">
-              <h3 class="text-sm font-semibold mb-2">Select Target Classes</h3>
-              <div class="flex items-center mb-4 gap-2">
-                <input type="checkbox" id="btn-select-all" class="checkbox checkbox-sm checkbox-primary" />
-                <label for="btn-select-all" class="text-sm cursor-pointer">Select All 100 Classes</label>
-              </div>
-              <div id="clip-classes-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-64 overflow-y-auto mb-6 p-4 bg-black/20 rounded-lg border border-[#222]">
-                <!-- Checkboxes will be dynamically inserted here -->
+              <h3 class="text-sm font-semibold mb-4 text-white flex items-center justify-between">
+                <span>3. YOLO Target Vocabulary</span>
+                <div class="flex items-center gap-2">
+                  <input type="checkbox" id="btn-select-all" class="checkbox checkbox-xs checkbox-primary" />
+                  <label for="btn-select-all" class="text-[10px] uppercase text-slate-400 cursor-pointer tracking-widest">Select All</label>
+                </div>
+              </h3>
+              
+              <div id="clip-classes-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-48 overflow-y-auto mb-6 p-4 bg-[#050505] rounded-none border border-[#333] shadow-inner">
+                <!-- Checkboxes dynamically inserted by renderer.js -->
               </div>
             </div>
 
-            <div class="card-actions justify-end mt-4 flex gap-4">
-              <button class="btn btn-error btn-outline  bg-red-900/20" onclick="stopActiveProcess()" id="btn-stop-clip">
-                Stop Process
+            <!-- Two-Stage Toggle & Execution -->
+            <div class="mt-6 flex items-center justify-between bg-indigo-950/20 border border-indigo-500/20 p-4">
+               <div>
+                  <h4 class="text-sm font-medium text-white mb-1">Pass YOLO Crops to CLIP (Stage 2)</h4>
+                  <p class="text-[10px] text-indigo-200/60 max-w-sm">Automatically pipes the bounding boxes localized by YOLO into the CLIP foundation model to attach dense semantic text tagging.</p>
+               </div>
+               <input type="checkbox" class="toggle toggle-primary toggle-sm" id="toggle-two-stage" checked />
+            </div>
+
+            <!-- Execution Buttons -->
+            <div class="mt-6 flex gap-4">
+              <button class="btn border-0 bg-indigo-600 hover:bg-indigo-500 text-white px-8 h-12 shadow-indigo-900/30 flex-1 rounded-none" onclick="runScript('clip')" id="btn-clip">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                Initialize Hybrid Annotation
+                <span class="loading loading-spinner hidden w-4 h-4 ml-2" id="spinner-clip"></span>
               </button>
-              <button class="btn border-0 bg-indigo-600 hover:bg-indigo-500 text-white px-8  shadow-indigo-900/20 flex gap-2" onclick="runScript('clip')" id="btn-clip">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
-                Auto-Compute Entire Folder
-                <span class="loading loading-spinner hidden w-4 h-4" id="spinner-clip"></span>
+              
+              <button id="btn-clip-stop" class="btn h-12 border border-red-500/50 bg-red-950/40 text-red-500 hover:bg-red-500/40 hover:text-white hidden transition-colors rounded-none" onclick="stopClipProcess()">
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" /></svg>
               </button>
             </div>
+
+            <!-- Live Status Board -->
+            <div id="auto-anno-stats" class="mt-8 border-t border-[#222] pt-6 hidden">
+                <div class="grid grid-cols-3 gap-4">
+                   <div class="bg-black border border-[#333] p-4 text-center">
+                      <p class="text-[10px] uppercase font-bold text-[#888] tracking-widest">Frames Processed</p>
+                      <p class="text-2xl font-mono text-white mt-1" id="stat-anno-frames">0</p>
+                   </div>
+                   <div class="bg-black border border-[#333] p-4 text-center">
+                      <p class="text-[10px] uppercase font-bold text-[#888] tracking-widest">Objects Detected</p>
+                      <p class="text-2xl font-mono text-indigo-400 mt-1" id="stat-anno-objects">0</p>
+                   </div>
+                   <div class="bg-black border border-[#333] p-4 text-center">
+                      <p class="text-[10px] uppercase font-bold text-[#888] tracking-widest">Time Remaining</p>
+                      <p class="text-2xl font-mono text-emerald-400 mt-1" id="stat-anno-eta">--:--</p>
+                   </div>
+                </div>
+            </div>
+
           </div>
         </div>
 
-        <!-- View: Manual Annotation -->
+        <!-- View: Manual Annotation --><!-- View: Manual Annotation -->
         <div id="view-manual" class="hidden-view flex flex-col gap-6 w-full max-w-4xl mx-auto pb-10">
           <div>
             <h2 class="text-3xl font-medium text-white tracking-tight">App-Based Annotation</h2>
@@ -651,99 +691,253 @@
             <p class="text-[#888888] mt-1">Bind the 50Hz Accel/Gyro Streams mathematically to the high-confidence Visual predictions via native UTC timeline matching.</p>
           </div>
 
-          <div class="border border-[#222] bg-[#0c0c0c] p-8 flex flex-col items-center justify-center text-center py-16">
-            <div class="w-20 h-20 rounded-none bg-gradient-to-tr from-cyan-500 to-emerald-500 flex items-center justify-center text-white  shadow-emerald-900/30 mb-6">
-              <svg class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
-            </div>
-            <h3 class="text-2xl font-normal tracking-tight text-white">Pandas ASOF Merge</h3>
-            <p class="text-[#888888] mt-2 max-w-md mx-auto">This process builds the master `aligned_dataset.csv`. Ensure you have run both the Frame Extraction and Zero-Shot logic steps before syncing.</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+            <!-- Global / Ad-Hoc Sync Settings -->
+            <div class="border border-[#222] bg-[#0c0c0c] p-6 flex flex-col items-start gap-4 shadow-xl">
+              <h3 class="text-lg font-medium text-white flex items-center justify-between w-full">
+                <span class="flex items-center gap-2">
+                  <svg class="h-5 w-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+                  Input Parameters
+                </span>
+                <div class="join">
+                   <input type="radio" name="sync-source-type" value="global" class="join-item btn btn-xs input-xs border-[#555] checked:bg-emerald-500 checked:text-white" aria-label="Global" checked onchange="document.getElementById('global-sync-inputs').classList.remove('hidden'); document.getElementById('adhoc-sync-inputs').classList.add('hidden');" />
+                   <input type="radio" name="sync-source-type" value="adhoc" class="join-item btn btn-xs input-xs border-[#555] checked:bg-emerald-500 checked:text-white" aria-label="Session" onchange="document.getElementById('adhoc-sync-inputs').classList.remove('hidden'); document.getElementById('global-sync-inputs').classList.add('hidden');" />
+                </div>
+              </h3>
+              
+              <div class="w-full">
+                <!-- Global Inputs -->
+                <div id="global-sync-inputs" class="flex flex-col gap-2 mt-4 animate-fade-in w-full">
+                  <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-0 block">Database Root</label>
+                  <div class="join w-full">
+                    <button class="btn btn-sm join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600" onclick="chooseSyncDir()">Choose Folder</button>
+                    <input type="text" placeholder="Defaults to BicycleData..." class="input input-sm join-item w-full bg-black border-[#333] text-white font-mono text-[10px]" id="syncDataPath" />
+                  </div>
+                  <p class="text-[10px] text-slate-500 italic mt-1">Automatically discovers all sessions to merge.</p>
+                </div>
 
-            <div class="flex flex-col w-full max-w-md mt-6 text-left">
-              <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2">Custom Root Data Folder (Optional)</label>
-              <div class="join w-full">
-                <button class="btn btn-md join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600" onclick="chooseSyncDir()">Choose Folder</button>
-                <input type="text" placeholder="Defaults to BicycleData..." class="input input-md join-item w-full bg-black border-[#333] focus:border-blue-400 text-white font-mono text-sm" id="syncDataPath" />
+                <!-- Ad-Hoc Inputs -->
+                <div id="adhoc-sync-inputs" class="hidden flex flex-col gap-3 mt-4 animate-fade-in w-full">
+                  <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-0 block">Upload Individual Files</label>
+                  <div class="join w-full">
+                    <button class="btn btn-sm join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600 w-24">IMU CSV</button>
+                    <input type="text" placeholder="e.g. Telemetry/IMU.csv" class="input input-sm join-item w-full bg-black border-[#333] text-white font-mono text-[10px]" id="adhocImuPath" />
+                  </div>
+                  <div class="join w-full">
+                    <button class="btn btn-sm join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600 w-24">Label CSV</button>
+                    <input type="text" placeholder="e.g. VideoFrames/Label.0.csv" class="input input-sm join-item w-full bg-black border-[#333] text-white font-mono text-[10px]" id="adhocLabelPath" />
+                  </div>
+                   <p class="text-[10px] text-slate-500 italic mt-1">Bypass global search. Directly merge two isolated tables.</p>
+                </div>
               </div>
             </div>
 
+            <!-- Tolerance & Gap Handling -->
+            <div class="border border-[#222] bg-[#0c0c0c] p-6 flex flex-col items-start gap-4 shadow-xl">
+              <h3 class="text-lg font-medium text-white flex items-center gap-2">
+                <svg class="h-5 w-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                Temporal Logic
+              </h3>
+
+              <div class="w-full">
+                  <div class="flex justify-between text-xs text-slate-400 mb-2">
+                    <span class="font-medium text-[10px] uppercase tracking-wide">Merge Tolerance</span>
+                    <span id="sync-tolerance-val" class="font-mono text-white text-[10px] bg-slate-800 px-1.5 py-0.5 rounded border border-white/10">50 ms</span>
+                  </div>
+                  <input type="range" min="10" max="1000" value="50" step="10" class="range range-xs range-info opacity-90" id="sync-tolerance-slider" oninput="document.getElementById('sync-tolerance-val').innerText = this.value + ' ms'" />
+                  <p class="text-[9px] text-[#777] mt-1 leading-tight">Maximum allowed clock gap drop-off boundary.</p>
+              </div>
+
+              <div class="w-full mt-2">
+                 <label class="text-[10px] uppercase tracking-widest font-medium text-slate-400 mb-2 block">Gap Imputation Strategy</label>
+                 <select class="select select-sm w-full bg-black border-[#333] focus:border-cyan-400 text-white text-xs" id="sync-gap-handling">
+                    <option value="ffill" selected>Forward-Fill (Hold previous ground truth)</option>
+                    <option value="interpolate">Linear Interpolation (Mathematical fading)</option>
+                    <option value="drop">Strict Drop (Remove unpaired rows)</option>
+                 </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="border border-[#222] bg-[#0c0c0c] flex flex-col lg:flex-row items-center justify-between p-6 gap-6 shadow-xl">
             <!-- Actionable DSP Filter Toggle -->
-            <div class="mt-4 bg-black border border-[#333] p-4 rounded-none flex items-center gap-4 text-left w-full max-w-md ">
+            <div class="bg-black border border-[#333] p-3 rounded-none flex items-center gap-4 text-left w-full lg:w-1/2">
                 <div class="w-10 h-10 rounded-none bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/></svg>
                 </div>
                 <div class="flex-1">
-                    <h4 class="text-white font-medium text-sm tracking-wide">Apply Quarter-Car DSP</h4>
-                    <p class="text-[10px] text-[#888888] mt-0.5 leading-snug">Mathematical frequency cut isolating Road Resonance from frame bounce.</p>
+                    <h4 class="text-white font-medium text-xs tracking-wide">Apply Quarter-Car DSP</h4>
+                    <p class="text-[9px] text-[#888888] leading-tight">Cut Road Resonance from frame bounce.</p>
                 </div>
-                <input type="checkbox" class="toggle toggle-warning" id="toggle-dsp" checked />
+                <input type="checkbox" class="toggle toggle-warning toggle-sm" id="toggle-dsp" checked />
             </div>
 
-            <button class="btn border-0 bg-white text-slate-900 hover:bg-slate-200 px-10 mt-8 rounded-none  font-medium tracking-wide" onclick="runScript('sync')" id="btn-sync">
-              Initiate Vector Synchronization
-              <span class="loading loading-spinner hidden w-4 h-4 border-slate-900" id="spinner-sync"></span>
+            <button class="btn border-0 bg-white text-slate-900 hover:bg-slate-200 px-12 rounded-none font-bold tracking-wider w-full lg:w-auto self-stretch flex-1" onclick="runScript('sync')" id="btn-sync">
+              INITIATE VECTOR MERGE
+              <span class="loading loading-spinner hidden w-4 h-4 border-slate-900 ml-2" id="spinner-sync"></span>
             </button>
+          </div>
+
+          <!-- Post-Sync Analytics Dashboard (Hidden initially) -->
+          <div id="sync-analytics-board" class="hidden grid grid-cols-3 gap-4 border border-emerald-500/20 bg-emerald-950/20 p-5 w-full items-center animate-fade-in shadow-xl">
+             <div class="flex flex-col items-center justify-center text-center">
+                 <h4 class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Rows Merged</h4>
+                 <span class="text-2xl font-mono text-emerald-400 tracking-tighter mt-1" id="sync-stat-rows">0</span>
+             </div>
+             <div class="flex flex-col items-center justify-center text-center border-l border-white/5 pl-4">
+                 <h4 class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Orphaned / Dropped</h4>
+                 <span class="text-2xl font-mono text-rose-400 tracking-tighter mt-1" id="sync-stat-drops">0%</span>
+             </div>
+             <div class="flex flex-col items-center justify-center text-center border-l border-white/5 pl-4">
+                 <h4 class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Major Classes Map</h4>
+                 <div class="flex flex-wrap gap-1 mt-2 items-center justify-center text-[10px] text-white" id="sync-stat-classes">
+                     <!-- dynamically filled, e.g., <span class="badge bg-slate-800 border-emerald-500/30">Asphalt</span> -->
+                 </div>
+             </div>
           </div>
         </div>
 
         <!-- View: Training -->
         <div id="view-train" class="hidden-view flex flex-col gap-6 w-full max-w-4xl mx-auto pb-10">
-          <div class="flex justify-between items-end">
-            <div>
+          <div class="flex justify-between items-end mb-2">
+            <div class="flex-1">
               <h2 class="text-3xl font-medium text-white tracking-tight">Transformer Training</h2>
-              <div class="flex items-center gap-4 mt-1">
-                  <p class="text-[#888888]">Initialize the PyTorch Engine. Gradients are adjusted across <span id="trainConfNum">epochs</span>.</p>
+              <div class="flex flex-col gap-2 mt-2 w-full">
+                  <p class="text-[#888888]">Initialize the PyTorch Engine. Gradients are dynamically tracked.</p>
                   
-                  <!-- Actionable Dual-Stream Toggle -->
-                  <div class="bg-black border border-[#333] p-2 px-3 rounded-none flex items-center gap-3 ml-4 ">
-                      <div class="w-6 h-6 rounded-none bg-teal-500/20 text-teal-400 flex items-center justify-center shrink-0 border border-teal-500/30">
-                          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                  <!-- Checkpoint Select & Resume -->
+                  <div class="flex flex-col gap-2 mt-4 w-max">
+                      <label class="text-xs uppercase tracking-widest text-[#888] font-medium flex items-center gap-2">
+                        <svg class="w-3 h-3 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                        Warm-Start / Checkpoint Injection
+                      </label>
+                      <div class="flex items-center gap-0 w-full max-w-lg border border-[#333] bg-black focus-within:border-amber-500/50 transition-all group">
+                          <button class="btn btn-sm rounded-none border-0 border-r border-[#333] bg-[#111] text-amber-400 hover:bg-amber-500/10 h-10 uppercase tracking-wider text-[10px] whitespace-nowrap" onclick="chooseResumeModel()">
+                            Load Checkpoint
+                          </button>
+                          <input type="text" placeholder="Train from scratch (Random weights)..." readonly class="input border-0 bg-transparent text-amber-200/70 font-mono text-[10px] w-64 h-10 px-3 cursor-not-allowed focus:outline-none" id="trainResumePath" />
+                          <button class="btn btn-sm btn-square rounded-none border-0 bg-transparent text-[#666] hover:text-rose-400 hover:bg-rose-500/10 h-10 w-10 transition-colors" onclick="document.getElementById('trainResumePath').value=''" title="Clear Checkpoint">
+                              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                          </button>
                       </div>
-                      <div class="mr-2">
-                          <h4 class="text-white font-medium text-[11px] tracking-wide">Dual-Stream Meta-Fusion</h4>
-                          <p class="text-[9px] text-[#888888] leading-none">2-Tower Transformer Logic</p>
-                      </div>
-                      <input type="checkbox" class="toggle toggle-info toggle-sm ml-2" id="toggle-dual" checked />
+                  </div>
+                  
+                  <div class="flex items-center gap-3">
+                      <!-- Force Stop Button (Initially Hidden) -->
+                      <button id="btn-train-stop" class="btn btn-sm border border-red-500/50 bg-red-900/20 text-red-400 hover:bg-red-500/40 hover:text-white hidden transition-all duration-300 rounded-none shadow-lg" onclick="stopActiveProcess()">
+                          <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" /></svg>
+                          Force Stop Early
+                      </button>
                   </div>
               </div>
             </div>
-            <button class="btn border-0 bg-rose-600 hover:bg-rose-500 text-white px-8  shadow-rose-900/30" onclick="runScript('train')" id="btn-train">
-              <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            
+            <button class="btn border-0 bg-rose-600 hover:bg-rose-500 text-white px-8 h-12 shadow-rose-900/30" onclick="runScript('train')" id="btn-train">
+              <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               Burn Neural Weights
-              <span class="loading loading-spinner hidden w-4 h-4" id="spinner-train"></span>
+              <span class="loading loading-spinner hidden w-4 h-4 ml-2" id="spinner-train"></span>
             </button>
           </div>
 
-          <div class="flex flex-col w-full max-w-xl text-left bg-[#0a0a0a]/40 p-4 rounded-none border border-[#222] ">
-            <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2">Target Aligned Dataset (CSV)</label>
-            <div class="join w-full">
-              <button class="btn btn-sm join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600" onclick="chooseTrainData()">Choose File</button>
-              <input type="text" placeholder="Defaults to config.yaml target..." class="input input-sm join-item w-full bg-slate-950/50 border-[#333] focus:border-rose-400 text-white font-mono text-xs" id="trainDataPath" />
-            </div>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start mt-2">
+              <!-- Hyperparameters & Settings -->
+              <div class="border border-[#222] bg-[#0c0c0c] p-6 shadow-xl space-y-5">
+                  <h3 class="text-white font-medium flex items-center gap-2 border-b border-white/5 pb-3">
+                      <svg class="w-4 h-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                      Hyperparameters
+                  </h3>
+                  
+                  <div class="grid grid-cols-3 gap-3">
+                      <div>
+                          <label class="text-[10px] uppercase font-bold text-slate-400 mb-1 block">Epochs</label>
+                          <input type="number" id="train-epochs" placeholder="50" min="1" max="1000" class="input input-sm w-full bg-black border-[#333] focus:border-rose-400 text-white font-mono" />
+                      </div>
+                      <div>
+                          <label class="text-[10px] uppercase font-bold text-slate-400 mb-1 block">Learning Rm</label>
+                          <input type="number" id="train-lr" placeholder="0.001" step="0.0001" class="input input-sm w-full bg-black border-[#333] focus:border-rose-400 text-white font-mono" />
+                      </div>
+                      <div>
+                          <label class="text-[10px] uppercase font-bold text-slate-400 mb-1 block">Batch Sz</label>
+                          <input type="number" id="train-batch" placeholder="32" min="1" class="input input-sm w-full bg-black border-[#333] focus:border-rose-400 text-white font-mono" />
+                      </div>
+                  </div>
+
+                  <div class="flex flex-col w-full text-left pt-2 border-t border-white/5">
+                      <label class="text-[10px] uppercase font-bold text-slate-400 mb-2">Target Training Matrix (CSV)</label>
+                      <div class="join w-full shadow-inner">
+                        <button class="btn btn-sm join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600" onclick="chooseTrainData()">Choose</button>
+                        <input type="text" placeholder="Defaults to config.yaml target..." class="input input-sm join-item w-full bg-slate-950 border-[#333] focus:border-rose-400 text-white font-mono text-[10px]" id="trainDataPath" />
+                      </div>
+                  </div>
+              </div>
+
+              <!-- Modality Switches -->
+              <div class="border border-[#222] bg-[#0c0c0c] p-6 shadow-xl space-y-5 h-full">
+                  <h3 class="text-white font-medium flex items-center gap-2 border-b border-white/5 pb-3">
+                      <svg class="w-4 h-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                      Sensor Architecture
+                  </h3>
+                  
+                  <div class="space-y-3">
+                      <!-- Vision -->
+                      <div class="bg-black border border-[#333] hover:border-purple-500/30 transition-colors p-2 px-3 rounded-none flex items-center justify-between">
+                          <div class="flex items-center gap-3">
+                              <div class="w-6 h-6 bg-purple-500/10 text-purple-400 flex items-center justify-center shrink-0 border border-purple-500/20"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg></div>
+                              <div>
+                                  <h4 class="text-white font-medium text-[11px]">Input Parameters</h4>
+                                  <p class="text-[9px] text-slate-500">Camera-based latent vectors</p>
+                              </div>
+                          </div>
+                          <input type="checkbox" class="toggle toggle-accent toggle-sm" id="toggle-vision" />
+                      </div>
+
+                      <!-- IMU -->
+                      <div class="bg-black border border-[#333] hover:border-teal-500/30 transition-colors p-2 px-3 rounded-none flex items-center justify-between">
+                          <div class="flex items-center gap-3">
+                              <div class="w-6 h-6 bg-teal-500/10 text-teal-400 flex items-center justify-center shrink-0 border border-teal-500/20"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg></div>
+                              <div>
+                                  <h4 class="text-white font-medium text-[11px]">Temporal Logic</h4>
+                                  <p class="text-[9px] text-slate-500">6-DoF Vibration Sequences</p>
+                              </div>
+                          </div>
+                          <input type="checkbox" class="toggle toggle-info toggle-sm" id="toggle-imu" checked />
+                      </div>
+                  </div>
+              </div>
           </div>
 
           <!-- Chart.js and Live Data Canvas -->
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-2 hidden" id="training-stats">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-4 animate-fade-in" id="training-stats" style="display: none;"> <!-- Revealed via JS -->
             <!-- Small Stat Cards -->
             <div class="col-span-1 space-y-4">
-              <div class="border border-[#222] bg-[#0c0c0c] p-8 rounded-none p-5 border border-[#333] border-l-4 border-l-blue-500">
-                <p class="text-[10px] uppercase font-medium text-[#888888] tracking-widest">Epoch</p>
-                <p class="text-3xl font-normal tracking-tight text-white mt-1 font-mono" id="stat-epoch">0.0</p>
+              <div class="border border-[#222] bg-[#0c0c0c] rounded-none p-5 border-l-4 border-l-blue-500 shadow-xl">
+                <p class="text-[10px] uppercase font-bold text-[#888888] tracking-widest flex items-center gap-2">
+                   <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75 hidden" id="ping-epoch"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span></span>
+                   Epoch
+                </p>
+                <div class="flex items-baseline mt-2">
+                    <p class="text-4xl font-normal tracking-tight text-white font-mono" id="stat-epoch">0</p>
+                    <p class="text-xs text-slate-500 font-mono ml-2">/ <span id="stat-epoch-total">?</span></p>
+                </div>
               </div>
-              <div class="border border-[#222] bg-[#0c0c0c] p-8 rounded-none p-5 border border-[#333] border-l-4 border-l-rose-500">
-                <p class="text-[10px] uppercase font-medium text-[#888888] tracking-widest">Val Loss (MSE)</p>
-                <p class="text-3xl font-normal tracking-tight text-white mt-1 font-mono" id="stat-loss">0.00</p>
+              <div class="border border-[#222] bg-[#0c0c0c] rounded-none p-5 border-l-4 border-l-rose-500 shadow-xl transition-all duration-300" id="loss-card">
+                <p class="text-[10px] uppercase font-bold text-[#888888] tracking-widest flex items-center justify-between">
+                   Val Loss (MSE)
+                   <span id="loss-trend" class="text-xs"></span>
+                </p>
+                <p class="text-4xl font-normal tracking-tight text-white mt-2 font-mono" id="stat-loss">0.000</p>
               </div>
             </div>
             
             <!-- Beautiful Canvas Render -->
-              <div class="col-span-3 border border-[#222] bg-[#0c0c0c] p-8 rounded-none p-5 border border-[#333] relative h-[250px]">
-                <p class="absolute top-4 left-6 text-xs uppercase font-medium text-[#888888] tracking-widest z-10 hidden" id="chart-title">Loss Trajectory</p>
+              <div class="col-span-3 border border-[#222] bg-[#0c0c0c] p-6 rounded-none relative h-[250px] shadow-xl">
+                <p class="absolute top-4 left-6 text-[10px] uppercase font-bold text-slate-500 tracking-widest z-10" id="chart-title">Loss Trajectory Map</p>
                 <canvas id="lossChart" class="w-full h-full"></canvas>
               </div>
             </div>
           </div> <!-- End view-train -->
 
-          <!-- View: Inference -->
+          <!-- View: Inference --><!-- View: Inference -->
       <div id="view-inference" class="hidden-view p-8 space-y-6 flex flex-col gap-6 w-full max-w-5xl mx-auto pb-10">
         <div>
           <h1 class="text-3xl font-normal tracking-tight text-white tracking-tight">Live Test Execution</h1>
@@ -780,7 +974,7 @@
                   Launch Visualization
                </button>
              <div class="mt-4 pt-4 border-t border-[#333]">
-                 <p class="text-[10px] text-slate-500 uppercase tracking-wide">Detection Pipeline</p>
+                 
                  <div class="flex gap-2 mt-2">
                      <span class="badge badge-sm border border-emerald-500/30 text-[#e0e0e0] bg-emerald-500/10">Physics Engine</span>
                      <span class="badge badge-sm border border-purple-500/30 text-purple-400 bg-purple-500/10">Computer Vision UI</span>
@@ -813,7 +1007,7 @@
                       <div>
                           <h3 class="text-[#e0e0e0] font-medium tracking-widest text-sm uppercase flex items-center gap-2">
                               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                              TEST PHASE: Dual-Stream Physics Engine
+                              Inference Run
                           </h3>
                           <p class="text-xs text-[#888888]">Processing LM-17.06_multi_sensor_aligned.csv Output</p>
                       </div>

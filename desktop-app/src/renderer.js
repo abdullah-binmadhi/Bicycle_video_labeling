@@ -18,7 +18,7 @@ if (__dirname.includes('Contents/Resources/app')) {
 const scripts = {
   'extract': path.join(rootDir, 'data_pipeline/frame_extractor.py'),
   'roboflow': path.join(rootDir, 'data_pipeline/roboflow_manager.py'),
-  'clip': path.join(rootDir, 'data_pipeline/clip_auto_labeler.py'),
+  'clip': path.join(rootDir, 'data_pipeline/yolo_clip_auto.py'),
   'sync': path.join(rootDir, 'data_pipeline/synchronizer.py'),
   'train': path.join(rootDir, 'train_unified.py'),
   'inference': path.join(rootDir, 'run_inference.py')
@@ -301,17 +301,71 @@ function _runScript(scriptKey) {
   }
   
   if (scriptKey === 'sync') {
-      const customDataDir = document.getElementById('syncDataPath') ? document.getElementById('syncDataPath').value.trim() : "";
-      if (customDataDir) {
-           args.push('--data_dir', customDataDir);
+      // 1. Data Source
+      const sourceType = document.querySelector('input[name="sync-source-type"]:checked').value;
+      if (sourceType === 'global') {
+          const customDataDir = document.getElementById('syncDataPath') ? document.getElementById('syncDataPath').value.trim() : "";
+          if (customDataDir) {
+              args.push('--data_dir', customDataDir);
+          }
+      } else {
+          args.push('--adhoc');
+          const imu = document.getElementById('adhocImuPath').value.trim();
+          const label = document.getElementById('adhocLabelPath').value.trim();
+          if (!imu || !label) {
+              logToConsole("[WARN] Ad-Hoc sync requires both IMU and Label CSVs.\n", true);
+              return;
+          }
+          args.push('--imu_csv', imu);
+          args.push('--label_csv', label);
       }
+
+      // 2. Tolerance Slider
+      const tol = document.getElementById('sync-tolerance-slider').value;
+      args.push('--tolerance', tol);
+      
+      // 3. Gap Handling
+      const gapHandling = document.getElementById('sync-gap-handling').value;
+      args.push('--gap_handling', gapHandling);
+      
+      // 4. DSP Filter Toggle
+      const applyDsp = document.getElementById('toggle-dsp').checked;
+      if (applyDsp) {
+         args.push('--apply_dsp');
+      }
+
+      // Show Analytics Dashboard Reset
+      document.getElementById('sync-analytics-board').classList.add('hidden');
+      document.getElementById('sync-stat-rows').innerText = "0";
+      document.getElementById('sync-stat-drops').innerText = "0%";
+      document.getElementById('sync-stat-classes').innerHTML = "";
   }
 
     if (scriptKey === 'train') {
         const customTrainData = document.getElementById('trainDataPath') ? document.getElementById('trainDataPath').value.trim() : "";
-        if (customTrainData) {
-            args.push('--dataset', customTrainData);
-        }
+        if (customTrainData) args.push('--data', customTrainData);
+        
+        const useVision = document.getElementById('toggle-vision')?.checked ?? false;
+        const useImu = document.getElementById('toggle-imu')?.checked ?? true;
+        
+        const epochs = document.getElementById('train-epochs')?.value;
+        const lr = document.getElementById('train-lr')?.value;
+        const batch = document.getElementById('train-batch')?.value;
+        const checkpoint = document.getElementById('trainResumePath')?.value;
+
+        args.push('--use_vision', useVision ? 'True' : 'False');
+        args.push('--use_imu', useImu ? 'True' : 'False');
+        
+        if (epochs) args.push('--epochs', epochs);
+        if (lr) args.push('--lr', lr);
+        if (batch) args.push('--batch_size', batch);
+        if (checkpoint) args.push('--checkpoint', checkpoint);
+
+        const stopBtn = document.getElementById('btn-train-stop');
+        if (stopBtn) stopBtn.classList.remove('hidden');
+        const statsBoard = document.getElementById('training-stats');
+        if (statsBoard) statsBoard.style.display = 'grid';
+        if (window.initLossChart) window.initLossChart();
     }
 
     logToConsole(`\n$ python3 ${path.basename(targetScript)} ${args.slice(1).join(' ')}\n`);
@@ -1084,6 +1138,18 @@ window.chooseClipOutDir = async function() {
     }
 };
 
+
+window.chooseAdhocImu = async function() {
+    const { ipcRenderer } = require('electron');
+    const file = await ipcRenderer.invoke('dialog:openCSV');
+    if (file) { document.getElementById('adhocImuPath').value = file; }
+};
+window.chooseAdhocLabel = async function() {
+    const { ipcRenderer } = require('electron');
+    const file = await ipcRenderer.invoke('dialog:openCSV');
+    if (file) { document.getElementById('adhocLabelPath').value = file; }
+};
+
 window.chooseSyncDir = async function() {
     const { ipcRenderer } = require('electron');
     const dir = await ipcRenderer.invoke('dialog:openDirectory');
@@ -1813,3 +1879,93 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+
+function initLossChart() {
+  const ctx = document.getElementById('lossChart');
+  if (!ctx) return;
+  
+  if (lossChartInstance) {
+    lossChartInstance.destroy();
+  }
+  
+  const Chart = window.Chart; // Assuming added to window via html tag
+  if (!Chart) { appendLog('Note: Chart.js not loaded. Live graphs disabled.'); return; }
+
+  lossChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        { label: 'Train Loss', data: [], borderColor: 'rgb(244, 63, 94)', backgroundColor: 'rgba(244, 63, 94, 0.1)', tension: 0.3, pointRadius: 2, fill: false },
+        { label: 'Val Loss', data: [], borderColor: 'rgb(59, 130, 246)', backgroundColor: 'rgba(59, 130, 246, 0.1)', tension: 0.3, pointRadius: 3, borderDash: [5, 5], fill: true }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: true, labels: { color: '#888' } } },
+      scales: {
+        x: { grid: { color: '#222' }, ticks: { color: '#888', maxTicksLimit: 10 } },
+        y: { grid: { color: '#222' }, ticks: { color: '#888' } }
+      },
+      animation: { duration: 300 }
+    }
+  });
+}
+
+
+window.initLossChart = function() {
+  const ctx = document.getElementById('lossChart');
+  if (!ctx) return;
+  
+  if (window.lossChartInstance) {
+    window.lossChartInstance.destroy();
+  }
+  
+  if (typeof Chart === 'undefined') { console.log('Chart.js not loaded'); return; }
+
+  window.lossChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        { label: 'Train Loss', data: [], borderColor: 'rgb(244, 63, 94)', backgroundColor: 'rgba(244, 63, 94, 0.1)', tension: 0.3, pointRadius: 2, fill: false },
+        { label: 'Val Loss', data: [], borderColor: 'rgb(59, 130, 246)', backgroundColor: 'rgba(59, 130, 246, 0.1)', tension: 0.3, pointRadius: 3, borderDash: [5, 5], fill: true }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: true, labels: { color: '#888' } } },
+      scales: {
+        x: { grid: { color: '#222' }, ticks: { color: '#888', maxTicksLimit: 10 } },
+        y: { grid: { color: '#222' }, ticks: { color: '#888' } }
+      },
+      animation: { duration: 300 }
+    }
+  });
+}
+
+function stopActiveProcess() {
+    if (window.activeTrainingProcess) {
+        window.activeTrainingProcess.kill();
+        logToConsole(`
+[System] Process violently terminated.
+`);
+    }
+}
+
+window.stopClipProcess = function() {
+    if (window.activeClipProcess) {
+        window.activeClipProcess.kill();
+        logToConsole(`\n[System] Auto Annotation aborted safely.\n`);
+    }
+}
+
+window.chooseResumeModel = async function() {
+  const file = await ipcRenderer.invoke('dialog:openModel');
+  if (file) {
+    document.getElementById('trainResumePath').value = file;
+  }
+};

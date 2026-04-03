@@ -93,6 +93,12 @@ def main():
     """Master executor routing config, data, model, and the training loop."""
     parser = argparse.ArgumentParser(description="Unified PyTorch Training.")
     parser.add_argument("--dataset", type=str, help="Path to the aligned dataset CSV", default="")
+    parser.add_argument("--epochs", type=int, help="Override number of epochs", default=None)
+    parser.add_argument("--lr", type=float, help="Override learning rate", default=None)
+    parser.add_argument("--batch_size", type=int, help="Override batch size", default=None)
+    parser.add_argument("--checkpoint", type=str, help="Path to a .pth checkpoint to resume from", default="")
+    parser.add_argument("--use_vision", action="store_true", help="Enable vision parameters")
+    parser.add_argument("--use_imu", action="store_true", help="Enable IMU parameters")
     args = parser.parse_args()
 
     # 1. Load Configurations
@@ -102,6 +108,11 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
     logging.info(f"Using compute device: {device}")
     
+    # Dynamic Overrides from UI
+    if args.epochs is not None: cfg.hyperparameters.epochs = args.epochs
+    if args.lr is not None: cfg.hyperparameters.learning_rate = args.lr
+    if args.batch_size is not None: cfg.hyperparameters.batch_size = args.batch_size
+
     # 2. Prepare Data
     if args.dataset:
         csv_path = Path(args.dataset)
@@ -141,13 +152,22 @@ def main():
     # 4. Optimizer Selection
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg.hyperparameters.learning_rate)
 
+    start_epoch = 0
+    if args.checkpoint and os.path.exists(args.checkpoint):
+        logging.info(f"Loading checkpoint {args.checkpoint}")
+        checkpoint = torch.load(args.checkpoint, map_location=device)
+        model.load_state_dict(checkpoint['state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer'])
+        start_epoch = checkpoint.get('epoch', 0)
+        logging.info(f"Resumed from epoch {start_epoch}")
+
     # 5. Execute Epochs
     best_val_loss = float('inf')
     num_epochs = cfg.hyperparameters.epochs
     checkpoint_dir = Path("checkpoints")
     
     logging.info("Starting robust training loop...")
-    for epoch in range(num_epochs):
+    for epoch in range(start_epoch, num_epochs):
         print(f"\n[{epoch+1}/{num_epochs}]")
         
         train_loss = train_epoch(model, train_loader, optimizer, device)
@@ -159,6 +179,9 @@ def main():
         is_best = val_loss < best_val_loss
         if is_best:
             best_val_loss = val_loss
+            
+        import json
+        print(f"EPOCH_STATS:{json.dumps({'epoch': epoch + 1, 'train_loss': train_loss, 'val_loss': val_loss})}")
             
         save_checkpoint({
             'epoch': epoch + 1,

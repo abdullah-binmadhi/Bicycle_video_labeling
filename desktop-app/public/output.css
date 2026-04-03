@@ -2845,6 +2845,9 @@
   .overflow-hidden {
     overflow: hidden;
   }
+  .overflow-x-auto {
+    overflow-x: auto;
+  }
   .overflow-y-auto {
     overflow-y: auto;
   }
@@ -3055,9 +3058,6 @@
   .border-l-rose-500 {
     border-left-color: var(--color-rose-500);
   }
-  .bg-\[\#0a0a0a\] {
-    background-color: #0a0a0a;
-  }
   .bg-\[\#0a0a0a\]\/30 {
     background-color: color-mix(in oklab, #0a0a0a 30%, transparent);
   }
@@ -3072,6 +3072,9 @@
   }
   .bg-\[\#111\] {
     background-color: #111;
+  }
+  .bg-\[\#222\] {
+    background-color: #222;
   }
   .bg-\[\#333\] {
     background-color: #333;
@@ -3513,6 +3516,17 @@
       }
     }
   }
+  .table-xs {
+    @layer daisyui.l1.l2 {
+      :not(thead, tfoot) tr {
+        font-size: 0.6875rem;
+      }
+      :where(th, td) {
+        padding-inline: calc(0.25rem * 2);
+        padding-block: calc(0.25rem * 1);
+      }
+    }
+  }
   .px-1 {
     padding-inline: calc(var(--spacing) * 1);
   }
@@ -3548,6 +3562,9 @@
   }
   .py-3 {
     padding-block: calc(var(--spacing) * 3);
+  }
+  .py-6 {
+    padding-block: calc(var(--spacing) * 6);
   }
   .pt-0 {
     padding-top: calc(var(--spacing) * 0);
@@ -4697,6 +4714,11 @@
       flex-direction: row;
     }
   }
+  .md\:items-center {
+    @media (width >= 48rem) {
+      align-items: center;
+    }
+  }
   .lg\:col-span-2 {
     @media (width >= 64rem) {
       grid-column: span 2 / span 2;
@@ -4720,6 +4742,11 @@
   .lg\:grid-cols-3 {
     @media (width >= 64rem) {
       grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  .lg\:grid-cols-4 {
+    @media (width >= 64rem) {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
   .lg\:flex-row {

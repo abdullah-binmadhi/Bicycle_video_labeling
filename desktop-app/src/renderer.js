@@ -1807,3 +1807,38 @@ window.chooseResumeModel = async function() {
     document.getElementById('trainResumePath').value = file;
   }
 };
+
+window.chooseMetricsFile = async function() {
+    const { ipcRenderer } = require('electron');
+    const filePath = await ipcRenderer.invoke('dialog:openMetrics');
+    if (filePath) {
+        document.getElementById('analyticsFilePath').value = filePath;
+        showToast('Metrics loaded successfully! (mock display)', 'success');
+        // Here you would parse the JSON with Node's 'fs' module 
+        // and update the Chart.js instances / HTML text nodes!
+        document.getElementById('stat-accuracy').innerText = "94.2%";
+        document.getElementById('stat-f1').innerText = "0.93";
+        document.getElementById('stat-loss').innerText = "0.187";
+        document.getElementById('stat-speed').innerText = "8.4 ms/iter";
+        
+        const tbody = document.getElementById('misclassification-tbody');
+        if (tbody) {
+            tbody.innerHTML = `
+              <tr class="hover:bg-rose-500/10 transition-colors">
+                <td class="font-mono text-emerald-400">00:14.23</td>
+                <td>Gravel</td>
+                <td class="text-rose-400 font-medium">Asphalt</td>
+                <td class="font-mono">98.6%</td>
+                <td><button class="btn btn-xs bg-[#222] border-[#333] hover:bg-rose-500/20 hover:text-rose-400 text-[#888888]">Flag Region</button></td>
+              </tr>
+              <tr class="hover:bg-rose-500/10 transition-colors">
+                <td class="font-mono text-emerald-400">01:05.81</td>
+                <td>Grass</td>
+                <td class="text-rose-400 font-medium">Dirt</td>
+                <td class="font-mono">91.2%</td>
+                <td><button class="btn btn-xs bg-[#222] border-[#333] hover:bg-rose-500/20 hover:text-rose-400 text-[#888888]">Flag Region</button></td>
+              </tr>
+            `;
+        }
+    }
+};

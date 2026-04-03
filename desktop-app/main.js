@@ -30,6 +30,15 @@ ipcMain.handle('dialog:openDirectory', async () => {
   if (canceled) { return null; } else { return filePaths[0]; }
 });
 
+ipcMain.handle('dialog:openMetrics', async () => {
+  const { canceled, filePaths } = await dialog.showOpenDialog({
+    properties: ['openFile'],
+    filters: [{ name: 'Metrics Files', extensions: ['json', 'csv'] }]
+  });
+  if (canceled) return null;
+  return filePaths[0];
+});
+
 ipcMain.handle('dialog:openCSV', async () => {
   const { canceled, filePaths } = await dialog.showOpenDialog({
     properties: ['openFile'],

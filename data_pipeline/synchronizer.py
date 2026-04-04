@@ -71,9 +71,9 @@ class DataSynchronizer:
                 df = pd.read_csv(file_path)
                 if time_col not in df.columns:
                     return None
-                if df[time_col].dtype == object:
+                if str(df[time_col].dtype) in ['object', 'str', 'string']:
                     # Clean up quoted strings like "2024-06-17, 10:51:27.2810"
-                    df[time_col] = df[time_col].str.replace('"', '').str.strip()
+                    df[time_col] = df[time_col].astype(str).str.replace('"', '').str.strip()
                     # Use specialized format to match "2024-06-17, 10:51:27.2810"
                     df[time_col] = pd.to_datetime(df[time_col], format='%Y-%m-%d, %H:%M:%S.%f', errors='coerce').astype('datetime64[ms]').astype('int64')
                 df[time_col] = df[time_col].astype('float64')
@@ -91,6 +91,7 @@ class DataSynchronizer:
                 if c in df.columns: df.drop(columns=[c], inplace=True)
             return df
         except Exception as e:
+            logging.error(f"Failed to load {file_path}: {e}", exc_info=True)
             return None
 
     def merge_streams(self, base_df: pd.DataFrame, aux_df: pd.DataFrame, time_col: str = "NTP", tolerance_ms: int = 50, direction: str = "backward") -> pd.DataFrame:
@@ -146,16 +147,19 @@ class DataSynchronizer:
 
         # Apply basic DSP if requested
         if self.apply_dsp:
-            from scipy.signal import butter, lfilter
-            def butter_lowpass_filter(data, cutoff, fs, order=5):
-                nyq = 0.5 * fs
-                normal_cutoff = cutoff / nyq
-                b, a = butter(order, normal_cutoff, btype='low', analog=False)
-                return lfilter(b, a, data)
-                
-            for c in ['Acc-Z']:
-                if c in master_df.columns:
-                    master_df[c] = butter_lowpass_filter(master_df[c].values, cutoff=5, fs=50)
+            try:
+                from scipy.signal import butter, lfilter # type: ignore
+                def butter_lowpass_filter(data, cutoff, fs, order=5):
+                    nyq = 0.5 * fs
+                    normal_cutoff = cutoff / nyq
+                    b, a = butter(order, normal_cutoff, btype='low', analog=False)
+                    return lfilter(b, a, data)
+                    
+                for c in ['Acc-Z']:
+                    if c in master_df.columns:
+                        master_df[c] = butter_lowpass_filter(master_df[c].values, cutoff=5, fs=50)
+            except ImportError:
+                logging.error("The 'scipy' library is required for DSP filtering but is not installed. Please run 'pip install scipy'.")
 
         master_df['session_id'] = session_id
         

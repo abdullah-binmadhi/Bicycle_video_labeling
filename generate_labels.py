@@ -15,11 +15,17 @@ base_classes = [
     "box_truck", "pickup_truck", "van", "minivan", "suv", "jeep", "crossover", "sedan", "coupe", 
     "convertible", "hatchback", "station_wagon", "sports_car", "luxury_car", "classic_car", "antique_car", 
     "muscle_car", "electric_car", "hybrid_car", "diesel_car", "gas_car", "hydrogen_car", "fuel_cell_car", 
-    "solar_car", "flying_car", "hover_car", "submarine_car", "boat_car"
+    "solar_car", "flying_car", "hover_car", "submarine_car", "boat_car",
+    "dirt_road", "macadam", "grassy_path", "wood_planks", "metal_grating", "paved_path", "unpaved_path", 
+    "pothole_cluster", "alligator_cracking", "longitudinal_cracks", "transverse_cracks", "block_cracking", 
+    "edge_cracking", "rutting", "shoving", "corrugation", "bleeding", "polished_aggregate", "pumping", 
+    "raveling", "stripping", "delamination", "patch", "traverse_speed_bump", "rubber_speed_bump", 
+    "concrete_speed_bump", "asphalt_speed_bump", "wide_speed_bump", "narrow_speed_bump", "rumble_strips", 
+    "speed_cushion", "speed_table"
 ]
 
 labels_dict = {}
-for i, cls in enumerate(base_classes[:100]):
+for i, cls in enumerate(base_classes):
     key = f"{i} - {cls}"
     name_clean = cls.replace('_', ' ')
     labels_dict[key] = [
@@ -33,4 +39,4 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(script_dir, "config", "labels.json"), "w") as f:
     json.dump(labels_dict, f, indent=4)
 
-print("Generated config/labels.json with 100 classes.")
+print(f"Generated config/labels.json with {len(labels_dict)} classes.")

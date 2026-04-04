@@ -673,6 +673,32 @@ window.chooseInfLabel = async function() {
   }
 };
 
+window.convertTimeToUnix = function() {
+    const input = document.getElementById('extractStartTime');
+    if (!input || !input.value.trim()) return;
+    
+    const val = input.value.trim();
+    // If it's already a number, don't do anything
+    if (!isNaN(val)) {
+        showToast("Already a Unix timestamp.", "info");
+        return;
+    }
+    
+    try {
+        // Try parsing common formats like "2024-06-17, 10:51:27.2810"
+        let cleanVal = val.replace(',', ''); // remove comma if present
+        const date = new Date(cleanVal);
+        if (isNaN(date.getTime())) {
+            throw new Error("Invalid Format");
+        }
+        const unix = (date.getTime() / 1000).toFixed(3);
+        input.value = unix;
+        showToast(`Converted to: ${unix}`, "success");
+    } catch (e) {
+        showToast("Error: Use format YYYY-MM-DD HH:MM:SS", "error");
+    }
+};
+
 let liveImuChart = null;
 let liveRadarChart = null;
 let spectrogramCtx = null;
@@ -2128,15 +2154,99 @@ function setupClipClasses() {
 
     if (clipContainer) {
         clipContainer.innerHTML = '';
+        clipContainer.className = 'w-full mb-6 max-h-72 overflow-y-auto bg-[#050505] p-2 border border-[#333] shadow-inner'; // Reset grid classes
+
+        // Define categories based on substrings/keywords
+        const categories = {
+            "Anomalies & Defects": ["pothole", "crack", "uneven_surface", "rutting", "shoving", "corrugation", "bleeding", "polished_aggregate", "pumping", "raveling", "stripping", "delamination"],
+            "Road Surface Types": ["asphalt", "gravel", "sand", "mud", "cobblestone", "brick_paving", "concrete_pavers", "dirt_road", "macadam", "grassy_path", "wood_planks", "metal_grating", "paved_path", "unpaved_path"],
+            "Obstacles & Hazards": ["water", "bump", "cushion", "rumble_strips", "table", "manhole", "drain", "grate", "leaves", "branches", "ice", "snow", "glass", "metal_plate", "rail_tracks", "tree_root", "cone", "bollard", "barrier", "fallen_tree", "debris", "plastic_bag", "trash_can", "spill", "patch"],
+            "Infrastructure & Signs": ["lines", "marking", "crosswalk", "tactile_paving", "curb", "shadow", "light", "sign", "stop", "station"],
+            "Vehicles (Cars/Trucks)": ["car", "truck", "van", "suv", "jeep", "crossover", "sedan", "coupe", "convertible", "hatchback", "wagon", "sweeper", "plow", "vehicle"],
+            "Other Road Users": ["bicycle", "pedestrian", "dog", "cat", "squirrel", "motorcycle", "bus", "scooter"],
+            "Uncategorized": [] // Fallback
+        };
+
+        const categorizedClasses = {};
+        for (const cat in categories) categorizedClasses[cat] = [];
+
         targetClasses.forEach(cls => {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'flex items-center gap-2';
-            wrapper.innerHTML = `
-                <input type="checkbox" id="clip-cls-${cls}" value="${cls}" checked class="checkbox checkbox-xs checkbox-primary clip-class-checkbox" />
-                <label for="clip-cls-${cls}" class="text-xs truncate text-[#e0e0e0] cursor-pointer" title="${cls}">${cls}</label>
-            `;
-            clipContainer.appendChild(wrapper);
+            const clsName = cls.split(' - ')[1] || cls;
+            let matched = false;
+            for (const [catName, keywords] of Object.entries(categories)) {
+                if (catName === "Uncategorized") continue;
+                if (keywords.some(kw => clsName.toLowerCase().includes(kw))) {
+                    categorizedClasses[catName].push(cls);
+                    matched = true;
+                    break;
+                }
+            }
+            if (!matched) categorizedClasses["Uncategorized"].push(cls);
         });
+
+        // Build the accordion UI for each category
+        for (const [catName, classes] of Object.entries(categorizedClasses)) {
+            if (classes.length === 0) continue;
+
+            const categoryBox = document.createElement('div');
+            categoryBox.className = 'collapse collapse-arrow bg-transparent border border-[#222] rounded-none mb-2';
+            
+            const catHeader = document.createElement('input');
+            catHeader.type = 'checkbox';
+            catHeader.checked = true; // start open
+
+            const catTitle = document.createElement('div');
+            catTitle.className = 'collapse-title text-xs font-semibold uppercase tracking-widest text-[#888] bg-[#111] min-h-0 p-2 flex items-center justify-between';
+            catTitle.innerHTML = `<span>${catName} (${classes.length})</span>`;
+
+            const catContent = document.createElement('div');
+            catContent.className = 'collapse-content p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2';
+
+            classes.forEach(cls => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex items-center gap-2 mb-1';
+                wrapper.innerHTML = `
+                    <input type="checkbox" id="clip-cls-${cls}" value="${cls}" checked class="checkbox checkbox-xs checkbox-primary clip-class-checkbox" />
+                    <label for="clip-cls-${cls}" class="text-[10px] sm:text-xs truncate text-[#e0e0e0] cursor-pointer" title="${cls}">${cls}</label>
+                `;
+                catContent.appendChild(wrapper);
+            });
+
+            categoryBox.appendChild(catHeader);
+            categoryBox.appendChild(catTitle);
+            categoryBox.appendChild(catContent);
+            clipContainer.appendChild(categoryBox);
+        }
+
+        // Search Logic
+        const searchInput = document.getElementById('search-clip-classes');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                const categories = clipContainer.querySelectorAll('.collapse');
+                categories.forEach(cat => {
+                    let hasVisible = false;
+                    const items = cat.querySelectorAll('.flex.items-center.gap-2');
+                    items.forEach(item => {
+                        const lbl = item.querySelector('label').innerText.toLowerCase();
+                        if (lbl.includes(term)) {
+                            item.style.display = 'flex';
+                            hasVisible = true;
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                    
+                    // Show or hide the whole category based on matches
+                    if (hasVisible) {
+                        cat.style.display = 'block';
+                        cat.querySelector('.collapse-content').style.display = 'grid'; // keep contents open when searching
+                    } else {
+                        cat.style.display = 'none';
+                    }
+                });
+            });
+        }
 
         if (selectAllBtn) {
             selectAllBtn.checked = true;

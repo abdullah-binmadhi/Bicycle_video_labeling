@@ -406,8 +406,11 @@
 
                 <div class="flex flex-col">
                   <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2">Base UNIX Time (Override)</label>
-                  <input type="text" placeholder="e.g. 1718614287.261" class="input input-md w-full bg-black border-[#333] focus:border-blue-400 text-white font-mono text-sm" id="extractStartTime" />
-                  <p class="text-xs text-slate-500 mt-2">Required if the original filename is missing UNIX time metadata.</p>
+                  <div class="join w-full">
+                    <input type="text" placeholder="Unix Epoch or YYYY-MM-DD HH:MM:SS" class="input input-md join-item w-full bg-black border-[#333] focus:border-blue-400 text-white font-mono text-sm" id="extractStartTime" />
+                    <button class="btn btn-md join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600 text-xs px-4" onclick="convertTimeToUnix()">Parse Date</button>
+                  </div>
+                  <p class="text-xs text-slate-500 mt-2">Required if the original filename is missing UNIX time metadata. Accepts raw seconds or formatted dates.</p>
                 </div>
             </div>
 
@@ -479,13 +482,16 @@
             <div class="mt-8 border-t border-[#222] pt-6">
               <h3 class="text-sm font-semibold mb-4 text-white flex items-center justify-between">
                 <span>3. YOLO Target Vocabulary</span>
-                <div class="flex items-center gap-2">
-                  <input type="checkbox" id="btn-select-all" class="checkbox checkbox-xs checkbox-primary" />
-                  <label for="btn-select-all" class="text-[10px] uppercase text-slate-400 cursor-pointer tracking-widest">Select All</label>
+                <div class="flex items-center gap-4">
+                  <input type="text" id="search-clip-classes" placeholder="Search classes..." class="input input-xs bg-black border-[#333] text-white focus:border-indigo-400 placeholder:text-[#555] w-48" />
+                  <div class="flex items-center gap-2">
+                    <input type="checkbox" id="btn-select-all" class="checkbox checkbox-xs checkbox-primary" />
+                    <label for="btn-select-all" class="text-[10px] uppercase text-slate-400 cursor-pointer tracking-widest">Select All</label>
+                  </div>
                 </div>
               </h3>
               
-              <div id="clip-classes-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-48 overflow-y-auto mb-6 p-4 bg-[#050505] rounded-none border border-[#333] shadow-inner">
+              <div id="clip-classes-container" class="w-full mb-6 max-h-72 overflow-y-auto bg-[#050505] p-2 border border-[#333] shadow-inner">
                 <!-- Checkboxes dynamically inserted by renderer.js -->
               </div>
             </div>

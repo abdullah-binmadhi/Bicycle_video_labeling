@@ -498,5 +498,165 @@
         "a first-person POV video from a bicycle riding near boat car",
         "looking down at boat car on the street from a bike",
         "a dashboard camera view of boat car on the road"
+    ],
+    "100 - dirt_road": [
+        "a first-person POV video from a bicycle riding near dirt road",
+        "looking down at dirt road on the street from a bike",
+        "a dashboard camera view of dirt road on the road"
+    ],
+    "101 - macadam": [
+        "a first-person POV video from a bicycle riding near macadam",
+        "looking down at macadam on the street from a bike",
+        "a dashboard camera view of macadam on the road"
+    ],
+    "102 - grassy_path": [
+        "a first-person POV video from a bicycle riding near grassy path",
+        "looking down at grassy path on the street from a bike",
+        "a dashboard camera view of grassy path on the road"
+    ],
+    "103 - wood_planks": [
+        "a first-person POV video from a bicycle riding near wood planks",
+        "looking down at wood planks on the street from a bike",
+        "a dashboard camera view of wood planks on the road"
+    ],
+    "104 - metal_grating": [
+        "a first-person POV video from a bicycle riding near metal grating",
+        "looking down at metal grating on the street from a bike",
+        "a dashboard camera view of metal grating on the road"
+    ],
+    "105 - paved_path": [
+        "a first-person POV video from a bicycle riding near paved path",
+        "looking down at paved path on the street from a bike",
+        "a dashboard camera view of paved path on the road"
+    ],
+    "106 - unpaved_path": [
+        "a first-person POV video from a bicycle riding near unpaved path",
+        "looking down at unpaved path on the street from a bike",
+        "a dashboard camera view of unpaved path on the road"
+    ],
+    "107 - pothole_cluster": [
+        "a first-person POV video from a bicycle riding near pothole cluster",
+        "looking down at pothole cluster on the street from a bike",
+        "a dashboard camera view of pothole cluster on the road"
+    ],
+    "108 - alligator_cracking": [
+        "a first-person POV video from a bicycle riding near alligator cracking",
+        "looking down at alligator cracking on the street from a bike",
+        "a dashboard camera view of alligator cracking on the road"
+    ],
+    "109 - longitudinal_cracks": [
+        "a first-person POV video from a bicycle riding near longitudinal cracks",
+        "looking down at longitudinal cracks on the street from a bike",
+        "a dashboard camera view of longitudinal cracks on the road"
+    ],
+    "110 - transverse_cracks": [
+        "a first-person POV video from a bicycle riding near transverse cracks",
+        "looking down at transverse cracks on the street from a bike",
+        "a dashboard camera view of transverse cracks on the road"
+    ],
+    "111 - block_cracking": [
+        "a first-person POV video from a bicycle riding near block cracking",
+        "looking down at block cracking on the street from a bike",
+        "a dashboard camera view of block cracking on the road"
+    ],
+    "112 - edge_cracking": [
+        "a first-person POV video from a bicycle riding near edge cracking",
+        "looking down at edge cracking on the street from a bike",
+        "a dashboard camera view of edge cracking on the road"
+    ],
+    "113 - rutting": [
+        "a first-person POV video from a bicycle riding near rutting",
+        "looking down at rutting on the street from a bike",
+        "a dashboard camera view of rutting on the road"
+    ],
+    "114 - shoving": [
+        "a first-person POV video from a bicycle riding near shoving",
+        "looking down at shoving on the street from a bike",
+        "a dashboard camera view of shoving on the road"
+    ],
+    "115 - corrugation": [
+        "a first-person POV video from a bicycle riding near corrugation",
+        "looking down at corrugation on the street from a bike",
+        "a dashboard camera view of corrugation on the road"
+    ],
+    "116 - bleeding": [
+        "a first-person POV video from a bicycle riding near bleeding",
+        "looking down at bleeding on the street from a bike",
+        "a dashboard camera view of bleeding on the road"
+    ],
+    "117 - polished_aggregate": [
+        "a first-person POV video from a bicycle riding near polished aggregate",
+        "looking down at polished aggregate on the street from a bike",
+        "a dashboard camera view of polished aggregate on the road"
+    ],
+    "118 - pumping": [
+        "a first-person POV video from a bicycle riding near pumping",
+        "looking down at pumping on the street from a bike",
+        "a dashboard camera view of pumping on the road"
+    ],
+    "119 - raveling": [
+        "a first-person POV video from a bicycle riding near raveling",
+        "looking down at raveling on the street from a bike",
+        "a dashboard camera view of raveling on the road"
+    ],
+    "120 - stripping": [
+        "a first-person POV video from a bicycle riding near stripping",
+        "looking down at stripping on the street from a bike",
+        "a dashboard camera view of stripping on the road"
+    ],
+    "121 - delamination": [
+        "a first-person POV video from a bicycle riding near delamination",
+        "looking down at delamination on the street from a bike",
+        "a dashboard camera view of delamination on the road"
+    ],
+    "122 - patch": [
+        "a first-person POV video from a bicycle riding near patch",
+        "looking down at patch on the street from a bike",
+        "a dashboard camera view of patch on the road"
+    ],
+    "123 - traverse_speed_bump": [
+        "a first-person POV video from a bicycle riding near traverse speed bump",
+        "looking down at traverse speed bump on the street from a bike",
+        "a dashboard camera view of traverse speed bump on the road"
+    ],
+    "124 - rubber_speed_bump": [
+        "a first-person POV video from a bicycle riding near rubber speed bump",
+        "looking down at rubber speed bump on the street from a bike",
+        "a dashboard camera view of rubber speed bump on the road"
+    ],
+    "125 - concrete_speed_bump": [
+        "a first-person POV video from a bicycle riding near concrete speed bump",
+        "looking down at concrete speed bump on the street from a bike",
+        "a dashboard camera view of concrete speed bump on the road"
+    ],
+    "126 - asphalt_speed_bump": [
+        "a first-person POV video from a bicycle riding near asphalt speed bump",
+        "looking down at asphalt speed bump on the street from a bike",
+        "a dashboard camera view of asphalt speed bump on the road"
+    ],
+    "127 - wide_speed_bump": [
+        "a first-person POV video from a bicycle riding near wide speed bump",
+        "looking down at wide speed bump on the street from a bike",
+        "a dashboard camera view of wide speed bump on the road"
+    ],
+    "128 - narrow_speed_bump": [
+        "a first-person POV video from a bicycle riding near narrow speed bump",
+        "looking down at narrow speed bump on the street from a bike",
+        "a dashboard camera view of narrow speed bump on the road"
+    ],
+    "129 - rumble_strips": [
+        "a first-person POV video from a bicycle riding near rumble strips",
+        "looking down at rumble strips on the street from a bike",
+        "a dashboard camera view of rumble strips on the road"
+    ],
+    "130 - speed_cushion": [
+        "a first-person POV video from a bicycle riding near speed cushion",
+        "looking down at speed cushion on the street from a bike",
+        "a dashboard camera view of speed cushion on the road"
+    ],
+    "131 - speed_table": [
+        "a first-person POV video from a bicycle riding near speed table",
+        "looking down at speed table on the street from a bike",
+        "a dashboard camera view of speed table on the road"
     ]
 }

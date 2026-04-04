@@ -275,6 +275,8 @@ function _runScript(scriptKey) {
       const customOutPath = document.getElementById('extractCustomOutPath') ? document.getElementById('extractCustomOutPath').value.trim() : "";
       const startTimeEl = document.getElementById('extractStartTime');
       const startTimeOverride = startTimeEl ? startTimeEl.value : "";
+      const fpsSelectEl = document.getElementById('extractFpsSelect');
+      const fpsValue = fpsSelectEl ? fpsSelectEl.value : "10";
       
       if (!extractVideoPathValue) {
         logToConsole("[WARN] Please select a video file to extract frames from.\n", true);
@@ -294,6 +296,7 @@ function _runScript(scriptKey) {
       }
     args.push('--video', videoPath);
     args.push('--out_dir', outDir);
+    args.push('--fps', fpsValue);
 
     if (startTimeOverride.trim() !== '') {
       args.push('--start_time', startTimeOverride.trim());

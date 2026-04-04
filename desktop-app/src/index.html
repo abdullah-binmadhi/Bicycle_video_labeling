@@ -392,9 +392,21 @@
                   </div>
                 </div>
 
-                <div class="flex flex-col md:col-span-2">
-                  <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2">Base UNIX Timestamp (Override)</label>
-                  <input type="text" placeholder="e.g. 1718614287.261" class="input input-md w-1/2 bg-black border-[#333] text-white font-mono text-sm" id="extractStartTime" />
+                <div class="flex flex-col">
+                  <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2">Target Frame Rate (FPS)</label>
+                  <select id="extractFpsSelect" class="select select-md w-full bg-black border-[#333] focus:border-blue-400 text-white font-mono text-sm">
+                    <option value="1">1 FPS</option>
+                    <option value="3">3 FPS</option>
+                    <option value="5" selected>5 FPS</option>
+                    <option value="10">10 FPS</option>
+                    <option value="30">30 FPS</option>
+                  </select>
+                  <p class="text-xs text-slate-500 mt-2">Frames extracted per second of video.</p>
+                </div>
+
+                <div class="flex flex-col">
+                  <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2">Base UNIX Time (Override)</label>
+                  <input type="text" placeholder="e.g. 1718614287.261" class="input input-md w-full bg-black border-[#333] focus:border-blue-400 text-white font-mono text-sm" id="extractStartTime" />
                   <p class="text-xs text-slate-500 mt-2">Required if the original filename is missing UNIX time metadata.</p>
                 </div>
             </div>

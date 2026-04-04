@@ -230,6 +230,39 @@ function runScript(scriptKey) {
   }
 }
 
+window.chooseSyncDir = async () => {
+  const { ipcRenderer } = require('electron');
+  const dir = await ipcRenderer.invoke('dialog:openDirectory');
+  if (dir) {
+    document.getElementById('syncDataPath').value = dir;
+  }
+};
+
+window.chooseAdhocImu = async () => {
+    const { ipcRenderer } = require('electron');
+    const file = await ipcRenderer.invoke('dialog:openCSV');
+    if (file) {
+      document.getElementById('adhocImuPath').value = file;
+    }
+};
+
+window.chooseAdhocLabel = async () => {
+    const { ipcRenderer } = require('electron');
+    const file = await ipcRenderer.invoke('dialog:openCSV');
+    if (file) {
+      document.getElementById('adhocLabelPath').value = file;
+    }
+};
+
+window.syncSyncPaths = () => {
+    const frames = document.getElementById('syncFramesPath').value;
+    const annoDir = document.getElementById('annoDirPath');
+    if (annoDir && !annoDir.value) {
+        annoDir.value = frames;
+        setDirectory();
+    }
+}
+
 function _runScript(scriptKey) {
   if (activeProcess) {
     logToConsole("[WARN] A process is already running. Please wait.\\n", true);
@@ -315,12 +348,15 @@ function _runScript(scriptKey) {
           args.push('--adhoc');
           const imu = document.getElementById('adhocImuPath').value.trim();
           const label = document.getElementById('adhocLabelPath').value.trim();
+          const frames = document.getElementById('syncFramesPath') ? document.getElementById('syncFramesPath').value.trim() : "";
+
           if (!imu || !label) {
               logToConsole("[WARN] Ad-Hoc sync requires both IMU and Label CSVs.\n", true);
               return;
           }
           args.push('--imu_csv', imu);
           args.push('--label_csv', label);
+          if (frames) args.push('--frames_dir', frames);
       }
 
       // 2. Tolerance Slider

@@ -701,13 +701,29 @@
                 <!-- Ad-Hoc Inputs -->
                 <div id="adhoc-sync-inputs" class="hidden flex flex-col gap-3 mt-4 animate-fade-in w-full">
                   <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-0 block">Upload Individual Files</label>
-                  <div class="join w-full">
-                    <button class="btn btn-sm join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600 w-24">IMU CSV</button>
-                    <input type="text" placeholder="e.g. Telemetry/IMU.csv" class="input input-sm join-item w-full bg-black border-[#333] text-white font-mono text-[10px]" id="adhocImuPath" />
+                  
+                  <div class="flex flex-col">
+                    <label class="text-[9px] uppercase tracking-widest text-slate-500 mb-1">1. Input Image Folder (Extracted)</label>
+                    <div class="join w-full shadow-inner mb-2">
+                        <button class="btn btn-xs h-8 join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600 px-3" onclick="chooseAnnoDir()">Choose Folder</button>
+                        <input type="text" placeholder="Select image folder..." class="input input-xs h-8 join-item w-full bg-black border-[#333] text-white font-mono text-[10px]" id="syncFramesPath" onchange="syncSyncPaths()" />
+                    </div>
                   </div>
-                  <div class="join w-full">
-                    <button class="btn btn-sm join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600 w-24">Label CSV</button>
-                    <input type="text" placeholder="e.g. VideoFrames/Label.0.csv" class="input input-sm join-item w-full bg-black border-[#333] text-white font-mono text-[10px]" id="adhocLabelPath" />
+
+                  <div class="flex flex-col">
+                    <label class="text-[9px] uppercase tracking-widest text-slate-500 mb-1">2. IMU Data (.csv)</label>
+                    <div class="join w-full mb-2">
+                      <button class="btn btn-xs h-8 join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600 px-3 w-24" onclick="chooseAdhocImu()">IMU CSV</button>
+                      <input type="text" placeholder="e.g. Telemetry/IMU.csv" class="input input-xs h-8 join-item w-full bg-black border-[#333] text-white font-mono text-[10px]" id="adhocImuPath" />
+                    </div>
+                  </div>
+
+                  <div class="flex flex-col">
+                    <label class="text-[9px] uppercase tracking-widest text-slate-500 mb-1">3. Auto Labels (.csv)</label>
+                    <div class="join w-full">
+                      <button class="btn btn-xs h-8 join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600 px-3 w-24" onclick="chooseAdhocLabel()">Label CSV</button>
+                      <input type="text" placeholder="e.g. VideoFrames/Label.0.csv" class="input input-xs h-8 join-item w-full bg-black border-[#333] text-white font-mono text-[10px]" id="adhocLabelPath" />
+                    </div>
                   </div>
                    <p class="text-[10px] text-slate-500 italic mt-1">Bypass global search. Directly merge two isolated tables.</p>
                 </div>

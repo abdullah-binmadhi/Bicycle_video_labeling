@@ -143,7 +143,7 @@ class DataSynchronizer:
             aux_sensors = {}
             for sensor, file_names in [
                 ("Gyroscope", ["Gyroscope.csv", "Gyroscope/Gyroscope.0.csv", "gyroscope/0.csv"]),
-                ("Label", ["Label.csv", "Label/Label.0.csv", "Label.0.csv", "clip/Label.0.csv"])
+                ("Label", ["Label.csv", "Label/Label.0.csv", "Label.0.csv", "clip/Label.0.csv", "csv and checkpoints/Label.0.csv"])
             ]:
                 for fn in file_names:
                     path = session_dir / fn
@@ -155,8 +155,12 @@ class DataSynchronizer:
 
         if (root_dir / "Accelerometer.csv").exists() or (root_dir / "Accelerometer" / "Accelerometer.0.csv").exists() or (root_dir / "accelerometer" / "0.csv").exists():
             df = process_dir_internal(root_dir)
-            if df is not None: all_dfs.append(df)
+            if df is not None: 
+                all_dfs.append(df)
+            else:
+                logging.error(f"Failed to process the root session directory: {root_dir}")
         else:
+            # Check for sub-folders (Legacy search)
             for platform in ['Android', 'iOS', 'Training', 'Validation', '']:
                 platform_dir = root_dir / platform if platform else root_dir
                 if not platform_dir.exists(): continue

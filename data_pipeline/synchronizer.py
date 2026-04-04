@@ -36,8 +36,24 @@ class DataSynchronizer:
         try:
             # Special handling for frames Label CSV which might have extra spaces/formatting
             if "Label.0.csv" in str(file_path):
-                # The frames Label CSV doesn't have a header and looks like frame_123.jpg,label,conf,x1,y1,x2,y2
-                df = pd.read_csv(file_path, header=None, names=["frame", "Label", "Conf", "X1", "Y1", "X2", "Y2"])
+                import io
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                
+                # The label CSV from Roboflow or some scripts exported \n as literal string characters
+                if r'\n' in content:
+                    content = content.replace(r'\n', '\n')
+                
+                df = pd.read_csv(io.StringIO(content))
+                
+                # If there's no 'frame' column, it implies the file had no header
+                if 'frame' not in df.columns:
+                    df = pd.read_csv(io.StringIO(content), header=None, names=["frame", "Label", "Conf", "X1", "Y1", "X2", "Y2"])
+                
+                # Standardize capitalization of the label column
+                if 'label' in df.columns and 'Label' not in df.columns:
+                    df.rename(columns={'label': 'Label'}, inplace=True)
+                
                 # Extract timestamp from frame name: frame_1718594185.997.jpg
                 def extract_timestamp(s):
                     try:
@@ -58,7 +74,8 @@ class DataSynchronizer:
                 if df[time_col].dtype == object:
                     # Clean up quoted strings like "2024-06-17, 10:51:27.2810"
                     df[time_col] = df[time_col].str.replace('"', '').str.strip()
-                    df[time_col] = pd.to_datetime(df[time_col], errors='coerce').view('int64') // 10**6
+                    # Use specialized format to match "2024-06-17, 10:51:27.2810"
+                    df[time_col] = pd.to_datetime(df[time_col], format='%Y-%m-%d, %H:%M:%S.%f', errors='coerce').astype('datetime64[ms]').astype('int64')
                 df[time_col] = df[time_col].astype('float64')
             
             df.dropna(subset=[time_col], inplace=True)
@@ -156,11 +173,21 @@ class DataSynchronizer:
 
         def process_dir_internal(session_dir: Path):
             session_id = session_dir.name
-            base_imu = session_dir / "Accelerometer.csv"
-            if not base_imu.exists(): base_imu = session_dir / "Accelerometer" / "Accelerometer.0.csv"
-            if not base_imu.exists(): base_imu = session_dir / "accelerometer" / "0.csv"
-            if not base_imu.exists(): return None
             
+            # 1. Base IMU check
+            base_imu = None
+            for cand in [
+                session_dir / "Accelerometer.csv",
+                session_dir / "Accelerometer" / "Accelerometer.0.csv",
+                session_dir / "accelerometer" / "0.csv"
+            ]:
+                if cand.exists():
+                    base_imu = cand
+                    break
+            
+            if not base_imu: return None
+            
+            # 2. Aux sensors check
             aux_sensors = {}
             for sensor, file_names in [
                 ("Gyroscope", ["Gyroscope.csv", "Gyroscope/Gyroscope.0.csv", "gyroscope/0.csv", "Gyroscope/0.csv"]),
@@ -172,29 +199,28 @@ class DataSynchronizer:
                         aux_sensors[sensor] = path
                         break
             
+            logging.info(f"Processing session: {session_id} in {session_dir}")
             return self.process_session(base_imu, aux_sensors, time_col, session_id=session_id)
 
-        if (root_dir / "Accelerometer.csv").exists() or (root_dir / "Accelerometer" / "Accelerometer.0.csv").exists() or (root_dir / "accelerometer" / "0.csv").exists():
-            df = process_dir_internal(root_dir)
-            if df is not None: 
-                all_dfs.append(df)
-            else:
-                logging.error(f"Failed to process the root session directory: {root_dir}")
-        else:
-            # Check for sub-folders (Legacy search)
-            # Recursively find any directory that contains an accelerometer/0.csv or similar
-            for session_dir in root_dir.rglob("*"):
-                if not session_dir.is_dir(): continue
-                
-                # Check if this directory looks like a session root
-                has_accel = (session_dir / "Accelerometer.csv").exists() or \
-                            (session_dir / "Accelerometer" / "Accelerometer.0.csv").exists() or \
-                            (session_dir / "accelerometer" / "0.csv").exists()
-                
-                if has_accel:
-                    logging.info(f"Found session directory: {session_dir}")
-                    df = process_dir_internal(session_dir)
-                    if df is not None: all_dfs.append(df)
+        # Main recursion
+        logging.info(f"Scanning {root_dir} recursively for session folders...")
+        
+        # We manually walk to find any folder containing an accelerometer file
+        for dirpath, dirnames, filenames in os.walk(root_dir):
+            current_dir = Path(dirpath)
+            
+            # Check if this folder or its immediate children look like a session root
+            is_session = (current_dir / "Accelerometer.csv").exists() or \
+                         (current_dir / "Accelerometer" / "Accelerometer.0.csv").exists() or \
+                         (current_dir / "accelerometer" / "0.csv").exists()
+            
+            if is_session:
+                # To prevent double-processing nested structures, we check if this is a primary session dir
+                df = process_dir_internal(current_dir)
+                if df is not None:
+                    all_dfs.append(df)
+                    # Once a session is found, we don't necessarily want to skip children 
+                    # (in case of nested sessions), but usually sessions are siblings.
         
         if not all_dfs:
             logging.error(f"No valid sessions found in {root_dir}!")

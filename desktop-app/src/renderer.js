@@ -665,6 +665,14 @@ function initThreeJS() {
     });
 }
 
+window.chooseInfLabel = async function() {
+  const { ipcRenderer } = require('electron');
+  const file = await ipcRenderer.invoke('dialog:openCSV');
+  if (file) {
+    document.getElementById('infLabelPath').value = file;
+  }
+};
+
 window.startAIOverlay = function() {
     const vidPathEl = document.getElementById('infVideoPath');
     if(!vidPathEl || !vidPathEl.value.trim()) {
@@ -713,6 +721,12 @@ window.startAIOverlay = function() {
     if(overlay) {
         overlay.classList.remove('scale-95', 'opacity-0');
         overlay.classList.add('scale-100', 'opacity-100');
+    }
+    
+    // Reveal Monitoring Dashboard
+    const dashboard = document.getElementById('inf-monitoring-dashboard');
+    if(dashboard) {
+        dashboard.classList.remove('hidden');
     }
     
     // Load Predictions
@@ -2133,6 +2147,7 @@ window.stopClipProcess = function() {
 }
 
 window.chooseResumeModel = async function() {
+  const { ipcRenderer } = require('electron');
   const file = await ipcRenderer.invoke('dialog:openModel');
   if (file) {
     document.getElementById('trainResumePath').value = file;

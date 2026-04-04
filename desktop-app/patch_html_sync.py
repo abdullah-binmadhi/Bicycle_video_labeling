@@ -17,7 +17,7 @@ if start_idx != -1 and end_idx != -1:
         <div id="view-sync" class="hidden-view flex flex-col gap-6 w-full max-w-4xl mx-auto pb-10">
           <div>
             <h2 class="text-3xl font-medium text-white tracking-tight">Temporal Alignment</h2>
-            <p class="text-[#888888] mt-1">Bind the 50Hz Accel/Gyro Streams mathematically to the high-confidence Visual predictions via native UTC timeline matching.</p>
+            <p class="text-[#888888] mt-1">Accurately align time-series data streams from different sensors using exact timestamp matching to generate a unified dataset.</p>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">

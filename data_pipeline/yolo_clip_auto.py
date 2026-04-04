@@ -4,7 +4,11 @@ import json
 import time
 import argparse
 import numpy as np
+import ssl
 from PIL import Image
+
+# Bypass SSL certificate verification for model downloads on macOS
+ssl._create_default_https_context = ssl._create_unverified_context
 
 try:
     from ultralytics import YOLOWorld

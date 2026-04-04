@@ -34,12 +34,33 @@ class DataSynchronizer:
         if not file_path.exists():
             return None
         try:
-            df = pd.read_csv(file_path)
-            if time_col not in df.columns:
-                return None
-            if df[time_col].dtype == object:
-                 df[time_col] = pd.to_datetime(df[time_col], errors='coerce').astype('int64') // 10**6
-            df[time_col] = df[time_col].astype('float64')
+            # Special handling for frames Label CSV which might have extra spaces/formatting
+            if "Label.0.csv" in str(file_path):
+                # The frames Label CSV doesn't have a header and looks like frame_123.jpg,label,conf,x1,y1,x2,y2
+                df = pd.read_csv(file_path, header=None, names=["frame", "Label", "Conf", "X1", "Y1", "X2", "Y2"])
+                # Extract timestamp from frame name: frame_1718594185.997.jpg
+                def extract_timestamp(s):
+                    try:
+                        # Find the part between 'frame_' and '.jpg'
+                        parts = str(s).split('frame_')
+                        if len(parts) > 1:
+                            ts_str = parts[1].split('.jpg')[0]
+                            return float(ts_str) * 1000.0 # Convert to ms
+                    except:
+                        pass
+                    return None
+                df[time_col] = df["frame"].apply(extract_timestamp)
+                df.dropna(subset=[time_col], inplace=True)
+            else:
+                df = pd.read_csv(file_path)
+                if time_col not in df.columns:
+                    return None
+                if df[time_col].dtype == object:
+                    # Clean up quoted strings like "2024-06-17, 10:51:27.2810"
+                    df[time_col] = df[time_col].str.replace('"', '').str.strip()
+                    df[time_col] = pd.to_datetime(df[time_col], errors='coerce').view('int64') // 10**6
+                df[time_col] = df[time_col].astype('float64')
+            
             df.dropna(subset=[time_col], inplace=True)
             df.sort_values(by=time_col, inplace=True)
             
@@ -142,8 +163,8 @@ class DataSynchronizer:
             
             aux_sensors = {}
             for sensor, file_names in [
-                ("Gyroscope", ["Gyroscope.csv", "Gyroscope/Gyroscope.0.csv", "gyroscope/0.csv"]),
-                ("Label", ["Label.csv", "Label/Label.0.csv", "Label.0.csv", "clip/Label.0.csv", "csv and checkpoints/Label.0.csv"])
+                ("Gyroscope", ["Gyroscope.csv", "Gyroscope/Gyroscope.0.csv", "gyroscope/0.csv", "Gyroscope/0.csv"]),
+                ("Label", ["Label.csv", "Label/Label.0.csv", "Label.0.csv", "clip/Label.0.csv", "csv and checkpoints/Label.0.csv", "Label/0.csv"])
             ]:
                 for fn in file_names:
                     path = session_dir / fn
@@ -161,16 +182,22 @@ class DataSynchronizer:
                 logging.error(f"Failed to process the root session directory: {root_dir}")
         else:
             # Check for sub-folders (Legacy search)
-            for platform in ['Android', 'iOS', 'Training', 'Validation', '']:
-                platform_dir = root_dir / platform if platform else root_dir
-                if not platform_dir.exists(): continue
-                for session_dir in platform_dir.iterdir():
-                    if not session_dir.is_dir() or session_dir == root_dir: continue 
+            # Recursively find any directory that contains an accelerometer/0.csv or similar
+            for session_dir in root_dir.rglob("*"):
+                if not session_dir.is_dir(): continue
+                
+                # Check if this directory looks like a session root
+                has_accel = (session_dir / "Accelerometer.csv").exists() or \
+                            (session_dir / "Accelerometer" / "Accelerometer.0.csv").exists() or \
+                            (session_dir / "accelerometer" / "0.csv").exists()
+                
+                if has_accel:
+                    logging.info(f"Found session directory: {session_dir}")
                     df = process_dir_internal(session_dir)
                     if df is not None: all_dfs.append(df)
         
         if not all_dfs:
-            logging.error("No valid sessions found to consolidate!")
+            logging.error(f"No valid sessions found in {root_dir}!")
             return None
 
         master_df = pd.concat(all_dfs, ignore_index=True)
@@ -179,8 +206,10 @@ class DataSynchronizer:
         print(f"SYNC_STATS:{json.dumps(self.stats)}")
         return output_path
         
-    def run_adhoc_session(self, imu_path: Path, label_path: Path, time_col: str = "NTP") -> Optional[Path]:
+    def run_adhoc_session(self, imu_path: Path, label_path: Path, frames_dir: Optional[Path] = None, time_col: str = "NTP") -> Optional[Path]:
         aux = {"Label": label_path}
+        # If frames_dir is provided, we might want to check for other sensors there
+        # but for AdHoc we usually just merge the two provided files.
         df = self.process_session(imu_path, aux, time_col, session_id="AdHoc")
         if df is None:
             logging.error("AdHoc merge failed or returned empty.")
@@ -196,6 +225,7 @@ if __name__ == "__main__":
     parser.add_argument("--adhoc", action="store_true", help="Run in ad-hoc solitary file mode")
     parser.add_argument("--imu_csv", type=str, help="Path to AdHoc IMU CSV", default="")
     parser.add_argument("--label_csv", type=str, help="Path to AdHoc Label CSV", default="")
+    parser.add_argument("--frames_dir", type=str, help="Path to Frames Folder", default="")
     parser.add_argument("--tolerance", type=int, help="Merge tolerance in ms", default=50)
     parser.add_argument("--gap_handling", type=str, choices=["ffill", "interpolate", "drop"], default="ffill")
     parser.add_argument("--apply_dsp", action="store_true", help="Apply quarter-car DSP filtering")
@@ -209,7 +239,8 @@ if __name__ == "__main__":
         if not args.imu_csv or not args.label_csv:
             logging.error("Missing --imu_csv or --label_csv for adhoc mode.")
             sys.exit(1)
-        output = synchronizer.run_adhoc_session(Path(args.imu_csv), Path(args.label_csv))
+        output = synchronizer.run_adhoc_session(Path(args.imu_csv), Path(args.label_csv), 
+                                              frames_dir=Path(args.frames_dir) if args.frames_dir else None)
     else:
         bicycle_data_dir = Path(args.data_dir) if args.data_dir else Path("/Users/abdullahbinmadhi/Desktop/Bicycle ML/Project Surface Detection/BicycleData")
         if not bicycle_data_dir.exists():

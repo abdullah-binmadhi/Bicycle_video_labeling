@@ -16,8 +16,18 @@ logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s', st
 class DataSynchronizer:
     def __init__(self, config: FrameworkConfig, args=None):
         self.config = config
-        self.base_dir = Path(config.data_paths.sensor_data_dir)
-        self.processed_dir = Path(config.data_paths.processed_dir)
+        
+        # Resolve paths relative to the project root (where this app actually lives)
+        project_root = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        
+        self.base_dir = project_root / Path(config.data_paths.sensor_data_dir)
+        
+        # Override processed_dir if passed via args
+        if args and getattr(args, "output_dir", None):
+            self.processed_dir = Path(args.output_dir)
+        else:
+            self.processed_dir = project_root / Path(config.data_paths.processed_dir)
+            
         self.processed_dir.mkdir(parents=True, exist_ok=True)
         
         self.tolerance_ms = int(getattr(args, "tolerance", 50)) if args else 50
@@ -54,15 +64,20 @@ class DataSynchronizer:
                 if 'label' in df.columns and 'Label' not in df.columns:
                     df.rename(columns={'label': 'Label'}, inplace=True)
                 
-                # Extract timestamp from frame name: frame_1718594185.997.jpg
+                # Extract timestamp from frame name (robustly)
                 def extract_timestamp(s):
+                    import re
                     try:
-                        # Find the part between 'frame_' and '.jpg'
-                        parts = str(s).split('frame_')
-                        if len(parts) > 1:
-                            ts_str = parts[1].split('.jpg')[0]
-                            return float(ts_str) * 1000.0 # Convert to ms
-                    except:
+                        s_str = str(s)
+                        # Try to grab the first sequence of numbers (with optional decimal point)
+                        match = re.search(r'(\d{10,13}(?:\.\d+)?)', s_str)
+                        if match:
+                            ts_float = float(match.group(1))
+                            # Ensure it's in milliseconds
+                            if ts_float < 1e11: # Looks like seconds
+                                return ts_float * 1000.0
+                            return ts_float # Already ms
+                    except Exception:
                         pass
                     return None
                 df[time_col] = df["frame"].apply(extract_timestamp)
@@ -96,6 +111,22 @@ class DataSynchronizer:
 
     def merge_streams(self, base_df: pd.DataFrame, aux_df: pd.DataFrame, time_col: str = "NTP", tolerance_ms: int = 50, direction: str = "backward") -> pd.DataFrame:
         try:
+            # Auto-detect massive timezone-like shifts between base and aux timestamps!
+            if len(base_df) > 0 and len(aux_df) > 0:
+                base_start = base_df[time_col].min()
+                aux_start = aux_df[time_col].min()
+                diff_ms = base_start - aux_start
+                # If difference is exactly in chunks of whole hours (3600000 ms), apply timezone offset
+                if abs(diff_ms) >= 3600000:
+                    hours_diff = round(diff_ms / 3600000)
+                    remainder = abs(diff_ms - (hours_diff * 3600000))
+                    # Allow up to 10 seconds of natural drift between streams before asserting it's a TZ bug
+                    if remainder < 10000: 
+                        tz_shift = hours_diff * 3600000
+                        logging.info(f"Auto-correcting timezone offset discrepancy of {hours_diff} hours between streams.")
+                        aux_df = aux_df.copy()
+                        aux_df[time_col] = aux_df[time_col] + tz_shift
+                        
             return pd.merge_asof(base_df, aux_df, on=time_col, tolerance=tolerance_ms, direction=direction)
         except pd.errors.MergeError as e:
             return base_df
@@ -259,6 +290,7 @@ if __name__ == "__main__":
     parser.add_argument("--tolerance", type=int, help="Merge tolerance in ms", default=50)
     parser.add_argument("--gap_handling", type=str, choices=["ffill", "interpolate", "drop"], default="ffill")
     parser.add_argument("--apply_dsp", action="store_true", help="Apply quarter-car DSP filtering")
+    parser.add_argument("--output_dir", type=str, help="Output directory to save the merged csv", default=None)
     args = parser.parse_args()
 
     config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config.yaml")

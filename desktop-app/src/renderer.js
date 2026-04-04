@@ -238,6 +238,22 @@ window.chooseSyncDir = async () => {
   }
 };
 
+window.chooseSyncOut = async () => {
+  const { ipcRenderer } = require('electron');
+  const dir = await ipcRenderer.invoke('dialog:openDirectory');
+  if (dir) {
+    document.getElementById('syncCustomOutPath').value = dir;
+  }
+};
+
+window.chooseTrainOut = async () => {
+  const { ipcRenderer } = require('electron');
+  const dir = await ipcRenderer.invoke('dialog:openDirectory');
+  if (dir) {
+    document.getElementById('trainCustomOutPath').value = dir;
+  }
+};
+
 window.chooseAdhocImu = async () => {
     const { ipcRenderer } = require('electron');
     const file = await ipcRenderer.invoke('dialog:openCSV');
@@ -378,6 +394,10 @@ function _runScript(scriptKey) {
       document.getElementById('sync-stat-rows').innerText = "0";
       document.getElementById('sync-stat-drops').innerText = "0%";
       document.getElementById('sync-stat-classes').innerHTML = "";
+
+      // Custom Output Directory
+      const syncOut = document.getElementById('syncCustomOutPath') ? document.getElementById('syncCustomOutPath').value.trim() : "";
+      if (syncOut) args.push('--output_dir', syncOut);
   }
 
     if (scriptKey === 'train') {
@@ -391,14 +411,16 @@ function _runScript(scriptKey) {
         const lr = document.getElementById('train-lr')?.value;
         const batch = document.getElementById('train-batch')?.value;
         const checkpoint = document.getElementById('trainResumePath')?.value;
+        const trainOut = document.getElementById('trainCustomOutPath') ? document.getElementById('trainCustomOutPath').value.trim() : "";
 
-        args.push('--use_vision', useVision ? 'True' : 'False');
-        args.push('--use_imu', useImu ? 'True' : 'False');
+        if (useVision) args.push('--use_vision');
+        if (useImu) args.push('--use_imu');
         
         if (epochs) args.push('--epochs', epochs);
         if (lr) args.push('--lr', lr);
         if (batch) args.push('--batch_size', batch);
         if (checkpoint) args.push('--checkpoint', checkpoint);
+        if (trainOut) args.push('--output_dir', trainOut);
 
         const stopBtn = document.getElementById('btn-train-stop');
         if (stopBtn) stopBtn.classList.remove('hidden');

@@ -673,6 +673,15 @@
             <p class="text-[#888888] mt-1">Accurately align time-series data streams from different sensors using exact timestamp matching to generate a unified dataset.</p>
           </div>
 
+          <!-- Custom Output Directory for Sync -->
+          <div class="border border-[#222] bg-[#0c0c0c] p-6 shadow-xl w-full">
+              <h3 class="text-xs uppercase tracking-widest font-medium text-emerald-400 mb-2">Synchronization Output Directory</h3>
+              <div class="flex gap-2">
+                  <button class="btn btn-sm bg-emerald-700 hover:bg-emerald-600 border-0 text-white rounded-none px-6" onclick="chooseSyncOut()">Browse...</button>
+                  <input type="text" id="syncCustomOutPath" placeholder="Default: Same as Processed Data..." readonly class="input input-sm border-[#333] border bg-black text-white w-full rounded-none font-mono text-[10px] placeholder:text-neutral-600" />
+              </div>
+          </div>
+
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
             <!-- Global / Ad-Hoc Sync Settings -->
             <div class="border border-[#222] bg-[#0c0c0c] p-6 flex flex-col items-start gap-4 shadow-xl">
@@ -797,11 +806,24 @@
 
         <!-- View: Training -->
         <div id="view-train" class="hidden-view flex flex-col gap-6 w-full max-w-4xl mx-auto pb-10">
+          <div>
+              <h2 class="text-3xl font-medium text-white tracking-tight">Transformer Training</h2>
+              <p class="text-[#888888] mt-1">Initialize the PyTorch Engine. Gradients are dynamically tracked.</p>
+          </div>
+
+          <!-- Custom Output Directory for Train -->
+          <div class="border border-[#222] bg-[#0c0c0c] p-6 shadow-xl w-full">
+              <h3 class="text-xs uppercase tracking-widest font-medium text-rose-400 mb-2">Model Save Directory</h3>
+              <p class="text-[10px] text-slate-500 mb-2">Select where 'best_model.pth' and 'metrics.json' will be saved.</p>
+              <div class="flex gap-2">
+                  <button class="btn btn-sm bg-rose-700 hover:bg-rose-600 border-0 text-white rounded-none px-6" onclick="chooseTrainOut()">Browse...</button>
+                  <input type="text" id="trainCustomOutPath" placeholder="Default: Context Checkpoints Folder..." readonly class="input input-sm border-[#333] border bg-black text-white w-full rounded-none font-mono text-[10px] placeholder:text-neutral-600" />
+              </div>
+          </div>
+
           <div class="flex justify-between items-end mb-2">
             <div class="flex-1">
-              <h2 class="text-3xl font-medium text-white tracking-tight">Transformer Training</h2>
-              <div class="flex flex-col gap-2 mt-2 w-full">
-                  <p class="text-[#888888]">Initialize the PyTorch Engine. Gradients are dynamically tracked.</p>
+              <div class="flex flex-col gap-2 w-full">
                   
                   <!-- Checkpoint Select & Resume -->
                   <div class="flex flex-col gap-2 mt-4 w-max">

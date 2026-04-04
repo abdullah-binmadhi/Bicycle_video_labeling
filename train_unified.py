@@ -108,6 +108,7 @@ def main():
     parser.add_argument("--checkpoint", type=str, help="Path to a .pth checkpoint to resume from", default="")
     parser.add_argument("--use_vision", action="store_true", help="Enable vision parameters")
     parser.add_argument("--use_imu", action="store_true", help="Enable IMU parameters")
+    parser.add_argument("--output_dir", type=str, help="Output directory to save checkpoints", default="checkpoints")
     args = parser.parse_args()
 
     # 1. Load Configurations
@@ -173,7 +174,14 @@ def main():
     # 5. Execute Epochs
     best_val_loss = float('inf')
     num_epochs = cfg.hyperparameters.epochs
-    checkpoint_dir = Path("checkpoints")
+    
+    if args.output_dir == "checkpoints":
+        checkpoint_dir = Path("checkpoints")
+    elif args.output_dir.endswith("checkpoints"):
+        checkpoint_dir = Path(args.output_dir)
+    else:
+        checkpoint_dir = Path(args.output_dir) / "checkpoints"
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
     
     logging.info("Starting robust training loop...")
     for epoch in range(start_epoch, num_epochs):
@@ -187,7 +195,11 @@ def main():
         # Calculate specialized metrics
         acc = accuracy_score(all_targets, all_preds)
         f1 = f1_score(all_targets, all_preds, average='weighted', zero_division=0)
-        cm = confusion_matrix(all_targets, all_preds).tolist()
+        import warnings
+        from sklearn.exceptions import UndefinedMetricWarning
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=UserWarning)
+            cm = confusion_matrix(all_targets, all_preds).tolist()
         
         metrics_dict = {
             'epoch': epoch + 1,
@@ -202,6 +214,9 @@ def main():
         is_best = val_loss < best_val_loss
         if is_best:
             best_val_loss = val_loss
+            
+            # Ensure the directory exists before saving metrics
+            checkpoint_dir.mkdir(parents=True, exist_ok=True)
             
             # Export metrics.json only on best validation
             with open(checkpoint_dir / 'metrics.json', 'w') as f:

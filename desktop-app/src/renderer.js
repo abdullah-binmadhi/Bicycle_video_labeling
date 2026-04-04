@@ -673,6 +673,183 @@ window.chooseInfLabel = async function() {
   }
 };
 
+let liveImuChart = null;
+let liveRadarChart = null;
+let spectrogramCtx = null;
+let vectorBallCtx = null;
+let spectrogramData = Array.from({length: 80}, () => Array(25).fill(0));
+let mapMarker = null;
+
+window.initLiveDashboard = function() {
+    // 1. Live IMU Scrubbing
+    const imuCanvas = document.getElementById('inf-imu-chart');
+    if (imuCanvas && !liveImuChart) {
+        // We defer to window.Chart (it should be loaded in HTML)
+        liveImuChart = new Chart(imuCanvas, {
+            type: 'line',
+            data: {
+                labels: Array(50).fill(''),
+                datasets: [
+                    { label: 'Accel X', data: Array(50).fill(0), borderColor: '#10b981', borderWidth: 1, tension: 0.1, pointRadius: 0 },
+                    { label: 'Accel Y', data: Array(50).fill(0), borderColor: '#3b82f6', borderWidth: 1, tension: 0.1, pointRadius: 0 },
+                    { label: 'Accel Z', data: Array(50).fill(0), borderColor: '#f43f5e', borderWidth: 1, tension: 0.1, pointRadius: 0 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x: { display: false }, y: { display: true, min: -20, max: 20 } }, plugins: { legend: { display: false } } }
+        });
+    }
+
+    // 2. Radar Chart
+    const radarCanvas = document.getElementById('inf-radar-chart');
+    if (radarCanvas && !liveRadarChart) {
+        liveRadarChart = new Chart(radarCanvas, {
+            type: 'radar',
+            data: {
+                labels: ['Asphalt', 'Gravel', 'Cobblestone', 'Grass', 'Pothole', 'SpeedBump', 'Braking', 'Turning', 'Wet', 'Sand'],
+                datasets: [{
+                    label: 'Confidence',
+                    data: Array(10).fill(10),
+                    backgroundColor: 'rgba(168, 85, 247, 0.2)',
+                    borderColor: '#a855f7',
+                    pointBackgroundColor: '#a855f7',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#a855f7'
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, animation: { duration: 150 },
+                scales: { r: { min: 0, max: 100, ticks: { display: false }, grid: { color: '#333' }, angleLines: { color: '#333' }, pointLabels: { color: '#888', font: { size: 9 } } } },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    // 3. FFT Spectrogram Setup
+    const specCanvas = document.getElementById('inf-spectrogram-canvas');
+    if (specCanvas) {
+        specCanvas.width = specCanvas.offsetWidth || 400;
+        specCanvas.height = specCanvas.offsetHeight || 150;
+        spectrogramCtx = specCanvas.getContext('2d');
+    }
+
+    // 4. Vector Ball Setup
+    const vectorCanvas = document.getElementById('inf-vector-ball-canvas');
+    if (vectorCanvas) {
+        vectorCanvas.width = vectorCanvas.offsetWidth || 200;
+        vectorCanvas.height = vectorCanvas.offsetHeight || 128;
+        vectorBallCtx = vectorCanvas.getContext('2d');
+    }
+}
+
+window.updateLiveDashboard = function(pred, time) {
+    if (!pred) return;
+    
+    let variance = pred.variance_metric || 0.5;
+    let mainSurface = pred.surface || "";
+    let conf = pred.confidence || 100;
+
+    // 1. Update IMU Chart (simulate noisy sine waves scaled by variance)
+    if (liveImuChart) {
+        liveImuChart.data.datasets.forEach((dataset, idx) => {
+            dataset.data.shift(); // remove first
+            let noise = (Math.random() - 0.5) * variance * (idx + 2) * 5;
+            let val = Math.sin(time * 10 + idx) * (variance) + noise;
+            val = Math.max(-20, Math.min(20, val));
+            dataset.data.push(val);
+        });
+        liveImuChart.update();
+    }
+
+    // 2. Update Radar (spike the correct class)
+    if (liveRadarChart) {
+        const labels = liveRadarChart.data.labels;
+        let newData = labels.map((l) => {
+            if (mainSurface.includes(l) || l.includes(mainSurface.split(' ')[0])) {
+                return conf;
+            }
+            return Math.random() * 20; // Background noise probabilities
+        });
+        liveRadarChart.data.datasets[0].data = newData;
+        liveRadarChart.update();
+    }
+
+    // 3. Update Spectrogram Waterfall
+    if (spectrogramCtx) {
+        const w = spectrogramCtx.canvas.width;
+        const h = spectrogramCtx.canvas.height;
+        spectrogramData.shift();
+        let newCol = Array(25).fill(0).map((_, i) => Math.random() * variance * (25 - i) / 5);
+        spectrogramData.push(newCol);
+        
+        spectrogramCtx.clearRect(0, 0, w, h);
+        const colW = w / 80;
+        const rowH = h / 25;
+        for (let x = 0; x < 80; x++) {
+            for (let y = 0; y < 25; y++) {
+                let val = spectrogramData[x][y];
+                // Jet colormap logic
+                let r = Math.min(255, val * 10);
+                let g = Math.min(255, val * 30);
+                let b = Math.max(0, 255 - val * 10);
+                spectrogramCtx.fillStyle = `rgb(${r},${g},${b})`;
+                spectrogramCtx.fillRect(x * colW, h - (y * rowH) - rowH, colW+1, rowH+1); // +1 fixes gaps
+            }
+        }
+    }
+
+    // 4. Update Vector Ball
+    if (vectorBallCtx) {
+        const w = vectorBallCtx.canvas.width;
+        const h = vectorBallCtx.canvas.height;
+        const cx = w / 2; const cy = h / 2;
+        vectorBallCtx.clearRect(0, 0, w, h);
+        
+        // Radar Crosshairs
+        vectorBallCtx.strokeStyle = '#333';
+        vectorBallCtx.beginPath();
+        vectorBallCtx.moveTo(cx, 0); vectorBallCtx.lineTo(cx, h);
+        vectorBallCtx.moveTo(0, cy); vectorBallCtx.lineTo(w, cy);
+        vectorBallCtx.stroke();
+        vectorBallCtx.beginPath(); vectorBallCtx.arc(cx, cy, h/3, 0, 2*Math.PI); vectorBallCtx.stroke();
+
+        let dx = (Math.random() - 0.5) * variance * 15;
+        let dy = (Math.random() - 0.5) * variance * 15;
+        
+        vectorBallCtx.beginPath();
+        vectorBallCtx.arc(cx + dx, cy + dy, 8, 0, 2 * Math.PI);
+        vectorBallCtx.fillStyle = '#f43f5e';
+        vectorBallCtx.shadowBlur = 10; vectorBallCtx.shadowColor = '#f43f5e';
+        vectorBallCtx.fill(); 
+        vectorBallCtx.shadowBlur = 0;
+    }
+
+    // 5. Update Severity Spike ProgressBar
+    const sevBar = document.getElementById('inf-severity-bar');
+    if (sevBar) {
+        let pct = Math.min(100, (variance / 8.0) * 100);
+        sevBar.style.width = pct + '%';
+        sevBar.style.backgroundColor = pct > 60 ? '#ef4444' : (pct > 30 ? '#f59e0b' : '#10b981');
+    }
+    
+    // 6. Update Map Marker
+    if (typeof infMap !== 'undefined' && infMap && window.infLatlngs) {
+        if (!mapMarker && window.infLatlngs.length > 0) {
+            mapMarker = L.circleMarker(window.infLatlngs[0], {color: '#000', fillColor: '#3b82f6', fillOpacity: 1, radius: 6, weight: 2}).addTo(infMap);
+        }
+        if (mapMarker) {
+            const vid = document.getElementById('inf-video');
+            if (vid && vid.duration) {
+                let progress = time / vid.duration;
+                let idx = Math.floor(progress * (window.infLatlngs.length - 1));
+                idx = Math.max(0, Math.min(window.infLatlngs.length - 1, idx));
+                mapMarker.setLatLng(window.infLatlngs[idx]);
+                infMap.panTo(window.infLatlngs[idx], {animate: true, duration: 0.1});
+            }
+        }
+    }
+}
+
 window.startAIOverlay = function() {
     const vidPathEl = document.getElementById('infVideoPath');
     if(!vidPathEl || !vidPathEl.value.trim()) {
@@ -701,12 +878,14 @@ window.startAIOverlay = function() {
             const startLng = 13.4050;
             const latlngs = [];
             let curl = startLat, curlg = startLng;
-            for(let i=0; i<50; i++) {
+            for(let i=0; i<150; i++) {
                 latlngs.push([curl, curlg]);
-                curl += (Math.random() - 0.5) * 0.001;
-                curlg += (Math.random() - 0.5) * 0.001;
+                // Smoother route pathing
+                curl += (Math.sin(i*0.1) - 0.5) * 0.0005;
+                curlg += (Math.cos(i*0.2) + 0.5) * 0.0005;
             }
-            L.polyline(latlngs, {color: '#10b981', weight: 4}).addTo(infMap);
+            window.infLatlngs = latlngs;
+            L.polyline(latlngs, {color: '#94a3b8', weight: 4, dashArray: '4, 6'}).addTo(infMap);
             infMap.fitBounds(L.latLngBounds(latlngs));
             setTimeout(() => infMap.invalidateSize(), 500);
         }
@@ -727,6 +906,7 @@ window.startAIOverlay = function() {
     const dashboard = document.getElementById('inf-monitoring-dashboard');
     if(dashboard) {
         dashboard.classList.remove('hidden');
+        setTimeout(window.initLiveDashboard, 300); // Give CSS max bounds time to apply before initing charts
     }
     
     // Load Predictions
@@ -749,6 +929,7 @@ window.startAIOverlay = function() {
            const currentPred = predictions.find(p => p.timestamp <= currentTime && (p.timestamp + 1) > currentTime);
            
            if(currentPred) {
+               window.updateLiveDashboard(currentPred, currentTime);
                label.innerText = currentPred.surface.toUpperCase();
                if(currentPred.surface.includes("Asphalt")) label.className = "text-2xl font-black tracking-widest text-emerald-400 switch-anim";
                else if(currentPred.surface.includes("Grass")) label.className = "text-2xl font-black tracking-widest text-warning switch-anim";

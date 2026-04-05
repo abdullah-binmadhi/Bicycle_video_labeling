@@ -200,7 +200,7 @@ def main():
         from sklearn.exceptions import UndefinedMetricWarning
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=UserWarning)
-            cm = confusion_matrix(all_targets, all_preds).tolist()
+            cm = confusion_matrix(all_targets, all_preds, labels=list(range(cfg.model_settings.num_classes))).tolist()
         
         history['epochs'].append(epoch + 1)
         history['train_loss'].append(train_loss)

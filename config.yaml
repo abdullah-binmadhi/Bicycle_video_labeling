@@ -29,4 +29,4 @@ model_settings:
   # Sensor-specific architectural settings
   # E.g., Accel (3) + Gyro (3) = 6 features
   imu_features: 6 
-  num_classes: 3  # Target classes: e.g., smooth_road, rough_road, pothole
+  num_classes: 7  # Target classes: asphalt, gravel, cobblestone, pothole, speed_bump, bicycle_lane, rail_tracks

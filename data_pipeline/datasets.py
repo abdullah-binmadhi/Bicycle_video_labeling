@@ -204,13 +204,34 @@ class MultimodalRoadDataset(Dataset):
         # 3. Load Target Label (Standard assumes the final step of the window dictates the label)
         raw_label = window_df.iloc[-1][self.label_col]
         
-        # CycleSafe: Labels might be string text (e.g., 'pedaling', 'coasting'). 
-        # Need a safe fallback to generic int mapping if strings are present.
+        # CycleSafe: Labels might be string text (e.g., '134 - asphalt', '8 - gravel', 'unlabeled'). 
+        # Need a robust mapping to standard integers for classification.
         if isinstance(raw_label, str):
-             # Placeholder map, you'll need the exact string names from Label.csv
-             label_map = {'pedaling': 0, 'coasting': 1, 'braking': 2}
-             # Default to 0 if unknown to prevent crashes
-             raw_label = label_map.get(raw_label.lower().strip(), 0) 
+            clean_label = raw_label.lower().strip()
+            
+            # Auto-detect label taxonomy dynamically or fallback to rigorous rules
+            class_map = {
+                'asphalt': 0, '134 - asphalt': 0,
+                'gravel': 1, '8 - gravel': 1,
+                'cobblestone': 2, '19 - cobblestone': 2,
+                'potholes': 3, '1 - potholes': 3, 'pothole': 3,
+                'speed_bump': 4, '5 - speed_bump': 4, 'speed bump': 4,
+                'bicycle_lane': 5, '133 - bicycle_lane': 5, 'bicycle lane': 5,
+                'rail_tracks': 6, '18 - rail_tracks': 6, 'rail tracks': 6,
+                'unlabeled': 0  # Map unlabeled to background/asphalt class default
+            }
+            
+            # Check if it matches any explicitly known key
+            if clean_label in class_map:
+                raw_label = class_map[clean_label]
+            else:
+                # Provide a generic fallback that searches string keys safely
+                matched_idx = 0
+                for k, v in class_map.items():
+                    if k in clean_label:
+                        matched_idx = v
+                        break
+                raw_label = matched_idx
              
         # Treat as classification index
         sample['label'] = torch.tensor(int(raw_label), dtype=torch.long)

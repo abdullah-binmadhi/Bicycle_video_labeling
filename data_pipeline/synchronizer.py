@@ -136,7 +136,11 @@ class DataSynchronizer:
             for col in discrete_cols:
                 if col in df.columns: df[col] = df[col].ffill(limit=50)
             for col in continuous_cols:
-                if col in df.columns: df[col] = df[col].interpolate(method='linear', limit=5, limit_direction='both')
+                if col in df.columns:
+                    if col in ['Latitude', 'Longitude', 'Speed']:
+                        df[col] = df[col].interpolate(method='linear', limit=100, limit_direction='both')
+                    else:
+                        df[col] = df[col].interpolate(method='linear', limit=5, limit_direction='both')
         elif self.gap_handling == 'interpolate':
             # interpolate discrete? Fallback to ffill for discrete, but heavily interpolate continuous
             for col in discrete_cols:
@@ -161,7 +165,7 @@ class DataSynchronizer:
             if aux_df is not None and not aux_df.empty:
                 master_df = self.merge_streams(master_df, aux_df, time_col, tolerance_ms=self.tolerance_ms, direction="nearest")
 
-        continuous = ['Acc-X', 'Acc-Y', 'Acc-Z', 'Gyr-X', 'Gyr-Y', 'Gyr-Z']
+        continuous = ['Acc-X', 'Acc-Y', 'Acc-Z', 'Gyr-X', 'Gyr-Y', 'Gyr-Z', 'Latitude', 'Longitude', 'Speed']
         discrete   = ['Label']
         master_df = self.handle_missing_data(master_df, continuous_cols=continuous, discrete_cols=discrete)
 
@@ -225,6 +229,7 @@ class DataSynchronizer:
             # 2. Aux sensors check
             aux_sensors = {}
             for sensor, file_names in [
+                ("GNSS", ["GNSS.csv", "GNSS/GNSS.0.csv", "GNSS/0.csv"]),
                 ("Gyroscope", ["Gyroscope.csv", "Gyroscope/Gyroscope.0.csv", "gyroscope/0.csv", "Gyroscope/0.csv"]),
                 ("Label", ["Label.csv", "Label/Label.0.csv", "Label.0.csv", "clip/Label.0.csv", "csv and checkpoints/Label.0.csv", "Label/0.csv"])
             ]:
@@ -269,6 +274,24 @@ class DataSynchronizer:
         
     def run_adhoc_session(self, imu_path: Path, label_path: Path, frames_dir: Optional[Path] = None, time_col: str = "NTP") -> Optional[Path]:
         aux = {"Label": label_path}
+        
+        # If the user selected an accelerometer or IMU file inside a session folder, intelligently grab GNSS & Gyro
+        session_dir = imu_path.parent.parent
+        
+        # Auto-inject GNSS for Mapping Telemetry!
+        gnss_candidate = session_dir / "GNSS" / imu_path.name
+        if gnss_candidate.exists():
+            logging.info(f"Auto-detected GNSS file at {gnss_candidate}.")
+            aux["GNSS"] = gnss_candidate
+        elif (imu_path.parent / "GNSS.csv").exists():
+            aux["GNSS"] = imu_path.parent / "GNSS.csv"
+            
+        # Auto-inject Gyroscope for 6DoF Deep Learning stability
+        gyro_candidate = session_dir / "gyroscope" / imu_path.name
+        if gyro_candidate.exists() and 'gyro' not in imu_path.name.lower():
+            logging.info(f"Auto-detected Gyro file at {gyro_candidate}.")
+            aux["Gyroscope"] = gyro_candidate
+            
         # If frames_dir is provided, we might want to check for other sensors there
         # but for AdHoc we usually just merge the two provided files.
         df = self.process_session(imu_path, aux, time_col, session_id="AdHoc")

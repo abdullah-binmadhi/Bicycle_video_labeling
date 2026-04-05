@@ -41,8 +41,11 @@ class TwoStageAnnotator:
         
         # Inject the custom target vocabulary into YOLO
         self.target_classes = target_classes
-        self.yolo.set_classes(self.target_classes)
-        print(f"[System] YOLO-World active with vocabulary: {self.target_classes}")
+        
+        # Clean target classes for YOLO's zero-shot NLP engine (e.g. "133 - bicycle_lane" -> "bicycle lane")
+        self.yolo_classes = [re.sub(r'^\d+\s*-\s*', '', c).replace('_', ' ') for c in self.target_classes]
+        self.yolo.set_classes(self.yolo_classes)
+        print(f"[System] YOLO-World active with NLP vocabulary: {self.yolo_classes}")
         
         self.use_clip = use_clip
         if self.use_clip:
@@ -52,7 +55,7 @@ class TwoStageAnnotator:
             self.clip_model = CLIPModel.from_pretrained(model_id).to(self.device)
             # Create highly descriptive prompt branches for the CLIP evaluator
             self.clip_prompts = [
-                f"a close up photo of {c}" for c in self.target_classes
+                f"a close up photo of {c}" for c in self.yolo_classes
             ]
             print(f"[System] CLIP Prompts loaded: {self.clip_prompts}")
 

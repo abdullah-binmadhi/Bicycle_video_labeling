@@ -46,18 +46,21 @@ class ZeroShotAnnotator:
         self.model = CLIPModel.from_pretrained(model_id).to(self.device)
         self.processor = CLIPProcessor.from_pretrained(model_id)
 
-        # Map exactly to num_classes=3 in config.yaml, 
+        # Map exactly to num_classes in config.yaml, 
         # using highly descriptive text for CLIP to understand the image context.
         self.class_prompts = [
             "A point of view photo from a bicycle riding on smooth black asphalt or concrete street.",
             "A point of view photo from a bicycle riding on rough cobblestone or bumpy brick road.",
-            "A point of view photo from a bicycle riding on a loose dirt, sand, or gravel path."
+            "A point of view photo from a bicycle riding on a loose dirt, sand, or gravel path.",
+            "A point of view photo from a bicycle looking at a pothole or cracked road surface.",
+            "A point of view photo from a bicycle riding over a raised speed bump or speed hump.",
+            "A point of view photo showing a dedicated bicycle lane or bike path on the street."
         ]
         
         # The shorthand label strings mapped to our prompts
-        self.class_labels = ["asphalt", "cobblestone", "dirt_gravel"]
+        self.class_labels = ["asphalt", "cobblestone", "dirt_gravel", "pothole", "speed_bump", "bicycle_lane"]
 
-    def annotate_session(self, frames_dir: Path, output_csv: Path) -> pd.DataFrame:
+    def annotate_session(self, frames_dir: Path, output_csv: Path, max_frames: int = None, save_frames: bool = True) -> pd.DataFrame:
         """
         Runs CLIP inference on all images in a directory. We expect filenames to 
         contain the UNIX timestamp (e.g., 'frame_1688123456789.jpg').
@@ -66,11 +69,17 @@ class ZeroShotAnnotator:
             logging.error(f"Frames directory {frames_dir} not found.")
             return None
 
-        # Gather all images
-        image_files = [f for f in frames_dir.iterdir() if f.suffix.lower() in ['.jpg', '.jpeg', '.png']]
+        # Gather all images and sort them chronologically
+        image_files = sorted([f for f in frames_dir.iterdir() if f.suffix.lower() in ['.jpg', '.jpeg', '.png']])
         if not image_files:
             logging.warning(f"No images found in {frames_dir}")
             return None
+
+        # --- SUBSAMPLING ---
+        if max_frames and max_frames > 0 and max_frames < len(image_files):
+            step = len(image_files) / max_frames
+            image_files = [image_files[int(i * step)] for i in range(max_frames)]
+            logging.info(f"Subsampled dataset down to {max_frames} frames (evenly spaced).")
 
         results = []
         
@@ -99,7 +108,8 @@ class ZeroShotAnnotator:
                 results.append({
                     "NTP": timestamp,
                     "Label_Raw": best_label,
-                    "Confidence": probs[0][best_class_idx]
+                    "Confidence": probs[0][best_class_idx],
+                    "img_path": img_path
                 })
 
             except Exception as e:
@@ -131,6 +141,18 @@ class ZeroShotAnnotator:
         
         # Map back to string format required by synchronizer
         df['Label'] = df['Label_ID_Smoothed'].map(id_to_label)
+
+        if save_frames:
+            import shutil
+            annotated_dir = output_csv.parent / "annotated_frames"
+            for label in self.class_labels:
+                (annotated_dir / label).mkdir(parents=True, exist_ok=True)
+            
+            logging.info(f"Saving physically annotated frames to {annotated_dir}...")
+            for _, row in df.iterrows():
+                src_path = row['img_path']
+                dst_path = annotated_dir / row['Label'] / src_path.name
+                shutil.copy2(src_path, dst_path)
 
         # Drop interim columns and save
         final_df = df[['NTP', 'Label']]

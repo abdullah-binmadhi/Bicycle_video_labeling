@@ -163,19 +163,64 @@ function logToConsole(message, isError = false) {
   }
 
   // Custom parsing for UI updates (e.g. Training stats updates)
-  if (message.includes("Epoch [") || message.includes("Epoch ")) {
+  if (message.match(/Epoch/i) || message.match(/Loss/i) || message.match(/\[\d+\/\d+\]/)) {
     document.getElementById('training-stats').classList.remove('hidden');
-    // Extract format: "Epoch [1/10]" or "Epoch 1/10"
-    const epochMatch = message.match(/Epoch\s*\[?\s*(\d+)\s*\/\s*(\d+)/i);
-    const lossMatch = message.match(/Loss:\s*([0-9.]+)/i);
+    
+    // Parse formats like "[1/50]", "Epoch [1/50]", "Epoch 1/50"
+    const epochMatch = message.match(/(?:Epoch\s*\[?)?(\d+)\s*\/\s*(\d+)/i);
+    // Parse formats like "Epoch 1 Summary"
+    const epochSummaryMatch = message.match(/Epoch (\d+) Summary/i);
+
+    const trainLossMatch = message.match(/Train Loss:\s*([0-9.]+)/i);
+    const valLossMatch = message.match(/(?:Val|Validation) Loss:\s*([0-9.]+)/i);
+    const valAccMatch = message.match(/(?:Val|Validation) Acc:\s*([0-9.]+)/i);
+
+    let currentEpochStr = null;
+
     if (epochMatch) {
-      document.getElementById('stat-epoch').innerText = `${epochMatch[1]} / ${epochMatch[2]}`;
+      document.getElementById('stat-epoch').innerText = epochMatch[1];
+      const elTotal = document.getElementById('stat-epoch-total');
+      if (elTotal) elTotal.innerText = epochMatch[2];
+      
       const current = parseInt(epochMatch[1]);
       const total = parseInt(epochMatch[2]);
+      currentEpochStr = epochMatch[1];
       const progressPercent = (current / total) * 100;
-      document.getElementById('stat-progress').value = progressPercent;
+      const progEl = document.getElementById('stat-progress');
+      if (progEl) progEl.value = progressPercent;
+    } else if (epochSummaryMatch) {
+      document.getElementById('stat-epoch').innerText = epochSummaryMatch[1];
+      currentEpochStr = epochSummaryMatch[1];
     }
-    if (lossMatch) document.getElementById('stat-loss').innerText = lossMatch[1];
+    
+    if (valLossMatch) {
+        document.getElementById('stat-loss').innerText = valLossMatch[1];
+    }
+    
+    if (valAccMatch) {
+        document.getElementById('stat-accuracy').innerText = valAccMatch[1] + "%";
+    }
+    
+    // Update live Chart.js Graph
+    if ((trainLossMatch || valLossMatch) && window.lossChartInstance && currentEpochStr !== null) {
+        const cLabels = window.lossChartInstance.data.labels;
+        const cTrain = window.lossChartInstance.data.datasets[0].data;
+        const cVal = window.lossChartInstance.data.datasets[1].data;
+        
+        const epochIndex = cLabels.indexOf(currentEpochStr);
+        
+        if (epochIndex !== -1) {
+            // Update existing if already pushed this epoch
+            if (trainLossMatch) cTrain[epochIndex] = parseFloat(trainLossMatch[1]);
+            if (valLossMatch) cVal[epochIndex] = parseFloat(valLossMatch[1]);
+        } else {
+            // Append new epoch point
+            cLabels.push(currentEpochStr);
+            cTrain.push(trainLossMatch ? parseFloat(trainLossMatch[1]) : null);
+            cVal.push(valLossMatch ? parseFloat(valLossMatch[1]) : null);
+        }
+        window.lossChartInstance.update();
+    }
   }
 }
 
@@ -309,6 +354,16 @@ function _runScript(scriptKey) {
      } else {
          // Default back to native Label.0.csv inside that session
          args.push('--output_csv', path.join(dirPath, '../Label/Label.0.csv'));
+     }
+
+     const maxFramesEl = document.getElementById('clipMaxFrames');
+     if (maxFramesEl && maxFramesEl.value) {
+         args.push('--max_frames', maxFramesEl.value);
+     }
+     
+     const saveFramesEl = document.getElementById('clipSaveFrames');
+     if (saveFramesEl && !saveFramesEl.checked) {
+         args.push('--no_save_frames');
      }
 
      const selectedClasses = [];
@@ -1062,14 +1117,14 @@ function initAnalytics() {
         confChart = new Chart(ctxConf, {
             type: 'bar',
             data: {
-                labels: ['Tarmac', 'Gravel', 'Cobble', 'Pothole'],
+                labels: ['134 - asphalt', '8 - gravel', '19 - cobblestone', '1 - potholes', '5 - speed_bump', '133 - bicycle_lane', '18 - rail_tracks'],
                 datasets: [{
                     label: 'True Positives',
-                    data: [98, 85, 92, 76],
+                    data: [98, 85, 92, 76, 50, 89, 45],
                     backgroundColor: 'rgba(16, 185, 129, 0.6)'
                 }, {
                     label: 'False Negatives',
-                    data: [2, 15, 8, 24],
+                    data: [2, 15, 8, 24, 3, 4, 10],
                     backgroundColor: 'rgba(244, 63, 94, 0.6)'
                 }]
             },
@@ -1086,10 +1141,10 @@ function initAnalytics() {
         classBarChart = new Chart(ctxClassBar, {
             type: 'bar',
             data: {
-                labels: ['Tarmac', 'Gravel', 'Cobble', 'Pothole'],
+                labels: ['134 - asphalt', '8 - gravel', '19 - cobblestone', '1 - potholes', '5 - speed_bump', '133 - bicycle_lane', '18 - rail_tracks'],
                 datasets: [{
                     label: 'Accuracy %',
-                    data: [98.0, 85.0, 92.0, 76.0],
+                    data: [98.0, 85.0, 92.0, 76.0, 94.3, 95.7, 81.8],
                     backgroundColor: 'rgba(99, 102, 241, 0.6)'
                 }]
             },
@@ -1144,10 +1199,10 @@ function initAnalytics() {
         distributionChart = new Chart(ctxDist, {
             type: 'doughnut',
             data: {
-                labels: ['Tarmac', 'Gravel', 'Cobble', 'Pothole'],
+                labels: ['134 - asphalt', '8 - gravel', '19 - cobblestone', '1 - potholes', '5 - speed_bump', '133 - bicycle_lane', '18 - rail_tracks'],
                 datasets: [{
-                    data: [1500, 800, 450, 200],
-                    backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'],
+                    data: [1500, 800, 450, 200, 100, 150, 300],
+                    backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#a855f7', '#2dd4bf', '#64748b'],
                     borderWidth: 0
                 }]
             },
@@ -1274,7 +1329,7 @@ window.scrapeGeospatialFolder = async function() {
                 const res = join(dir, dirent.name);
                 if (dirent.isDirectory()) {
                     scanDirectory(res);
-                } else if (dirent.isFile() && dirent.name.toLowerCase().endsWith('.csv') && res.toLowerCase().includes('gnss')) {
+                } else if (dirent.isFile() && dirent.name.toLowerCase().endsWith('.csv') && (res.toLowerCase().includes('gnss') || res.toLowerCase().includes('aligned') || res.toLowerCase().includes('label'))) {
                     // It's a GNSS CSV file, read it
                     processCSV(res);
                 }
@@ -1312,7 +1367,7 @@ window.scrapeGeospatialFolder = async function() {
             let headers = parseCSVLine(lines[0]).map(h => h.toLowerCase());
             let latIdx = headers.findIndex(h => h.includes('lat'));
             let lonIdx = headers.findIndex(h => h.includes('lon') || h.includes('lng'));
-            let classIdx = headers.findIndex(h => h.includes('class') || h.includes('surface') || h.includes('type'));
+            let classIdx = headers.findIndex(h => h.includes('class') || h.includes('surface') || h.includes('type') || h.includes('label'));
             
             if (latIdx === -1 || lonIdx === -1) return;
             
@@ -1346,10 +1401,13 @@ window.scrapeGeospatialFolder = async function() {
                 
                 let color = '#3b82f6'; // default blue for raw data
                 let sLow = surfaceType.toLowerCase();
-                if (sLow.includes('asphalt') || sLow.includes('tarmac')) color = '#10b981';
-                else if (sLow.includes('gravel')) color = '#f59e0b';
-                else if (sLow.includes('cobble')) color = '#3b82f6';
-                else if (sLow.includes('pothole') || sLow.includes('crack')) color = '#ef4444';
+                if (sLow.includes('asphalt') || sLow.includes('tarmac') || sLow.includes('134')) color = '#10b981';
+                else if (sLow.includes('gravel') || sLow.includes('8')) color = '#f59e0b';
+                else if (sLow.includes('cobble') || sLow.includes('19')) color = '#3b82f6';
+                else if (sLow.includes('pothole') || sLow.includes('crack') || sLow.includes('1')) color = '#ef4444';
+                else if (sLow.includes('speed bump') || sLow.includes('speed_bump') || sLow.includes('5')) color = '#a855f7';
+                else if (sLow.includes('bicycle lane') || sLow.includes('bicycle_lane') || sLow.includes('133')) color = '#2dd4bf';
+                else if (sLow.includes('rail_tracks') || sLow.includes('rail tracks') || sLow.includes('18')) color = '#64748b';
                 else if (surfaceType === 'Unknown') color = '#ccc';
                 
                 L.circleMarker([lat, lon], {
@@ -1396,11 +1454,35 @@ window.loadGeospatialCSV = async function() {
         const lines = data.trim().split('\n');
         if (lines.length < 2) return;
         
-        let headers = lines[0].toLowerCase().split(',');
+        const parseCSVLine = (line) => {
+            const cols = [];
+            let inside = false;
+            let current = '';
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    inside = !inside;
+                } else if (char === ',' && !inside) {
+                    cols.push(current.trim().replace(/^"|"$/g, ''));
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            cols.push(current.trim().replace(/^"|"$/g, ''));
+            return cols;
+        };
+        
+        let headers = parseCSVLine(lines[0]).map(h => h.toLowerCase());
         let latIdx = headers.findIndex(h => h.includes('lat'));
         let lonIdx = headers.findIndex(h => h.includes('lon') || h.includes('lng'));
-        let classIdx = headers.findIndex(h => h.includes('class') || h.includes('surface') || h.includes('type'));
+        let classIdx = headers.findIndex(h => h.includes('class') || h.includes('surface') || h.includes('type') || h.includes('label'));
         
+        if (latIdx === -1 || lonIdx === -1) {
+            showToast('GPS coordinates missing! Please upload aligned_dataset.csv, not purely labels.', 'error');
+            return;
+        }
+
         // Ensure map is initialized
         if (!analyticsMap) initAnalytics();
         
@@ -1413,25 +1495,34 @@ window.loadGeospatialCSV = async function() {
         window.currentGeoData = [];
         
         for (let i = 1; i < lines.length; i++) {
-            let row = lines[i].split(',');
+            if (!lines[i].trim()) continue;
+            let row = parseCSVLine(lines[i]);
             if (row.length < 3) continue;
             
             let lat = parseFloat(row[latIdx !== -1 ? latIdx : 0]);
             let lon = parseFloat(row[lonIdx !== -1 ? lonIdx : 1]);
             let surface = classIdx !== -1 ? row[classIdx].trim() : 'Unknown';
             
-            if (isNaN(lat) || isNaN(lon)) continue;
+            if (isNaN(lat) || isNaN(lon) || lat === 0 || lon === 0) continue;
             
             bounds.push([lat, lon]);
-            const plusCode = olcInstance.encode(lat, lon);
+            
+            let plusCode = 'N/A';
+            try {
+                plusCode = typeof olcInstance !== 'undefined' ? olcInstance.encode(lat, lon) : 'N/A';
+            } catch(e) {}
+            
             window.currentGeoData.push({lat, lon, surface, plusCode});
             
             let color = '#ccc'; // Default
             let sLow = surface.toLowerCase();
-            if (sLow.includes('asphalt') || sLow.includes('tarmac')) color = '#10b981';
-            else if (sLow.includes('gravel')) color = '#f59e0b';
-            else if (sLow.includes('cobble')) color = '#3b82f6';
-            else if (sLow.includes('pothole') || sLow.includes('crack')) color = '#ef4444';
+            if (sLow.includes('asphalt') || sLow.includes('tarmac') || sLow.includes('134')) color = '#10b981';
+            else if (sLow.includes('gravel') || sLow.includes('8')) color = '#f59e0b';
+            else if (sLow.includes('cobble') || sLow.includes('19')) color = '#3b82f6';
+            else if (sLow.includes('pothole') || sLow.includes('crack') || sLow.includes('1')) color = '#ef4444';
+            else if (sLow.includes('speed bump') || sLow.includes('speed_bump') || sLow.includes('5')) color = '#a855f7';
+            else if (sLow.includes('bicycle lane') || sLow.includes('bicycle_lane') || sLow.includes('133')) color = '#2dd4bf';
+            else if (sLow.includes('rail_tracks') || sLow.includes('rail tracks') || sLow.includes('18')) color = '#64748b';
             
             L.circleMarker([lat, lon], {
                 radius: 6,
@@ -2539,6 +2630,39 @@ window.chooseMetricsFile = async function() {
                     classBarChart.data.datasets[0].data = acc;
                     classBarChart.update();
                 }
+
+                // Update Data Distribution Chart
+                if (distributionChart) {
+                    const classTotals = cm.map(row => row.reduce((sum, val) => sum + val, 0));
+                    distributionChart.data.datasets[0].data = classTotals;
+                    distributionChart.update();
+                }
+            }
+
+            // Update Loss Convergence Chart (if history exists, plot array; else single point)
+            if (convergenceChart) {
+                if (metrics.history && metrics.history.train_loss) {
+                    convergenceChart.data.labels = metrics.history.epochs.map(e => "Epoch " + e);
+                    convergenceChart.data.datasets[0].data = metrics.history.train_loss;
+                    convergenceChart.data.datasets[1].data = metrics.history.val_loss;
+                } else {
+                    convergenceChart.data.labels = ["Epoch " + metrics.epoch];
+                    convergenceChart.data.datasets[0].data = [metrics.train_loss];
+                    convergenceChart.data.datasets[1].data = [metrics.val_loss];
+                }
+                convergenceChart.update();
+            }
+
+            // Update Temporal Stability (Flicker) Chart (use temporal_stability or empty mock)
+            if (stabilityChart) {
+                if (metrics.temporal_stability) {
+                    stabilityChart.data.labels = metrics.temporal_stability.map((_, i) => `${i}s`);
+                    stabilityChart.data.datasets[0].data = metrics.temporal_stability;
+                } else {
+                    stabilityChart.data.labels = ['N/A'];
+                    stabilityChart.data.datasets[0].data = [];
+                }
+                stabilityChart.update();
             }
             
             showToast('Metrics loaded & parsed successfully!', 'success');

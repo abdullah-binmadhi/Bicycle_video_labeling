@@ -3,6 +3,7 @@ import sys
 import json
 import time
 import argparse
+import re
 import numpy as np
 import ssl
 from PIL import Image
@@ -26,6 +27,8 @@ def parse_args():
     parser.add_argument('--classes', nargs='+', help='Target YOLO classes to detect', default=["bicycle", "car", "pedestrian", "pothole"])
     parser.add_argument('--out', type=str, default='', help='Ignore')
     parser.add_argument('--use_clip', action='store_true', help='Pass YOLO crops to CLIP for zero-shot description')
+    parser.add_argument('--max_frames', type=int, default=0, help='Max frames to process (0 for unlimited)')
+    parser.add_argument('--no_save_frames', action='store_true', help='Skip saving annotated image frames')
     return parser.parse_args()
 
 class TwoStageAnnotator:
@@ -53,8 +56,17 @@ class TwoStageAnnotator:
             ]
             print(f"[System] CLIP Prompts loaded: {self.clip_prompts}")
 
-    def run(self, input_dir, csv_path):
+    def run(self, input_dir, csv_path, max_frames=0, save_frames=True):
         os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+        
+        annotated_dir = None
+        if save_frames:
+            # Create a parallel 'Annotated_Images' directory beside the Output CSV directory
+            csv_dir = os.path.dirname(csv_path)
+            # Usually Label/Label.0.csv -> we want Annotated_Images/
+            annotated_dir = os.path.join(os.path.dirname(csv_dir), 'Annotated_Images')
+            os.makedirs(annotated_dir, exist_ok=True)
+            print(f"[System] Saving annotated frames to: {annotated_dir}")
         
         # Grab images
         if not os.path.exists(input_dir):
@@ -65,6 +77,10 @@ class TwoStageAnnotator:
         images = [f for f in os.listdir(input_dir) if f.lower().endswith(valid_ext)]
         images.sort()
         
+        if max_frames > 0 and len(images) > max_frames:
+            step = max(1, len(images) // max_frames)
+            images = images[::step][:max_frames]
+
         total = len(images)
         if total == 0:
             print("No images found to process.")
@@ -87,8 +103,18 @@ class TwoStageAnnotator:
             
             try:
                 # Stage 1: YOLO-World
-                results = self.yolo.predict(img_path, conf=0.15, verbose=False)
+                results = self.yolo.predict(img_path, conf=0.05, verbose=False)
                 objects_in_frame = 0
+                
+                # Clean the frame name to just timestamp.jpg for standardization
+                clean_match = re.search(r'(\d{10,13}(?:\.\d+)?)', img_name)
+                clean_name = f"{clean_match.group(1)}.jpg" if clean_match else img_name
+                
+                # Setup drawing for annotated frame saving
+                img_to_draw = None
+                if save_frames and annotated_dir:
+                    import cv2
+                    img_to_draw = cv2.imread(img_path)
                 
                 with open(csv_path, 'a') as f:
                     for r in results:
@@ -119,15 +145,27 @@ class TwoStageAnnotator:
                                         
                                         clip_desc = self.clip_prompts[best_idx].replace(',', '')
                                         clip_conf = probs[best_idx].item()
-                                        
+                            
+                            if img_to_draw is not None:
+                                import cv2
+                                cv2.rectangle(img_to_draw, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                                text_label = f"{label} {conf:.2f}"
+                                if self.use_clip and clip_desc:
+                                    text_label = f"{clip_desc} {clip_conf:.2f}"
+                                cv2.putText(img_to_draw, text_label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                                
                             # Save
                             if self.use_clip:
-                                f.write(f"{img_name},{label},{conf:.3f},{x1},{y1},{x2},{y2},{clip_desc},{clip_conf:.3f}\\n")
+                                f.write(f"{clean_name},{label},{conf:.3f},{x1},{y1},{x2},{y2},{clip_desc},{clip_conf:.3f}\\n")
                             else:
-                                f.write(f"{img_name},{label},{conf:.3f},{x1},{y1},{x2},{y2}\\n")
+                                f.write(f"{clean_name},{label},{conf:.3f},{x1},{y1},{x2},{y2}\\n")
                             
                             objects_in_frame += 1
                             total_objects += 1
+                    
+                if img_to_draw is not None and objects_in_frame > 0:
+                    import cv2
+                    cv2.imwrite(os.path.join(annotated_dir, clean_name), img_to_draw)
                 
             except Exception as e:
                 print(f"Error processing {img_name}: {e}")
@@ -154,5 +192,9 @@ if __name__ == "__main__":
     args = parse_args()
     print(f"Reading frames from: {args.frames_dir}")
     annotator = TwoStageAnnotator(target_classes=args.classes, use_clip=args.use_clip)
-    annotator.run(args.frames_dir, args.output_csv)
+    
+    # args.no_save_frames is True when the user toggles OFF saving. 
+    # So if it's False, save_frames = True
+    should_save_frames = not args.no_save_frames
+    annotator.run(args.frames_dir, args.output_csv, max_frames=args.max_frames, save_frames=should_save_frames)
 

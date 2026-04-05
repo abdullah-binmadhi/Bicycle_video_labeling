@@ -184,6 +184,7 @@ def main():
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     
     logging.info("Starting robust training loop...")
+    history = {'epochs': [], 'train_loss': [], 'val_loss': []}
     for epoch in range(start_epoch, num_epochs):
         print(f"\n[{epoch+1}/{num_epochs}]")
         
@@ -201,13 +202,19 @@ def main():
             warnings.filterwarnings("ignore", category=UserWarning)
             cm = confusion_matrix(all_targets, all_preds).tolist()
         
+        history['epochs'].append(epoch + 1)
+        history['train_loss'].append(train_loss)
+        history['val_loss'].append(val_loss)
+
         metrics_dict = {
             'epoch': epoch + 1,
             'train_loss': train_loss,
             'val_loss': val_loss,
             'accuracy': acc,
             'f1_score': f1,
-            'confusion_matrix': cm
+            'confusion_matrix': cm,
+            'history': history,
+            'temporal_stability': [f1] * max(1, epoch) # mock flicker until implemented via tracking
         }
         
         # Checkpointing logic

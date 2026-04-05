@@ -17,6 +17,8 @@ def main():
     parser = argparse.ArgumentParser(description="Zero-shot video frame annotation using CLIP.")
     parser.add_argument("--frames_dir", type=str, required=True, help="Path to extracted video frames")
     parser.add_argument("--output_csv", type=str, required=True, help="Path to save output labels (e.g. Label.csv)")
+    parser.add_argument("--max_frames", type=int, default=None, help="Maximum number of frames to annotate (evenly spaced sample)")
+    parser.add_argument("--no_save_frames", action="store_true", help="Disable saving annotated frames to class folders")
     
     args = parser.parse_args()
     
@@ -36,7 +38,12 @@ def main():
     print(f"Saving annotations to: {out_csv_path}")
     
     try:
-        annotator.annotate_session(frames_path, out_csv_path)
+        annotator.annotate_session(
+            frames_path, 
+            out_csv_path, 
+            max_frames=args.max_frames, 
+            save_frames=not args.no_save_frames
+        )
         print("\nSuccess! CLIP zero-shot annotation complete.")
     except Exception as e:
         print(f"\nError during annotation: {e}")

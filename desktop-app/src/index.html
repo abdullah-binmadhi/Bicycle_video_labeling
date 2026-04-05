@@ -476,6 +476,27 @@
                   <input type="text" placeholder="Defaults to dataset source folder if blank..." class="input input-sm h-10 join-item w-full bg-black border-[#333] focus:border-indigo-400 text-white font-mono text-sm" id="clipCustomOutPath" />
                 </div>
               </div>
+              
+              <!-- Subsampling & Save Settings -->
+              <div class="flex flex-col md:col-span-1">
+                <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2" title="How many frames from the pool to process">Subsampling (Max Frames)</label>
+                <select id="clipMaxFrames" class="select select-sm h-10 w-full bg-black border-[#333] focus:border-indigo-400 text-white font-mono text-sm">
+                  <option value="">Process All Frames (Slow)</option>
+                  <option value="500">500 Frames</option>
+                  <option value="1000">1,000 Frames</option>
+                  <option value="2000">2,000 Frames</option>
+                  <option value="5000">5,000 Frames</option>
+                  <option value="10000">10,000 Frames</option>
+                </select>
+              </div>
+
+              <div class="flex flex-col md:col-span-1 justify-center pt-6 items-end">
+                <label class="cursor-pointer label justify-end gap-3 p-0 pb-1 w-full max-w-[200px]">
+                  <span class="label-text text-sm font-medium text-white">Save Image Copies</span> 
+                  <input type="checkbox" id="clipSaveFrames" class="toggle focus:ring-opacity-0 bg-gray-500 border border-gray-600 checked:bg-indigo-500 checked:border-indigo-500" checked />
+                </label>
+                <span class="text-[10px] text-gray-500 max-w-[200px] text-right mt-1">Export samples into class folders</span>
+              </div>
             </div>
 
             <!-- Model Selection & Classes -->
@@ -1184,11 +1205,14 @@
     <div class="w-full h-[400px] relative bg-[#111] z-0 overflow-hidden" id="analytics-map">
         <!-- Leaflet Map Container -->
     </div>
-    <div class="mt-3 flex gap-4 text-xs text-slate-400 justify-center">
-        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-[#10b981]"></span> Asphalt</span>
-        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-[#f59e0b]"></span> Gravel</span>
-        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-[#3b82f6]"></span> Cobble</span>
-        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-[#ef4444]"></span> Pothole</span>
+    <div class="mt-3 flex gap-4 text-[10px] sm:text-xs text-slate-400 justify-center flex-wrap">
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-[#10b981]"></span> 134 - asphalt</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-[#3b82f6]"></span> 8 - gravel</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-[#f59e0b]"></span> 19 - cobblestone</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-[#ef4444]"></span> 1 - potholes</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-[#a855f7]"></span> 5 - speed_bump</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-[#2dd4bf]"></span> 133 - bicycle_lane</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-[#64748b]"></span> 18 - rail_tracks</span>
     </div>
   </div>
 

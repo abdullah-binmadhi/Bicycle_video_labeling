@@ -658,5 +658,20 @@
         "a first-person POV video from a bicycle riding near speed table",
         "looking down at speed table on the street from a bike",
         "a dashboard camera view of speed table on the road"
+    ],
+    "132 - bycicle_lane": [
+        "a first-person POV video from a bicycle riding near bicycle lane",
+        "looking down at bicycle lane on the street from a bike",
+        "a dashboard camera view of bicycle lane on the road"
+    ],
+    "133 - bicycle_lane": [
+        "a first-person POV video from a bicycle riding near bicycle lane",
+        "looking down at bicycle lane on the street from a bike",
+        "a dashboard camera view of bicycle lane on the road"
+    ],
+    "134 - asphalt": [
+        "a first-person POV video from a bicycle riding near asphalt.",
+        "looking down at asphalt on the street from a bike.",
+        "a dashboard camera view of asphalt on the road."
     ]
 }

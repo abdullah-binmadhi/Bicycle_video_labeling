@@ -64,10 +64,22 @@ class MultimodalRoadDataset(Dataset):
         # Load the synchronized dataset
         try:
             self.data_df = pd.read_csv(csv_path)
-            # Ensure the necessary columns exist
-            missing_cols = [c for c in feature_cols + [label_col] if c not in self.data_df.columns]
-            if missing_cols:
-                raise ValueError(f"Missing expected columns in CSV: {missing_cols}")
+            
+            # Ensure the necessary columns exist, dynamically ignoring missing IMU sensors
+            available_features = [c for c in feature_cols if c in self.data_df.columns]
+            missing_features = [c for c in feature_cols if c not in self.data_df.columns]
+            
+            if missing_features:
+                if set(missing_features).issubset({'Gyr-X', 'Gyr-Y', 'Gyr-Z'}):
+                    logging.warning(f"Dropping missing Gyroscope columns: {missing_features}. Model will train with {len(available_features)} IMU features.")
+                else:
+                    logging.warning(f"Missing feature columns in CSV: {missing_features}. Proceeding with remaining.")
+                    
+            self.feature_cols = available_features
+            config.model_settings.imu_features = len(self.feature_cols)
+            
+            if label_col not in self.data_df.columns:
+                raise ValueError(f"Missing expected label column in CSV: {label_col}")
         except FileNotFoundError:
             logging.error(f"Failed to find aligned dataset at {csv_path}")
             raise

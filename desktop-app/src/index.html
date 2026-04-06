@@ -441,14 +441,8 @@
         <!-- View: Data & Annotation -->
         <div id="view-data" class="hidden-view flex flex-col gap-6 w-full max-w-4xl mx-auto pb-10">
           <div>
-            <h2 class="text-3xl font-medium text-white tracking-tight">Automated Annotation</h2>
-            <p class="text-[#888888] mt-2 text-sm leading-relaxed max-w-3xl">
-               Automate your dataset labeling using a state-of-the-art hybrid vision pipeline. 
-               <br><br>
-               <strong class="text-indigo-400">1. YOLO-World:</strong> Scans the video frames for bounding boxes based on the target vocabulary. It operates zero-shot, meaning it can detect items based purely on text prompts without fine-tuning.
-               <br><br>
-               <strong class="text-emerald-400">2. CLIP (Contrastive Language-Image Pretraining):</strong> Acts as a semantic refinement layer. The cropped objects from YOLO are passed into CLIP, which reads the visual texture and matches it to detailed descriptive text (e.g., distinguishing a "dry pothole" from a "puddle").
-            </p>
+            <h2 class="text-3xl font-medium text-white tracking-tight">Two-Stage Auto Annotation (YOLO-World + CLIP)</h2>
+            <p class="text-[#888888] mt-1">Leverage a fully automated 2-stage pipeline. YOLO isolates objects, CLIP tags semantic features.</p>
           </div>
 
           <div class="border border-[#222] bg-[#0c0c0c] p-8 relative overflow-hidden shadow-xl">
@@ -476,43 +470,19 @@
                   <input type="text" placeholder="Defaults to dataset source folder if blank..." class="input input-sm h-10 join-item w-full bg-black border-[#333] focus:border-indigo-400 text-white font-mono text-sm" id="clipCustomOutPath" />
                 </div>
               </div>
-              
-              <!-- Subsampling & Save Settings -->
-              <div class="flex flex-col md:col-span-1">
-                <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2" title="How many frames from the pool to process">Subsampling (Max Frames)</label>
-                <select id="clipMaxFrames" class="select select-sm h-10 w-full bg-black border-[#333] focus:border-indigo-400 text-white font-mono text-sm">
-                  <option value="">Process All Frames (Slow)</option>
-                  <option value="500">500 Frames</option>
-                  <option value="1000">1,000 Frames</option>
-                  <option value="2000">2,000 Frames</option>
-                  <option value="5000">5,000 Frames</option>
-                  <option value="10000">10,000 Frames</option>
-                </select>
-              </div>
-
-              <div class="flex flex-col md:col-span-1 justify-center pt-6 items-end">
-                <label class="cursor-pointer label justify-end gap-3 p-0 pb-1 w-full max-w-[200px]">
-                  <span class="label-text text-sm font-medium text-white">Save Image Copies</span> 
-                  <input type="checkbox" id="clipSaveFrames" class="toggle focus:ring-opacity-0 bg-gray-500 border border-gray-600 checked:bg-indigo-500 checked:border-indigo-500" checked />
-                </label>
-                <span class="text-[10px] text-gray-500 max-w-[200px] text-right mt-1">Export samples into class folders</span>
-              </div>
             </div>
 
             <!-- Model Selection & Classes -->
             <div class="mt-8 border-t border-[#222] pt-6">
               <h3 class="text-sm font-semibold mb-4 text-white flex items-center justify-between">
                 <span>3. YOLO Target Vocabulary</span>
-                <div class="flex items-center gap-4">
-                  <input type="text" id="search-clip-classes" placeholder="Search classes..." class="input input-xs bg-black border-[#333] text-white focus:border-indigo-400 placeholder:text-[#555] w-48" />
-                  <div class="flex items-center gap-2">
-                    <input type="checkbox" id="btn-select-all" class="checkbox checkbox-xs checkbox-primary" />
-                    <label for="btn-select-all" class="text-[10px] uppercase text-slate-400 cursor-pointer tracking-widest">Select All</label>
-                  </div>
+                <div class="flex items-center gap-2">
+                  <input type="checkbox" id="btn-select-all" class="checkbox checkbox-xs checkbox-primary" />
+                  <label for="btn-select-all" class="text-[10px] uppercase text-slate-400 cursor-pointer tracking-widest">Select All</label>
                 </div>
               </h3>
               
-              <div id="clip-classes-container" class="w-full mb-6 max-h-72 overflow-y-auto bg-[#050505] p-2 border border-[#333] shadow-inner">
+              <div id="clip-classes-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-48 overflow-y-auto mb-6 p-4 bg-[#050505] rounded-none border border-[#333] shadow-inner">
                 <!-- Checkboxes dynamically inserted by renderer.js -->
               </div>
             </div>
@@ -560,7 +530,7 @@
           </div>
         </div>
 
-        <!-- View: Manual Annotation --><!-- View: Manual Annotation -->
+        <!-- View: Manual Annotation --><!-- View: Manual Annotation --><!-- View: Manual Annotation -->
         <div id="view-manual" class="hidden-view flex flex-col gap-6 w-full max-w-4xl mx-auto pb-10">
           <div>
             <h2 class="text-3xl font-medium text-white tracking-tight">App-Based Annotation</h2>
@@ -1202,17 +1172,22 @@
             <p class="text-xs text-slate-500 font-mono" id="geo-stats-text">Google Plus Codes mapping enabled</p>
         </div>
     </div>
-    <div class="w-full h-[400px] relative bg-[#111] z-0 overflow-hidden" id="analytics-map">
-        <!-- Leaflet Map Container -->
-    </div>
-    <div class="mt-3 flex gap-4 text-[10px] sm:text-xs text-slate-400 justify-center flex-wrap">
-        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-[#10b981]"></span> 134 - asphalt</span>
-        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-[#3b82f6]"></span> 8 - gravel</span>
-        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-[#f59e0b]"></span> 19 - cobblestone</span>
-        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-[#ef4444]"></span> 1 - potholes</span>
-        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-[#a855f7]"></span> 5 - speed_bump</span>
-        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-[#2dd4bf]"></span> 133 - bicycle_lane</span>
-        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-[#64748b]"></span> 18 - rail_tracks</span>
+    <div class="flex flex-col md:flex-row gap-4 w-full h-[400px]">
+        <div class="flex-1 relative bg-[#111] z-0 overflow-hidden border border-[#333]" id="analytics-map">
+            <!-- Leaflet Map Container -->
+        </div>
+
+        <!-- External Interactive Map Legend -->
+        <div class="w-full md:w-64 bg-[#0c0c0c] border border-[#333] p-4 overflow-y-auto hidden flex-col shadow-inner" id="map-legend-container">
+            <div class="flex justify-between items-center mb-3 border-b border-[#333] pb-2">
+                <h3 class="text-xs uppercase tracking-widest font-bold text-emerald-400">Surface Filters</h3>
+                <div class="flex gap-2">
+                    <button onclick="for(const k in window.classState) window.classState[k].visible=true; window.renderLegend(); window.updateMapState();" class="text-[10px] uppercase font-mono text-cyan-500 hover:text-cyan-300">All</button>
+                    <button onclick="for(const k in window.classState) window.classState[k].visible=false; window.renderLegend(); window.updateMapState();" class="text-[10px] uppercase font-mono text-rose-500 hover:text-rose-300">None</button>
+                </div>
+            </div>
+            <div id="dynamic-legend-controls" class="flex flex-col gap-2 overflow-y-auto pr-1"></div>
+        </div>
     </div>
   </div>
 

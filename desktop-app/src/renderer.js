@@ -1237,6 +1237,113 @@ function initAnalytics() {
         };
         
         window.currentGeoData = [];
+window.classState = {};
+
+window.updateMapState = function() {
+    if (!geoLayerGroup || !analyticsMap) return;
+    analyticsMap.removeLayer(geoLayerGroup);
+    geoLayerGroup = L.layerGroup().addTo(analyticsMap);
+    
+    // Draw the unified route path first
+    const pathCoords = window.currentGeoData.map(pt => [pt.lat, pt.lon]);
+    if (pathCoords.length > 0) {
+        L.polyline(pathCoords, {
+            color: '#666666',
+            weight: 2,
+            opacity: 0.5,
+            smoothFactor: 1
+        }).addTo(geoLayerGroup);
+    }
+    
+    for (const pt of window.currentGeoData) {
+        if (!pt.surface) continue;
+        let s = pt.surface;
+        if (!window.classState[s] || !window.classState[s].visible) continue;
+        
+        let color = window.classState[s].color;
+        let lat = pt.lat;
+        let lon = pt.lon;
+        let plusCode = pt.plusCode || 'N/A';
+        
+        L.circleMarker([lat, lon], {
+            radius: 3,
+            fillColor: color,
+            color: color,
+            weight: 1,
+            opacity: 1,
+            fillOpacity: 0.8
+        }).bindTooltip(`<b>${s}</b><br/><span class="font-mono text-xs">${plusCode}</span>`, {
+            className: 'bg-[#111] text-white border-[#333]'
+        }).addTo(geoLayerGroup);
+    }
+};
+
+window.renderLegend = function() {
+    const container = document.getElementById('dynamic-legend-controls');
+    if (!container) return;
+    
+    // UNHIDE THE LEGEND OVERLAY!
+    if (container.parentElement) {
+        container.parentElement.classList.remove('hidden');
+        container.parentElement.classList.add('flex'); // Because the new layout uses flex-col
+    }
+    
+    container.innerHTML = '';
+    
+    for (const className in window.classState) {
+        const state = window.classState[className];
+        
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex items-center gap-2 mb-2';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = state.visible;
+        checkbox.className = 'w-4 h-4 rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-gray-800 cursor-pointer';
+        checkbox.onchange = (e) => {
+            window.classState[className].visible = e.target.checked;
+            window.updateMapState();
+        };
+        
+        const colorPicker = document.createElement('input');
+        colorPicker.type = 'color';
+        colorPicker.value = state.color;
+        colorPicker.className = 'w-6 h-6 p-0 border-0 rounded cursor-pointer bg-transparent';
+        colorPicker.oninput = (e) => {
+            window.classState[className].color = e.target.value;
+            window.updateMapState();
+        };
+        
+        const label = document.createElement('span');
+        label.className = 'text-xs text-gray-300 font-mono flex-1 capitalize';
+        label.innerText = className;
+        
+        wrapper.appendChild(checkbox);
+        wrapper.appendChild(colorPicker);
+        wrapper.appendChild(label);
+        container.appendChild(wrapper);
+    }
+};
+
+window.registerSurface = function(surface) {
+    if (!surface) return;
+    if (!window.classState[surface]) {
+        let defColor = '#ccc';
+        let sLow = surface.toLowerCase();
+        if (sLow.includes('asphalt') || sLow.includes('tarmac') || sLow.includes('134')) defColor = '#10b981';
+        else if (sLow.includes('gravel') || sLow.includes('8')) defColor = '#f59e0b';
+        else if (sLow.includes('cobble') || sLow.includes('19')) defColor = '#3b82f6';
+        else if (sLow.includes('pothole') || sLow.includes('crack') || sLow.includes('1')) defColor = '#ef4444';
+        else if (sLow.includes('speed bump') || sLow.includes('speed_bump') || sLow.includes('5')) defColor = '#a855f7';
+        else if (sLow.includes('bicycle lane') || sLow.includes('bicycle_lane') || sLow.includes('133')) defColor = '#2dd4bf';
+        else if (sLow.includes('rail_tracks') || sLow.includes('rail tracks') || sLow.includes('18')) defColor = '#64748b';
+        
+        window.classState[surface] = {
+            visible: false,
+            color: defColor
+        };
+    }
+};
         
         for (let i = 0; i < 50; i++) {
             const lat = base_lat + (Math.random() * 0.05 - 0.025);
@@ -1399,28 +1506,7 @@ window.scrapeGeospatialFolder = async function() {
                     plusCode: plusCode
                 });
                 
-                let color = '#3b82f6'; // default blue for raw data
-                let sLow = surfaceType.toLowerCase();
-                if (sLow.includes('asphalt') || sLow.includes('tarmac') || sLow.includes('134')) color = '#10b981';
-                else if (sLow.includes('gravel') || sLow.includes('8')) color = '#f59e0b';
-                else if (sLow.includes('cobble') || sLow.includes('19')) color = '#3b82f6';
-                else if (sLow.includes('pothole') || sLow.includes('crack') || sLow.includes('1')) color = '#ef4444';
-                else if (sLow.includes('speed bump') || sLow.includes('speed_bump') || sLow.includes('5')) color = '#a855f7';
-                else if (sLow.includes('bicycle lane') || sLow.includes('bicycle_lane') || sLow.includes('133')) color = '#2dd4bf';
-                else if (sLow.includes('rail_tracks') || sLow.includes('rail tracks') || sLow.includes('18')) color = '#64748b';
-                else if (surfaceType === 'Unknown') color = '#ccc';
-                
-                L.circleMarker([lat, lon], {
-                    radius: 3,
-                    fillColor: color,
-                    color: color,
-                    weight: 1,
-                    opacity: 1,
-                    fillOpacity: 0.8
-                }).bindTooltip(`<b>${surfaceType}</b><br/><span class="font-mono text-xs">${plusCode}</span>`, {
-                    className: 'bg-[#111] text-white border-[#333]'
-                }).addTo(geoLayerGroup);
-                
+                window.registerSurface(surfaceType);
                 totalPoints++;
             }
         } catch (e) {
@@ -1437,6 +1523,8 @@ window.scrapeGeospatialFolder = async function() {
         // Fit map bounds to the markers
         const bounds = L.latLngBounds(window.currentGeoData.map(d => [d.lat, d.lon]));
         analyticsMap.fitBounds(bounds, { padding: [50, 50] });
+        window.renderLegend();
+        window.updateMapState();
     }
     
     if (statsText) {
@@ -1513,34 +1601,14 @@ window.loadGeospatialCSV = async function() {
             } catch(e) {}
             
             window.currentGeoData.push({lat, lon, surface, plusCode});
-            
-            let color = '#ccc'; // Default
-            let sLow = surface.toLowerCase();
-            if (sLow.includes('asphalt') || sLow.includes('tarmac') || sLow.includes('134')) color = '#10b981';
-            else if (sLow.includes('gravel') || sLow.includes('8')) color = '#f59e0b';
-            else if (sLow.includes('cobble') || sLow.includes('19')) color = '#3b82f6';
-            else if (sLow.includes('pothole') || sLow.includes('crack') || sLow.includes('1')) color = '#ef4444';
-            else if (sLow.includes('speed bump') || sLow.includes('speed_bump') || sLow.includes('5')) color = '#a855f7';
-            else if (sLow.includes('bicycle lane') || sLow.includes('bicycle_lane') || sLow.includes('133')) color = '#2dd4bf';
-            else if (sLow.includes('rail_tracks') || sLow.includes('rail tracks') || sLow.includes('18')) color = '#64748b';
-            
-            L.circleMarker([lat, lon], {
-                radius: 6,
-                fillColor: color,
-                color: color,
-                weight: 1,
-                opacity: 1,
-                fillOpacity: 0.8
-            })
-            .bindTooltip(`<b>${surface}</b><br/><span class="font-mono text-xs">${plusCode}</span>`, {
-                className: 'bg-[#111] text-white border-[#333]'
-            })
-            .addTo(geoLayerGroup);
+            window.registerSurface(surface);
         }
         
         if (bounds.length > 0) {
             analyticsMap.fitBounds(bounds, { padding: [20, 20] });
             document.getElementById('geo-stats-text').innerText = `Loaded ${bounds.length} waypoints via +Codes`;
+            window.renderLegend();
+            window.updateMapState();
         }
         
     } catch (err) {

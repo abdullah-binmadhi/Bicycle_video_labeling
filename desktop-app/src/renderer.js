@@ -1,59 +1,4 @@
-window.defaultClasses = ["0 - bicycle", "1 - potholes", "2 - manhole", "3 - water_puddle", "4 - uneven_surface", "5 - speed_bump", "6 - drain", "7 - crack", "8 - gravel", "9 - sand", "10 - mud", "11 - wet_leaves", "12 - dry_leaves", "13 - branches", "14 - ice", "15 - snow", "16 - glass", "17 - metal_plate", "18 - rail_tracks", "19 - cobblestone", "20 - brick_paving", "21 - concrete_pavers", "22 - tree_root", "23 - painted_lines", "24 - road_marking", "25 - crosswalk", "26 - pedestrian", "27 - dog", "28 - cat", "29 - squirrel", "30 - car", "31 - motorcycle", "32 - truck", "33 - bus", "34 - scooter", "35 - e-scooter", "36 - traffic_cone", "37 - bollard", "38 - construction_barrier", "39 - fallen_tree", "40 - debris", "41 - plastic_bag", "42 - trash_can", "43 - standing_water", "44 - oil_spill", "45 - smooth_asphalt", "46 - rough_asphalt", "47 - grate", "48 - tactile_paving", "49 - curb", "50 - shadow", "51 - street_light", "52 - traffic_light", "53 - stop_sign", "54 - yield_sign", "55 - speed_limit_sign", "56 - bus_stop", "57 - train_station", "58 - parked_car", "59 - moving_car", "60 - turning_car", "61 - reversing_car", "62 - emergency_vehicle", "63 - construction_vehicle", "64 - farm_vehicle", "65 - delivery_truck", "66 - garbage_truck", "67 - street_sweeper", "68 - snow_plow", "69 - tow_truck", "70 - flatbed_truck", "71 - semi_truck", "72 - box_truck", "73 - pickup_truck", "74 - van", "75 - minivan", "76 - suv", "77 - jeep", "78 - crossover", "79 - sedan", "80 - coupe", "81 - convertible", "82 - hatchback", "83 - station_wagon", "84 - sports_car", "85 - luxury_car", "86 - classic_car", "87 - antique_car", "88 - muscle_car", "89 - electric_car", "90 - hybrid_car", "91 - diesel_car", "92 - gas_car", "93 - hydrogen_car", "94 - fuel_cell_car", "95 - solar_car", "96 - flying_car", "97 - hover_car", "98 - submarine_car", "99 - boat_car", "100 - dirt_road", "101 - macadam", "102 - grassy_path", "103 - wood_planks", "104 - metal_grating", "105 - paved_path", "106 - unpaved_path", "107 - pothole_cluster", "108 - alligator_cracking", "109 - longitudinal_cracks", "110 - transverse_cracks", "111 - block_cracking", "112 - edge_cracking", "113 - rutting", "114 - shoving", "115 - corrugation", "116 - bleeding", "117 - polished_aggregate", "118 - pumping", "119 - raveling", "120 - stripping", "121 - delamination", "122 - patch", "123 - traverse_speed_bump", "124 - rubber_speed_bump", "125 - concrete_speed_bump", "126 - asphalt_speed_bump", "127 - wide_speed_bump", "128 - narrow_speed_bump", "129 - rumble_strips", "130 - speed_cushion", "131 - speed_table", "132 - bycicle_lane", "133 - bicycle_lane", "134 - asphalt"];
-// --- Advanced UI Filtering ---
-
-
-window.distanceFilterState = {};
-
-window.getCategory = function(className) {
-    if (!className) return 'Other';
-    const surface_ids = [45, 46, 134, 8, 19, 20, 21, 100, 101, 103, 104, 105, 106, 9]; // asphalt, gravel, cobblestone, macadam, etc.
-    const infra_ids = [18, 132, 133, 47, 48, 49, 51, 52, 53, 54, 55, 56, 57, 23, 24, 25, 36, 37, 38]; 
-    const anomaly_ids = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 16, 17, 22, 39, 40, 41, 42, 43, 44, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131];
-    
-    // Extract numeric ID from "134 - asphalt"
-    const match = className.match(/^(\d+)\s-/);
-    if (!match) return 'Other';
-    const id = parseInt(match[1]);
-    
-    if (surface_ids.includes(id)) return 'Surfaces';
-    if (infra_ids.includes(id)) return 'Infrastructure';
-    if (anomaly_ids.includes(id)) return 'Anomalies';
-    // Everything else (Cars, people, animals)
-    return 'Other';
-};
-
-
-window.renderDistanceFilter = function() {
-    const container = document.getElementById('distance-filter-dropdown');
-    if (!container) return;
-    container.innerHTML = '';
-    
-    const roadSurfaces = window.defaultClasses.filter(lbl => window.getCategory(lbl) === 'Surfaces');
-    
-    roadSurfaces.forEach(lbl => {
-        if (window.distanceFilterState[lbl] === undefined) {
-            window.distanceFilterState[lbl] = false;
-        }
-        
-        const wrapper = document.createElement('label');
-        wrapper.className = 'flex items-center gap-2 mb-1 p-1 hover:bg-[#222] cursor-pointer rounded';
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.className = 'w-3 h-3 rounded bg-gray-700 border-gray-600 text-blue-500 cursor-pointer';
-        checkbox.checked = window.distanceFilterState[lbl];
-        checkbox.onchange = (e) => {
-            window.distanceFilterState[lbl] = e.target.checked;
-            window.updateMapState(); // map state updates the distance chart
-        };
-        const text = document.createElement('span');
-        text.className = 'text-[10px] uppercase font-mono text-gray-300';
-        text.innerText = lbl;
-        wrapper.appendChild(checkbox);
-        wrapper.appendChild(text);
-        container.appendChild(wrapper);
-    });
-};
-
+window.addEventListener("error", function(e) { require("fs").writeFileSync("ui-err.log", e.message + "\n" + e.filename + ":" + e.lineno + "\n" + (e.error ? e.error.stack : "")); });
 
 const { spawn } = require('child_process');
 const path = require('path');
@@ -94,7 +39,7 @@ window.stopActiveProcess = function() {
     }
 };
 
-function switchView(viewName) {
+window.switchView = function(viewName) {
   // Update navs
   document.querySelectorAll('.menu a').forEach(el => el.classList.remove('active'));
   document.getElementById(`nav-${viewName}`).classList.add('active');
@@ -421,21 +366,6 @@ function _runScript(scriptKey) {
      const saveFramesEl = document.getElementById('clipSaveFrames');
      if (saveFramesEl && !saveFramesEl.checked) {
          args.push('--no_save_frames');
-     }
-     
-     const modelSelect = document.getElementById('clipModelSelect');
-     if (modelSelect) {
-         args.push('--model', modelSelect.value);
-     }
-     
-     const confSlider = document.getElementById('clipConfSlider');
-     if (confSlider) {
-         args.push('--conf', (parseInt(confSlider.value) / 100).toString());
-     }
-     
-     const useClip = document.getElementById('toggle-two-stage');
-     if (useClip && useClip.checked) {
-         args.push('--use_clip');
      }
 
      const selectedClasses = [];
@@ -1174,7 +1104,7 @@ window.setProcessStatus = function(running, scriptKey) {
 
 
 // --- Phase 1: Analytics & Reports ---
-let distanceChart = null;
+let confChart = null, classBarChart = null, convergenceChart = null, stabilityChart = null, distributionChart = null;
 let scrubberInterval = null;
 
 let analyticsMap = null;
@@ -1183,41 +1113,16 @@ const { OpenLocationCode } = require('open-location-code');
 const olcInstance = new OpenLocationCode();
 
 function initAnalytics() {
-    // 5.5 Distance Distribution Bar Chart
-    const ctxDistBar = document.getElementById('distance-canvas');
-    if(ctxDistBar && !distanceChart) {
-        distanceChart = new Chart(ctxDistBar, {
-            type: 'bar',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'Total Distance per Surface (m)',
-                    data: [],
-                    backgroundColor: [],
-                    borderWidth: 0
-                }]
-            },
-            options: { 
-                responsive: true, 
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: { color: 'rgba(255,255,255,0.7)', font: { family: 'monospace' } },
-                        grid: { color: 'rgba(255,255,255,0.1)' }
-                    },
-                    x: {
-                        ticks: { color: 'rgba(255,255,255,0.7)', font: { family: 'monospace', size: 10 } },
-                        grid: { display: false }
-                    }
-                },
-                plugins: { legend: { display: false } }
-             }
-        });
-    }
-    
-    // UI initializations for Filters
-    window.renderDistanceFilter();
+    // Removed confChart initialization
+
+    // 2. Per-Class Accuracy
+    const ctxClassBar = document.getElementById('class-bar-canvas');
+    // Removed classBarChart initialization
+
+    // Removed convergenceChart initialization
+
+    // 4. Temporal Stability (Flicker)
+    // Removed stabilityChart initialization
 
     // 6. Geospatial Map
     const mapDiv = document.getElementById('analytics-map');
@@ -1233,187 +1138,1318 @@ function initAnalytics() {
         }).addTo(analyticsMap);
 
         geoLayerGroup = L.layerGroup().addTo(analyticsMap);
-        
+
         // No mock data generated here. Waiting for CSV/Scraper load.
         window.classState = {};
+// Force Leaflet to recalculate its CSS rendering area since it gets 
+        // instantiated inside a hidden tab and will layout incorrectly.
+        setTimeout(() => {
+            analyticsMap.invalidateSize();
+        }, 300);
+    } else if (analyticsMap) {
+        setTimeout(() => analyticsMap.invalidateSize(), 300);
+    }
+}
 
+// Ensure it initializes when switching tabs
+const oldSwitchView = window.switchView || function(){};
+window.switchView = function(viewId) {
+    oldSwitchView(viewId);
+    if(viewId === 'analytics') {
+        setTimeout(initAnalytics, 100);
+    }
+}
 
-window.updateMapState = function() {
-    if (!geoLayerGroup || !analyticsMap) return;
-    analyticsMap.removeLayer(geoLayerGroup);
+window.generatePDFReport = function() {
+    showToast('Compiling analytical snapshot...', 'info');
+    const elem = document.getElementById('view-analytics');
+    
+    // HTML2PDF settings
+    const opt = {
+      margin:       1,
+      filename:     'CycleSafe_Report.pdf',
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true },
+      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+    
+    html2pdf().set(opt).from(elem).save().then(() => {
+        showToast('PDF Exported Successfully!', 'success');
+    });
+};
+
+window.currentGeoData = [];
+
+window.scrapeGeospatialFolder = async function() {
+    const { ipcRenderer } = require('electron');
+    const { opendirSync, statSync, readFileSync } = require('fs');
+    const { join } = require('path');
+    
+    const folderPath = await ipcRenderer.invoke('dialog:openDirectory');
+    if (!folderPath) return;
+
+    window.currentGeoData = [];
+    if (geoLayerGroup) {
+        analyticsMap.removeLayer(geoLayerGroup);
+    }
     geoLayerGroup = L.layerGroup().addTo(analyticsMap);
+
+    // Provide a status update to the user
+    const statsText = document.getElementById('geo-stats-text');
+    if (statsText) statsText.innerText = `Scraping GNSS files...`;
+
+    let totalPoints = 0;
     
-    let drawLinesMode = false;
-    const toggle = document.getElementById('map-render-toggle');
-    if (toggle) drawLinesMode = toggle.checked;
-
-    const lbl = document.getElementById('map-render-label');
-    if (lbl) lbl.innerText = drawLinesMode ? 'Mode: Lines' : 'Mode: Dots';
-    
-    const distanceAgg = {};
-
-    // 1. ALWAYS draw a visible baseline white path so the shape of the route is intact
-    const pathCoords = window.currentGeoData.map(pt => [pt.lat, pt.lon]);
-    if (pathCoords.length > 0) {
-        L.polyline(pathCoords, {
-            color: '#ffffff', // More visible white mark
-            weight: 3,
-            opacity: 0.2,
-            smoothFactor: 1
-        }).addTo(geoLayerGroup);
-    }
-
-    let currentSegmentPoints = [];
-    let currentSegmentSurface = null;
-    let currentSegmentDistance = 0;
-
-    // Helper to draw accumulated segment
-    function commitSegment() {
-        if (currentSegmentPoints.length > 1 && currentSegmentSurface) {
-            let isVisible = window.classState[currentSegmentSurface] && window.classState[currentSegmentSurface].visible;
-            if (isVisible) {
-                let color = window.classState[currentSegmentSurface].color;
-                let distKm = (currentSegmentDistance / 1000).toFixed(4); // Convert meters to KM
-                L.polyline(currentSegmentPoints, {
-                    color: color,
-                    weight: 5,
-                    opacity: 0.9 
-                }).bindTooltip(`<b>${currentSegmentSurface}</b><br/>Segment length: ${distKm} KM`, {
-                    className: 'bg-[#111] text-white border-[#333]'
-                }).addTo(geoLayerGroup);
+    // Recursive folder scan
+    function scanDirectory(dir) {
+        try {
+            const dirEntries = require('fs').readdirSync(dir, { withFileTypes: true });
+            
+            for (const dirent of dirEntries) {
+                const res = join(dir, dirent.name);
+                if (dirent.isDirectory()) {
+                    scanDirectory(res);
+                } else if (dirent.isFile() && dirent.name.toLowerCase().endsWith('.csv') && (res.toLowerCase().includes('gnss') || res.toLowerCase().includes('aligned') || res.toLowerCase().includes('label'))) {
+                    // It's a GNSS CSV file, read it
+                    processCSV(res);
+                }
             }
-        } else if (currentSegmentPoints.length === 1 && currentSegmentSurface && !drawLinesMode) {
-             // Fallback for single isolated point if not in strictly line mode or if it happens to be just 1 dot
-             let isVisible = window.classState[currentSegmentSurface] && window.classState[currentSegmentSurface].visible;
-             if (isVisible) {
-                 let color = window.classState[currentSegmentSurface].color;
-                 L.circleMarker(currentSegmentPoints[0], {
-                    radius: 5,
-                    fillColor: color,
-                    color: color,
-                    weight: 1,
-                    opacity: 1,
-                    fillOpacity: 0.8
-                }).bindTooltip(`<b>${currentSegmentSurface}</b>`, {
-                    className: 'bg-[#111] text-white border-[#333]'
-                }).addTo(geoLayerGroup);
-             }
+        } catch (e) {
+            console.error('Error scanning folder:', e);
         }
-        currentSegmentPoints = [];
-        currentSegmentDistance = 0;
-        currentSegmentSurface = null;
+    }
+    
+    function processCSV(filePath) {
+        try {
+            const data = readFileSync(filePath, 'utf-8');
+            const lines = data.trim().split('\n');
+            if (lines.length < 2) return;
+            
+            const parseCSVLine = (line) => {
+                const cols = [];
+                let inside = false;
+                let current = '';
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"') {
+                        inside = !inside;
+                    } else if (char === ',' && !inside) {
+                        cols.push(current.trim().replace(/^"|"$/g, ''));
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                cols.push(current.trim().replace(/^"|"$/g, ''));
+                return cols;
+            };
+            
+            let headers = parseCSVLine(lines[0]).map(h => h.toLowerCase());
+            let latIdx = headers.findIndex(h => h.includes('lat'));
+            let lonIdx = headers.findIndex(h => h.includes('lon') || h.includes('lng'));
+            let classIdx = headers.findIndex(h => h.includes('class') || h.includes('surface') || h.includes('type') || h.includes('label'));
+            
+            if (latIdx === -1 || lonIdx === -1) return;
+            
+            const olcLocalInstance = new OpenLocationCode();
+            
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const cols = parseCSVLine(lines[i]);
+                if (cols.length <= Math.max(latIdx, lonIdx)) continue;
+                
+                const lat = parseFloat(cols[latIdx]);
+                const lon = parseFloat(cols[lonIdx]);
+                
+                // Avoid zeroes and invalid numbers created from bad parses
+                if (isNaN(lat) || isNaN(lon) || lat === 0 || lon === 0) continue;
+                
+                // If it doesn't exist, log as Unknown
+                let surfaceType = classIdx !== -1 && cols[classIdx] ? cols[classIdx] : 'Unknown';
+                
+                let plusCode = 'N/A';
+                try {
+                    plusCode = olcLocalInstance.encode(lat, lon);
+                } catch(e) {}
+                
+                window.currentGeoData.push({
+                    lat: lat,
+                    lon: lon,
+                    surface: surfaceType, // Match the key used in exporting
+                    plusCode: plusCode
+                });
+                
+                window.registerSurface(surfaceType);
+                totalPoints++;
+            }
+        } catch (e) {
+            console.error('Error reading CSV:', filePath, e);
+        }
     }
 
-    for (const pt of window.currentGeoData) {
-        if (!pt.surface) continue;
-        let s = pt.surface;
-        let dist = parseFloat(pt.distance_m || 0);
-        let cat = window.getCategory(s);
+    // Ensure map is initialized
+    if (!analyticsMap) initAnalytics();
 
-        if (!distanceAgg[s]) distanceAgg[s] = 0;
-        distanceAgg[s] += dist;
+    scanDirectory(folderPath);
 
-        let isVisible = window.classState[s] && window.classState[s].visible;
+    if (window.currentGeoData.length > 0) {
+        // Fit map bounds to the markers
+        const bounds = L.latLngBounds(window.currentGeoData.map(d => [d.lat, d.lon]));
+        analyticsMap.fitBounds(bounds, { padding: [50, 50] });
+        window.renderLegend();
+        window.updateMapState();
+    }
+    
+    if (statsText) {
+        statsText.innerText = `Scraped ${totalPoints} GPS points.`;
+    }
+}
 
-        if (drawLinesMode && cat === 'Surfaces') {
-            if (s === currentSegmentSurface) {
-                currentSegmentPoints.push([pt.lat, pt.lon]);
-                currentSegmentDistance += dist;
+window.loadGeospatialCSV = async function() {
+    const { ipcRenderer } = require('electron');
+    const filePath = await ipcRenderer.invoke('dialog:openCSV');
+    if (!filePath) return;
+    
+    try {
+        const data = require('fs').readFileSync(filePath, 'utf-8');
+        const lines = data.trim().split('\n');
+        if (lines.length < 2) return;
+        
+        const parseCSVLine = (line) => {
+            const cols = [];
+            let inside = false;
+            let current = '';
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    inside = !inside;
+                } else if (char === ',' && !inside) {
+                    cols.push(current.trim().replace(/^"|"$/g, ''));
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            cols.push(current.trim().replace(/^"|"$/g, ''));
+            return cols;
+        };
+        
+        let headers = parseCSVLine(lines[0]).map(h => h.toLowerCase());
+        let latIdx = headers.findIndex(h => h.includes('lat'));
+        let lonIdx = headers.findIndex(h => h.includes('lon') || h.includes('lng'));
+        let classIdx = headers.findIndex(h => h.includes('class') || h.includes('surface') || h.includes('type') || h.includes('label'));
+        
+        if (latIdx === -1 || lonIdx === -1) {
+            showToast('GPS coordinates missing! Please upload aligned_dataset.csv, not purely labels.', 'error');
+            return;
+        }
+
+        // Ensure map is initialized
+        if (!analyticsMap) initAnalytics();
+        
+        if (geoLayerGroup) {
+            analyticsMap.removeLayer(geoLayerGroup);
+        }
+        geoLayerGroup = L.featureGroup().addTo(analyticsMap);
+        
+        const bounds = [];
+        window.currentGeoData = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            let row = parseCSVLine(lines[i]);
+            if (row.length < 3) continue;
+            
+            let lat = parseFloat(row[latIdx !== -1 ? latIdx : 0]);
+            let lon = parseFloat(row[lonIdx !== -1 ? lonIdx : 1]);
+            let surface = classIdx !== -1 ? row[classIdx].trim() : 'Unknown';
+            
+            if (isNaN(lat) || isNaN(lon) || lat === 0 || lon === 0) continue;
+            
+            bounds.push([lat, lon]);
+            
+            let plusCode = 'N/A';
+            try {
+                plusCode = typeof olcInstance !== 'undefined' ? olcInstance.encode(lat, lon) : 'N/A';
+            } catch(e) {}
+            
+            window.currentGeoData.push({lat, lon, surface, plusCode});
+            window.registerSurface(surface);
+        }
+        
+        if (bounds.length > 0) {
+            analyticsMap.fitBounds(bounds, { padding: [20, 20] });
+            document.getElementById('geo-stats-text').innerText = `Loaded ${bounds.length} waypoints via +Codes`;
+            window.renderLegend();
+            window.updateMapState();
+        }
+        
+    } catch (err) {
+        showToast('Error reading GPS CSV: ' + err.message, 'error');
+    }
+};
+
+window.exportGeospatialCSV = async function() {
+    const { ipcRenderer } = require('electron');
+    if (!window.currentGeoData || window.currentGeoData.length === 0) {
+        showToast('No geospatial data to export!', 'error');
+        return;
+    }
+    
+    try {
+        let csvContent = 'Latitude,Longitude,Surface,PlusCode\n';
+        for (const pt of window.currentGeoData) {
+            csvContent += `${pt.lat},${pt.lon},${pt.surface},${pt.plusCode}\n`;
+        }
+        
+        const savePath = await ipcRenderer.invoke('dialog:saveCSV');
+        if (!savePath) return; // User canceled
+        
+        require('fs').writeFileSync(savePath, csvContent, 'utf-8');
+        showToast('CSV Exported Successfully!', 'success');
+    } catch (err) {
+        showToast('Error saving CSV: ' + err.message, 'error');
+    }
+};
+
+// --- Scrubber & FFT Mock ---
+function initScrubber(videoPlayer) {
+    const scrubber = document.getElementById('inf-scrubber');
+    const fftCanvas = document.getElementById('fft-canvas');
+    if(!scrubber || !fftCanvas) return;
+    
+    const ctx = fftCanvas.getContext('2d');
+    
+    // Mock FFT Bars
+    function drawFFT() {
+        if(videoPlayer.paused) return;
+        ctx.clearRect(0, 0, fftCanvas.width, fftCanvas.height);
+        const barWidth = 4;
+        const totalBars = Math.floor(fftCanvas.width / (barWidth + 1));
+        
+        ctx.fillStyle = '#10b981'; // Emerald
+        for(let i = 0; i < totalBars; i++) {
+            const h = Math.random() * fftCanvas.height;
+            ctx.fillRect(i * (barWidth + 1), fftCanvas.height - h, barWidth, h);
+        }
+    }
+    
+    if(scrubberInterval) clearInterval(scrubberInterval);
+    scrubberInterval = setInterval(() => {
+        if(!videoPlayer.paused && videoPlayer.duration) {
+            const progress = (videoPlayer.currentTime / videoPlayer.duration) * 100;
+            scrubber.value = progress;
+            drawFFT();
+            
+            
+            
+            
+        }
+    }, 100);
+    
+    scrubber.addEventListener('input', (e) => {
+        if(videoPlayer.duration) {
+            videoPlayer.currentTime = (e.target.value / 100) * videoPlayer.duration;
+        }
+    });
+}
+
+
+
+
+
+
+
+window.addEventListener("error", (event) => {
+    logToConsole("ERROR: " + event.message + "<br/>" + event.filename + ":" + event.lineno, true);
+});
+
+
+window.previewExtractVideo = function() {
+    const inputPath = document.getElementById('extractVideoPath') ? document.getElementById('extractVideoPath').value : "";
+    if (inputPath) {
+        logToConsole("ℹ️ Validated Video ready to map: " + inputPath);
+    }
+};
+
+window.chooseOutputDir = async function() {
+    const { ipcRenderer } = require('electron');
+    const path = await ipcRenderer.invoke('dialog:openDirectory');
+    if (path) {
+        document.getElementById('extractCustomOutPath').value = path;
+        logToConsole("ℹ️ Selected Output Directory: " + path);
+    }
+};
+
+window.chooseVideoFile = async function() {
+    const { ipcRenderer } = require('electron');
+    const path = await ipcRenderer.invoke('dialog:openFile');
+    if (path) {
+        document.getElementById('extractVideoPath').value = path;
+        logToConsole("ℹ️ Selected Video File: " + path);
+        previewExtractVideo();
+    }
+};
+
+
+window.chooseAnnoDir = async function() {
+    const { ipcRenderer } = require('electron');
+    const dir = await ipcRenderer.invoke('dialog:openDirectory');
+    if (dir) {
+        document.getElementById('annoDirPath').value = dir;
+        setDirectory();
+    }
+};
+
+window.chooseAnnoVideo = async function() {
+    const { ipcRenderer } = require('electron');
+    const file = await ipcRenderer.invoke('dialog:openFile');
+    if (file) {
+        document.getElementById('annoVideoPath').value = file;
+        setVideoFile();
+    }
+};
+
+window.chooseClipOutDir = async function() {
+    const { ipcRenderer } = require('electron');
+    const dir = await ipcRenderer.invoke('dialog:openDirectory');
+    if (dir) {
+        document.getElementById('clipCustomOutPath').value = dir;
+    }
+};
+
+
+window.chooseAdhocImu = async function() {
+    const { ipcRenderer } = require('electron');
+    const file = await ipcRenderer.invoke('dialog:openCSV');
+    if (file) { document.getElementById('adhocImuPath').value = file; }
+};
+window.chooseAdhocLabel = async function() {
+    const { ipcRenderer } = require('electron');
+    const file = await ipcRenderer.invoke('dialog:openCSV');
+    if (file) { document.getElementById('adhocLabelPath').value = file; }
+};
+
+window.chooseSyncDir = async function() {
+    const { ipcRenderer } = require('electron');
+    const dir = await ipcRenderer.invoke('dialog:openDirectory');
+    if (dir) {
+        document.getElementById('syncDataPath').value = dir;
+    }
+};
+  window.chooseTrainData = async function() {
+      const { ipcRenderer } = require('electron');
+      const file = await ipcRenderer.invoke('dialog:openCSV');
+      if (file) {
+          document.getElementById('trainDataPath').value = file;
+      }
+  };
+// --- Inference Setup & Handlers ---
+window.chooseInfModel = async function() {
+  const { ipcRenderer } = require('electron');
+  const filePath = await ipcRenderer.invoke('dialog:openModel');
+  if (filePath) document.getElementById('infModelPath').value = filePath;
+};
+
+window.chooseInfCsv = async function() {
+  const { ipcRenderer } = require('electron');
+  const filePath = await ipcRenderer.invoke('dialog:openCSV');
+  if (filePath) document.getElementById('infCsvPath').value = filePath;
+};
+
+window.chooseInfVideo = async function() {
+  const { ipcRenderer } = require('electron');
+  const filePath = await ipcRenderer.invoke('dialog:openVideo');
+  if (filePath) {
+    document.getElementById('infVideoPath').value = filePath;
+    document.getElementById('inf-video').src = `file://${filePath}`;
+  }
+};
+
+// --- App-Based Annotation & Canvas ---
+
+// 1. Interactive CLIP Search Handlers
+window.triggerInteractiveClip = function() {
+  const promptInput = document.getElementById('interactive-clip-prompt');
+  const videoPlayer = document.getElementById('video-player');
+  
+  if (!promptInput.value) {
+      showToast('Please type a search phrase first.', 'error');
+      return;
+  }
+  
+  if (!videoPlayer || !videoPlayer.src) {
+      showToast('Please map a master video first prior to searching frames.', 'error');
+      return; 
+  }
+  
+  const currentTime = videoPlayer.currentTime;
+  const promptTxt = promptInput.value;
+  const videoPath = document.getElementById('annoVideoPath').value;
+  
+  logToConsole(`[Interactive Search] Triggering specialized zero-shot inference for: "${promptTxt}" @ ${currentTime.toFixed(3)}s`);
+  document.getElementById('spinner-clip-interactive').classList.remove('hidden');
+  
+  const { spawn } = require('child_process');
+  const path = require('path');
+  const fs = require('fs');
+  const interactiveScript = path.join(__dirname, '../../data_pipeline/clip_interactive.py');
+  
+  // Choose python env
+  const pythonPath = fs.existsSync(path.join(__dirname, '../../venv/bin/python')) 
+    ? path.join(__dirname, '../../venv/bin/python') 
+    : 'python3';
+    
+  const child = spawn(pythonPath, [
+      interactiveScript,
+      '--video', videoPath,
+      '--time', currentTime.toString(),
+      '--prompt', promptTxt
+  ]);
+
+  let outputData = '';
+  
+  child.stdout.on('data', (data) => {
+      outputData += data.toString();
+  });
+  
+  child.stderr.on('data', (data) => {
+      console.warn('Interactive CLIP STDERR:', data.toString());
+  });
+  
+  child.on('close', (code) => {
+      document.getElementById('spinner-clip-interactive').classList.add('hidden');
+      
+      if (code !== 0) {
+          showToast('Inference failed.', 'error');
+          logToConsole('[Interactive Search] Inference failed (Script error).');
+          return;
+      }
+      
+      try {
+          const res = JSON.parse(outputData.trim().split('\n').pop()); // last line
+          if (res.error) {
+              showToast(res.error, 'error'); return;
+          }
+          if (res.success) {
+              logToConsole(`[Interactive Search] Identified "${promptTxt}" cluster! Score: ${res.score.toFixed(3)}`);
+              
+              const box = res.box; // [x, y, w, h] in original video dimensions
+              const videoWidth = res.original_width;
+              const videoHeight = res.original_height;
+              
+              drawBoundingBox(promptTxt, box, videoWidth, videoHeight);
+              
+              // Automatically save to manual_annotations.csv
+              const csvPath = path.join(__dirname, '../../manual_annotations.csv');
+              
+              if (!fs.existsSync(csvPath)) {
+                  fs.writeFileSync(csvPath, "video,timestamp,x,y,w,h,label,confidence\n");
+              }
+              
+              const row = `${videoPath},${currentTime.toFixed(3)},${box[0]},${box[1]},${box[2]},${box[3]},${promptTxt},1.0\n`;
+              fs.appendFileSync(csvPath, row);
+              logToConsole(`Saved point data to ${csvPath}`);
+          }
+      } catch (err) {
+          showToast('Failed to parse Python response', 'error');
+          console.error(err, outputData);
+      }
+  });
+}
+
+function drawBoundingBox(label, boxCoords, rawVidW, rawVidH) {
+    const canvas = document.getElementById('annotation-layer');
+    if (!canvas) return;
+    
+    // Internal canvas resolution
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Scale coords to match frontend CSS box
+    const scaleX = canvas.width / rawVidW;
+    const scaleY = canvas.height / rawVidH;
+    
+    const x = boxCoords[0] * scaleX;
+    const y = boxCoords[1] * scaleY;
+    const w = boxCoords[2] * scaleX;
+    const h = boxCoords[3] * scaleY;
+    
+    ctx.strokeStyle = '#10B981'; // Emerald
+    ctx.lineWidth = 3;
+    ctx.setLineDash([8, 4]); // Dashed line for search result
+    ctx.strokeRect(x, y, w, h);
+    
+    // Draw Label bubble
+    ctx.fillStyle = '#10B981';
+    ctx.fillRect(x, Math.max(0, y - 24), ctx.measureText(label).width + 16, 24);
+    
+    ctx.fillStyle = '#111827';
+    ctx.font = 'bold 12px monospace';
+    ctx.fillText(label, x + 8, Math.max(0, y - 24) + 16);
+}
+
+// 2. Manual Canvas Drawing Logic
+document.addEventListener('DOMContentLoaded', () => {
+    const canvas = document.getElementById('annotation-layer');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    let startX = 0;
+    let startY = 0;
+    
+    // Ensure resolution
+    const resizeCanvas = () => {
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+    };
+    
+    window.addEventListener('resize', resizeCanvas);
+    
+    canvas.addEventListener('mousedown', (e) => {
+        resizeCanvas(); // Snap res just in case
+        isDrawing = true;
+        const rect = canvas.getBoundingClientRect();
+        startX = e.clientX - rect.left;
+        startY = e.clientY - rect.top;
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if (!isDrawing) return;
+        
+        const rect = canvas.getBoundingClientRect();
+        const currentX = e.clientX - rect.left;
+        const currentY = e.clientY - rect.top;
+        
+        const width = currentX - startX;
+        const height = currentY - startY;
+        
+        // Clear previous frame logic before drawing next preview box
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.strokeStyle = '#F43F5E'; // Red/Rose for manual draw
+        ctx.lineWidth = 2;
+        ctx.setLineDash([]); 
+        ctx.strokeRect(startX, startY, width, height);
+    });
+
+    canvas.addEventListener('mouseup', (e) => {
+        if(!isDrawing) return;
+        isDrawing = false;
+        
+        const rect = canvas.getBoundingClientRect();
+        const endX = e.clientX - rect.left;
+        const endY = e.clientY - rect.top;
+        
+        const width = endX - startX;
+        const height = endY - startY;
+        
+        if (Math.abs(width) > 10 && Math.abs(height) > 10) {
+            logToConsole(`[Manual Annotation] Appended bounding box: [${startX.toFixed(1)}, ${startY.toFixed(1)}, ${width.toFixed(1)}, ${height.toFixed(1)}]`);
+            showToast('Manual bounding box locked.', 'success');
+            
+            const videoPlayer = document.getElementById('video-player');
+            const promptInput = document.getElementById('interactive-clip-prompt');
+            const videoPath = document.getElementById('annoVideoPath').value;
+            
+            if (videoPlayer && videoPlayer.src) {
+                // Map from canvas sizing back to native video sizing
+                const rawVidW = videoPlayer.videoWidth || 1920; 
+                const rawVidH = videoPlayer.videoHeight || 1080;
+                
+                const scaleX = rawVidW / canvas.width;
+                const scaleY = rawVidH / canvas.height;
+                
+                const realX = Math.round(startX * scaleX);
+                const realY = Math.round(startY * scaleY);
+                const realW = Math.round(width * scaleX);
+                const realH = Math.round(height * scaleY);
+                
+                let label = promptInput.value || "pothole"; // Default label if empty
+                const currentTime = videoPlayer.currentTime;
+                
+                const fs = require('fs');
+                const path = require('path');
+                const csvPath = path.join(__dirname, '../../manual_annotations.csv');
+                
+                // Write header if file doesn't exist
+                if (!fs.existsSync(csvPath)) {
+                    fs.writeFileSync(csvPath, "video,timestamp,x,y,w,h,label,confidence\n");
+                }
+                
+                const row = `${videoPath},${currentTime.toFixed(3)},${realX},${realY},${realW},${realH},${label},1.0\n`;
+                fs.appendFileSync(csvPath, row);
+                logToConsole(`Saved manual annotation to backend dataset (labels.csv context).`);
+                
+                // Draw label bubble to confirm it's captured
+                ctx.fillStyle = '#F43F5E';
+                ctx.fillRect(startX, Math.max(0, startY - 24), ctx.measureText(label).width + 16, 24);
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = 'bold 12px monospace';
+                ctx.fillText(label, startX + 8, Math.max(0, startY - 24) + 16);
+            }
+            
+        } else {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Too small, clear it
+        }
+    });
+});
+
+
+// Auto-Generated Dataset Review Logic
+let currentDatasetImages = [];
+let currentDatasetIndex = 0;
+let isDrawingDataset = false;
+let datasetStartX = 0;
+let datasetStartY = 0;
+let currentBoxes = [];
+let selectedBoxIndex = -1;
+
+function setupDatasetGallery() {
+    const { ipcRenderer } = require('electron');
+    const btnUploadAutoDataset = document.getElementById('btn-upload-auto-dataset');
+    const datasetPathLabel = document.getElementById('dataset-path-label');
+    const datasetGalleryView = document.getElementById('dataset-gallery-view');
+    const datasetPreviewImg = document.getElementById('dataset-preview-img');
+    const datasetAnnotationCanvas = document.getElementById('dataset-annotation-canvas');
+    const btnDatasetPrev = document.getElementById('btn-dataset-prev');
+    const btnDatasetNext = document.getElementById('btn-dataset-next');
+    const datasetCounter = document.getElementById('dataset-counter');
+    const btnDatasetSave = document.getElementById('btn-dataset-save');
+    const btnToolClear = document.getElementById('btn-tool-clear');
+    const datasetLabelSelect = document.getElementById('dataset-label-select');
+    const datasetColorBox = document.getElementById('dataset-color-box');
+    const datasetColorFont = document.getElementById('dataset-color-font');
+    const datasetSliderThickness = document.getElementById('dataset-slider-thickness');
+    const datasetSliderOpacity = document.getElementById('dataset-slider-opacity');
+    const btnDatasetDeleteSelected = document.getElementById('btn-dataset-delete-selected');
+
+    logToConsole('[Dataset Gallery] Init UI check: ' + !!btnUploadAutoDataset + ' ' + !!datasetAnnotationCanvas);
+    if (!btnUploadAutoDataset || !datasetAnnotationCanvas) return;
+
+    let datasetContext = datasetAnnotationCanvas.getContext('2d');
+
+    function renderDatasetCanvas(currentX, currentY) {
+        datasetContext.clearRect(0, 0, datasetAnnotationCanvas.width, datasetAnnotationCanvas.height);
+        
+        // Draw saved boxes
+        for (let i = 0; i < currentBoxes.length; i++) {
+            let box = currentBoxes[i];
+            let bColor = box.colorBox || '#F43F5E';
+            let fColor = box.colorFont || '#000000';
+            let thick = box.thickness || 2;
+            
+            // Only keeping the stroke perfectly opaque and solid
+            datasetContext.globalAlpha = 1.0;
+
+            datasetContext.strokeStyle = i === selectedBoxIndex ? '#00ff00' : bColor;
+            datasetContext.fillStyle = i === selectedBoxIndex ? '#00ff00' : bColor;
+            datasetContext.lineWidth = i === selectedBoxIndex ? thick + 2 : thick;
+
+            datasetContext.strokeRect(box.x, box.y, box.w, box.h);
+            
+            // Draw label perfectly opaque
+            if (box.label) {
+                datasetContext.globalAlpha = 1.0; // Keep font fully readable
+                datasetContext.fillStyle = i === selectedBoxIndex ? '#00ff00' : bColor;
+                datasetContext.fillRect(box.x, Math.max(0, box.y - 20), datasetContext.measureText(box.label).width + 10, 20);
+                datasetContext.fillStyle = fColor;
+                datasetContext.font = 'bold 12px monospace';
+                datasetContext.fillText(box.label, box.x + 5, Math.max(0, box.y - 20) + 14);
+            }
+        }
+
+        // Reset alpha for drag box
+        datasetContext.globalAlpha = 1.0;
+
+        // Draw current dragging box
+        if (isDrawingDataset && currentX !== undefined && currentY !== undefined) {
+            let dragThick = datasetSliderThickness ? parseInt(datasetSliderThickness.value) : 2;
+            
+            datasetContext.globalAlpha = 1.0;
+            datasetContext.strokeStyle = '#e0e0e0';
+            datasetContext.lineWidth = dragThick;
+            datasetContext.strokeRect(datasetStartX, datasetStartY, currentX - datasetStartX, currentY - datasetStartY);
+        }
+    }
+
+    function loadDatasetImage(index) {
+        if (index >= 0 && index < currentDatasetImages.length) {
+            datasetPreviewImg.src = "file://" + currentDatasetImages[index];
+            datasetCounter.innerText = (index + 1) + " / " + currentDatasetImages.length;
+            currentBoxes = [];
+            selectedBoxIndex = -1;
+            
+            if (datasetAnnotationCanvas.width > 0) {
+                renderDatasetCanvas();
+            }
+            // Update label select UI if needed
+            if (datasetLabelSelect) datasetLabelSelect.value = "0 - bicycle";
+        }
+    }
+
+    datasetPreviewImg.onload = () => {
+        datasetAnnotationCanvas.width = datasetPreviewImg.clientWidth;
+        datasetAnnotationCanvas.height = datasetPreviewImg.clientHeight;
+        renderDatasetCanvas();
+    };
+
+    btnUploadAutoDataset.addEventListener('click', async () => {
+        logToConsole('[Dataset Gallery] Upload button clicked');
+        const folderPath = await ipcRenderer.invoke('dialog:openDirectory');
+        if (folderPath) {
+            datasetPathLabel.innerText = folderPath;
+            currentDatasetImages = await ipcRenderer.invoke('read-dir-images', folderPath);
+            if (currentDatasetImages && currentDatasetImages.length > 0) {
+                currentDatasetIndex = 0;
+                datasetGalleryView.classList.remove('hidden');
+                loadDatasetImage(currentDatasetIndex);
             } else {
-                commitSegment();
-                currentSegmentSurface = s;
-                currentSegmentPoints = [[pt.lat, pt.lon]];
-                currentSegmentDistance = dist;
+                logToConsole("[WARN] No images found");
             }
-        } else {
-             commitSegment();
-             if (isVisible) {
-                 let color = window.classState[s] ? window.classState[s].color : '#fff';
-                 L.circleMarker([pt.lat, pt.lon], {
-                    radius: 5,
-                    fillColor: color,
-                    color: color,
-                    weight: 1,
-                    opacity: 1,
-                    fillOpacity: 0.8
-                 }).bindTooltip(`<b>${s}</b><br/>Dist: ${dist}m`, {
-                    className: 'bg-[#111] text-white border-[#333]'
-                 }).addTo(geoLayerGroup);
-             }
         }
+    });
+
+    btnDatasetPrev.addEventListener('click', () => {
+        if (currentDatasetIndex > 0) {
+            currentDatasetIndex--;
+            loadDatasetImage(currentDatasetIndex);
+        }
+    });
+
+    btnDatasetNext.addEventListener('click', () => {
+        if (currentDatasetIndex < currentDatasetImages.length - 1) {
+            currentDatasetIndex++;
+            loadDatasetImage(currentDatasetIndex);
+        }
+    });
+
+    btnDatasetSave.addEventListener('click', async () => {
+        if (currentDatasetImages.length === 0) return;
+        selectedBoxIndex = -1; // hide selection before saving
+        renderDatasetCanvas();
+        
+        const offscreen = document.createElement('canvas');
+        offscreen.width = datasetPreviewImg.clientWidth;
+        offscreen.height = datasetPreviewImg.clientHeight;
+        const ctx = offscreen.getContext('2d');
+        
+        ctx.drawImage(datasetPreviewImg, 0, 0, offscreen.width, offscreen.height);
+        ctx.drawImage(datasetAnnotationCanvas, 0, 0);
+
+        const dataUrl = offscreen.toDataURL('image/jpeg', 1.0);
+        const success = await ipcRenderer.invoke('save-annotated-image', currentDatasetImages[currentDatasetIndex], dataUrl);
+        if (success) {
+            logToConsole("[SUCCESS] Saved frame: " + currentDatasetImages[currentDatasetIndex]);
+            btnDatasetSave.innerHTML = "SAVED!";
+            setTimeout(() => btnDatasetSave.innerHTML = "[SAVE] Overwrite Frame", 1500);
+        }
+    });
+
+    btnToolClear.addEventListener('click', () => {
+        currentBoxes = [];
+        selectedBoxIndex = -1;
+        renderDatasetCanvas();
+    });
+
+    if (datasetLabelSelect) {
+        datasetLabelSelect.addEventListener('change', (e) => {
+            if (selectedBoxIndex !== -1 && currentBoxes[selectedBoxIndex]) {
+                currentBoxes[selectedBoxIndex].label = e.target.value;
+                renderDatasetCanvas();
+            }
+        });
     }
-    commitSegment(); // Commit remaining points
 
-    
-    
-    
-    // Update Distance Bar Chart
-    const barCtx = document.getElementById('distance-canvas'); // FIXED
-    if (barCtx) {
-        const labels = Object.keys(distanceAgg);
-        const data = labels.map(l => distanceAgg[l]);
-        const bColors = labels.map(l => (window.classState[l] && window.classState[l].color) ? window.classState[l].color : '#555');
+    if (datasetColorBox) {
+        datasetColorBox.addEventListener('input', (e) => {
+            if (selectedBoxIndex !== -1 && currentBoxes[selectedBoxIndex]) {
+                currentBoxes[selectedBoxIndex].colorBox = e.target.value;
+                renderDatasetCanvas();
+            }
+        });
+    }
 
-        if (window.distanceChart) {
-            window.distanceChart.data.labels = labels;
-            window.distanceChart.data.datasets[0].data = data;
-            window.distanceChart.data.datasets[0].backgroundColor = bColors;
-            window.distanceChart.update();
-        } else {
-            window.distanceChart = new Chart(barCtx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Distance (m)',
-                        data: data,
-                        backgroundColor: bColors,
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: '#333' } },
-                        x: { grid: { display: false } }
-                    }
+    if (datasetColorFont) {
+        datasetColorFont.addEventListener('input', (e) => {
+            if (selectedBoxIndex !== -1 && currentBoxes[selectedBoxIndex]) {
+                currentBoxes[selectedBoxIndex].colorFont = e.target.value;
+                renderDatasetCanvas();
+            }
+        });
+    }
+
+    if (datasetSliderThickness) {
+        datasetSliderThickness.addEventListener('input', (e) => {
+            if (selectedBoxIndex !== -1 && currentBoxes[selectedBoxIndex]) {
+                currentBoxes[selectedBoxIndex].thickness = parseInt(e.target.value);
+                renderDatasetCanvas();
+            }
+        });
+    }
+
+    if (datasetSliderOpacity) {
+        datasetSliderOpacity.addEventListener('input', (e) => {
+            if (selectedBoxIndex !== -1 && currentBoxes[selectedBoxIndex]) {
+                currentBoxes[selectedBoxIndex].opacity = parseFloat(e.target.value);
+                renderDatasetCanvas();
+            }
+        });
+    }
+
+    if (btnDatasetDeleteSelected) {
+        btnDatasetDeleteSelected.addEventListener('click', () => {
+            if (selectedBoxIndex !== -1 && currentBoxes[selectedBoxIndex]) {
+                currentBoxes.splice(selectedBoxIndex, 1);
+                selectedBoxIndex = -1;
+                renderDatasetCanvas();
+            }
+        });
+    }
+
+    datasetAnnotationCanvas.addEventListener('mousedown', (e) => {
+        const rect = datasetAnnotationCanvas.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
+
+        // Check if we clicked an existing box (from top to bottom / newest to oldest visually)
+        let clickedExistingBox = false;
+        for (let i = currentBoxes.length - 1; i >= 0; i--) {
+            const box = currentBoxes[i];
+            const left = Math.min(box.x, box.x + box.w);
+            const right = Math.max(box.x, box.x + box.w);
+            const top = Math.min(box.y, box.y + box.h);
+            const bottom = Math.max(box.y, box.y + box.h);
+
+            if (clickX >= left && clickX <= right && clickY >= top && clickY <= bottom) {
+                selectedBoxIndex = i;
+                clickedExistingBox = true;
+                if (datasetLabelSelect) {
+                    datasetLabelSelect.value = box.label || "0 - bicycle";
                 }
+                if (datasetColorBox) {
+                    datasetColorBox.value = box.colorBox || "#F43F5E";
+                }
+                if (datasetColorFont) {
+                    datasetColorFont.value = box.colorFont || "#000000";
+                }
+                if (datasetSliderThickness) {
+                    datasetSliderThickness.value = box.thickness || 2;
+                }
+                if (datasetSliderOpacity) {
+                    let dispOpac = box.opacity !== undefined ? box.opacity : 100;
+                    if (dispOpac <= 1.0 && dispOpac > 0) dispOpac *= 100;
+                    datasetSliderOpacity.value = dispOpac;
+                }
+                break;
+            }
+        }
+
+        if (clickedExistingBox) {
+            isDrawingDataset = false;
+            renderDatasetCanvas();
+        } else {
+            isDrawingDataset = true;
+            selectedBoxIndex = -1;
+            datasetStartX = clickX;
+            datasetStartY = clickY;
+            renderDatasetCanvas();
+        }
+    });
+
+    datasetAnnotationCanvas.addEventListener('mousemove', (e) => {
+        if (!isDrawingDataset) return;
+        const rect = datasetAnnotationCanvas.getBoundingClientRect();
+        const currentX = e.clientX - rect.left;
+        const currentY = e.clientY - rect.top;
+        renderDatasetCanvas(currentX, currentY);
+    });
+
+    datasetAnnotationCanvas.addEventListener('mouseup', (e) => {
+        if (!isDrawingDataset) return;
+        isDrawingDataset = false;
+        
+        const rect = datasetAnnotationCanvas.getBoundingClientRect();
+        const currentX = e.clientX - rect.left;
+        const currentY = e.clientY - rect.top;
+
+        const w = currentX - datasetStartX;
+        const h = currentY - datasetStartY;
+
+        // Only add if it's large enough
+        if (Math.abs(w) > 5 && Math.abs(h) > 5) {
+            let initialLabel = "0 - bicycle";
+            let cBox = "#F43F5E";
+            let cFont = "#000000";
+            let thick = 2;
+            let opac = 100;
+
+            if (datasetLabelSelect) initialLabel = datasetLabelSelect.value;
+            if (datasetColorBox) cBox = datasetColorBox.value;
+            if (datasetColorFont) cFont = datasetColorFont.value;
+            if (datasetSliderThickness) thick = parseInt(datasetSliderThickness.value);
+            if (datasetSliderOpacity) opac = parseFloat(datasetSliderOpacity.value);
+            
+            const newBox = {
+                x: datasetStartX,
+                y: datasetStartY,
+                w: w,
+                h: h,
+                label: initialLabel,
+                colorBox: cBox,
+                colorFont: cFont,
+                thickness: thick,
+                opacity: opac
+            };
+            currentBoxes.push(newBox);
+            selectedBoxIndex = currentBoxes.length - 1; // auto select new box
+            if (datasetLabelSelect) datasetLabelSelect.value = initialLabel;
+        }
+        
+        renderDatasetCanvas();
+    });
+}
+
+function setupClipClasses() {
+    const labelsPath = path.join(rootDir, 'config/labels.json');
+    if (!fs.existsSync(labelsPath)) return;
+    
+    let labelsData;
+    try {
+        labelsData = JSON.parse(fs.readFileSync(labelsPath, 'utf8'));
+    } catch(e) {
+        console.error('Error parsing labels.json', e);
+        return;
+    }
+    const targetClasses = Object.keys(labelsData);
+    const clipContainer = document.getElementById('clip-classes-container');
+    const selectAllBtn = document.getElementById('btn-select-all');
+    const datasetLabelSelect = document.getElementById('dataset-label-select');
+
+    // Populate drop down for manual manual annotations label select
+    if (datasetLabelSelect) {
+        datasetLabelSelect.innerHTML = '';
+        targetClasses.forEach(cls => {
+            const opt = document.createElement('option');
+            opt.value = cls;
+            opt.innerText = cls;
+            datasetLabelSelect.appendChild(opt);
+        });
+    }
+
+    if (clipContainer) {
+        clipContainer.innerHTML = '';
+        clipContainer.className = 'w-full mb-6 max-h-72 overflow-y-auto bg-[#050505] p-2 border border-[#333] shadow-inner'; // Reset grid classes
+
+        // Define categories based on substrings/keywords
+        const categories = {
+            "Anomalies & Defects": ["pothole", "crack", "uneven_surface", "rutting", "shoving", "corrugation", "bleeding", "polished_aggregate", "pumping", "raveling", "stripping", "delamination"],
+            "Road Surface Types": ["asphalt", "gravel", "sand", "mud", "cobblestone", "brick_paving", "concrete_pavers", "dirt_road", "macadam", "grassy_path", "wood_planks", "metal_grating", "paved_path", "unpaved_path"],
+            "Obstacles & Hazards": ["water", "bump", "cushion", "rumble_strips", "table", "manhole", "drain", "grate", "leaves", "branches", "ice", "snow", "glass", "metal_plate", "rail_tracks", "tree_root", "cone", "bollard", "barrier", "fallen_tree", "debris", "plastic_bag", "trash_can", "spill", "patch"],
+            "Infrastructure & Signs": ["lines", "marking", "crosswalk", "tactile_paving", "curb", "shadow", "light", "sign", "stop", "station"],
+            "Vehicles (Cars/Trucks)": ["car", "truck", "van", "suv", "jeep", "crossover", "sedan", "coupe", "convertible", "hatchback", "wagon", "sweeper", "plow", "vehicle"],
+            "Other Road Users": ["bicycle", "pedestrian", "dog", "cat", "squirrel", "motorcycle", "bus", "scooter"],
+            "Uncategorized": [] // Fallback
+        };
+
+        const categorizedClasses = {};
+        for (const cat in categories) categorizedClasses[cat] = [];
+
+        targetClasses.forEach(cls => {
+            const clsName = cls.split(' - ')[1] || cls;
+            let matched = false;
+            for (const [catName, keywords] of Object.entries(categories)) {
+                if (catName === "Uncategorized") continue;
+                if (keywords.some(kw => clsName.toLowerCase().includes(kw))) {
+                    categorizedClasses[catName].push(cls);
+                    matched = true;
+                    break;
+                }
+            }
+            if (!matched) categorizedClasses["Uncategorized"].push(cls);
+        });
+
+        // Build the accordion UI for each category
+        for (const [catName, classes] of Object.entries(categorizedClasses)) {
+            if (classes.length === 0) continue;
+
+            const categoryBox = document.createElement('div');
+            categoryBox.className = 'collapse collapse-arrow bg-transparent border border-[#222] rounded-none mb-2';
+            
+            const catHeader = document.createElement('input');
+            catHeader.type = 'checkbox';
+            catHeader.checked = true; // start open
+
+            const catTitle = document.createElement('div');
+            catTitle.className = 'collapse-title text-xs font-semibold uppercase tracking-widest text-[#888] bg-[#111] min-h-0 p-2 flex items-center justify-between';
+            catTitle.innerHTML = `<span>${catName} (${classes.length})</span>`;
+
+            const catContent = document.createElement('div');
+            catContent.className = 'collapse-content p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2';
+
+            classes.forEach(cls => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex items-center gap-2 mb-1';
+                wrapper.innerHTML = `
+                    <input type="checkbox" id="clip-cls-${cls}" value="${cls}" checked class="checkbox checkbox-xs checkbox-primary clip-class-checkbox" />
+                    <label for="clip-cls-${cls}" class="text-[10px] sm:text-xs truncate text-[#e0e0e0] cursor-pointer" title="${cls}">${cls}</label>
+                `;
+                catContent.appendChild(wrapper);
+            });
+
+            categoryBox.appendChild(catHeader);
+            categoryBox.appendChild(catTitle);
+            categoryBox.appendChild(catContent);
+            clipContainer.appendChild(categoryBox);
+        }
+
+        // Search Logic
+        const searchInput = document.getElementById('search-clip-classes');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                const categories = clipContainer.querySelectorAll('.collapse');
+                categories.forEach(cat => {
+                    let hasVisible = false;
+                    const items = cat.querySelectorAll('.flex.items-center.gap-2');
+                    items.forEach(item => {
+                        const lbl = item.querySelector('label').innerText.toLowerCase();
+                        if (lbl.includes(term)) {
+                            item.style.display = 'flex';
+                            hasVisible = true;
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                    
+                    // Show or hide the whole category based on matches
+                    if (hasVisible) {
+                        cat.style.display = 'block';
+                        cat.querySelector('.collapse-content').style.display = 'grid'; // keep contents open when searching
+                    } else {
+                        cat.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        if (selectAllBtn) {
+            selectAllBtn.checked = true;
+            selectAllBtn.addEventListener('change', (e) => {
+                document.querySelectorAll('.clip-class-checkbox').forEach(cb => {
+                    cb.checked = e.target.checked;
+                });
             });
         }
     }
 }
-window.classState[l] && window.classState[l].color) ? window.classState[l].color : '#555');
 
-        if (window.distanceChartInstance) {
-            window.distanceChartInstance.data.labels = labels;
-            window.distanceChartInstance.data.datasets[0].data = data;
-            window.distanceChartInstance.data.datasets[0].backgroundColor = bColors;
-            window.distanceChartInstance.update();
-        } else {
-            window.distanceChartInstance = new Chart(barCtx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Distance (m)',
-                        data: data,
-                        backgroundColor: bColors,
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: '#333' } },
-                        x: { grid: { display: false } }
-                    }
-                }
-            });
-        }
+document.addEventListener('DOMContentLoaded', () => {
+    setupDatasetGallery();
+    setupClipClasses();
+});
+
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setupDatasetGallery();
+    setupClipClasses();
+}
+
+// ==== NEW LOGIC FOR MANUAL CAPTURE & ANNOTATION TOGGLE ====
+let manualCaptureFolder = '';
+let isManualAnnotationOn = false;
+
+document.addEventListener('DOMContentLoaded', () => {
+    const btnToggle = document.getElementById('btn-toggle-annotation');
+    const btnSetFolder = document.getElementById('btn-set-capture-folder');
+    const btnCapture = document.getElementById('btn-capture-frame');
+    const annotationLayer = document.getElementById('annotation-layer');
+    const videoPlayer = document.getElementById('video-player');
+
+    if (btnToggle) {
+        btnToggle.addEventListener('click', () => {
+            isManualAnnotationOn = !isManualAnnotationOn;
+            if (isManualAnnotationOn) {
+                btnToggle.innerText = "Annotation: ON";
+                btnToggle.classList.replace('text-[#e0e0e0]', 'text-emerald-400');
+                annotationLayer.classList.remove('pointer-events-none');
+                annotationLayer.classList.add('pointer-events-auto');
+            } else {
+                btnToggle.innerText = "Annotation: OFF";
+                btnToggle.classList.replace('text-emerald-400', 'text-[#e0e0e0]');
+                annotationLayer.classList.remove('pointer-events-auto');
+                annotationLayer.classList.add('pointer-events-none');
+            }
+        });
+    }
+
+    if (btnSetFolder) {
+        btnSetFolder.addEventListener('click', async () => {
+            const { ipcRenderer } = require('electron');
+            const path = await ipcRenderer.invoke('dialog:openDirectory');
+            if (path) {
+                manualCaptureFolder = path;
+                showToast("Capture folder set to: " + path, "success");
+            }
+        });
+    }
+
+    if (btnCapture) {
+        btnCapture.addEventListener('click', async () => {
+            if (!videoPlayer || !videoPlayer.src) {
+                showToast("No video loaded to capture", "error");
+                return;
+            }
+            if (!manualCaptureFolder) {
+                showToast("Please Set Output Folder first", "error");
+                return;
+            }
+
+            const rawVidW = videoPlayer.videoWidth;
+            const rawVidH = videoPlayer.videoHeight;
+            if (!rawVidW || !rawVidH) return;
+
+            // Draw frame to hidden canvas
+            const hiddenCanvas = document.createElement('canvas');
+            hiddenCanvas.width = rawVidW;
+            hiddenCanvas.height = rawVidH;
+            const hCtx = hiddenCanvas.getContext('2d');
+            
+            // Draw video frame
+            hCtx.drawImage(videoPlayer, 0, 0, rawVidW, rawVidH);
+
+            // Draw annotations on top
+            hCtx.drawImage(annotationLayer, 0, 0, rawVidW, rawVidH);
+
+            // Export to PNG base64
+            const dataUrl = hiddenCanvas.toDataURL('image/png');
+            
+            // Generate filename based on current video time and timestamp
+            const timestamp = new Date().toISOString().replace(/[:.-]/g, '_');
+            const path = require('path');
+            const savePath = path.join(manualCaptureFolder, "capture_" + timestamp + ".png");
+
+            const { ipcRenderer } = require('electron');
+            const success = await ipcRenderer.invoke('save-annotated-image', savePath, dataUrl);
+            if (success) {
+                showToast("Frame captured successfully to " + savePath, "success");
+            } else {
+                showToast("Failed to save frame", "error");
+            }
+        });
+    }
+});
+
+
+function initLossChart() {
+  const ctx = document.getElementById('lossChart');
+  if (!ctx) return;
+  
+  if (lossChartInstance) {
+    lossChartInstance.destroy();
+  }
+  
+  const Chart = window.Chart; // Assuming added to window via html tag
+  if (!Chart) { appendLog('Note: Chart.js not loaded. Live graphs disabled.'); return; }
+
+  lossChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        { label: 'Train Loss', data: [], borderColor: 'rgb(244, 63, 94)', backgroundColor: 'rgba(244, 63, 94, 0.1)', tension: 0.3, pointRadius: 2, fill: false },
+        { label: 'Val Loss', data: [], borderColor: 'rgb(59, 130, 246)', backgroundColor: 'rgba(59, 130, 246, 0.1)', tension: 0.3, pointRadius: 3, borderDash: [5, 5], fill: true }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: true, labels: { color: '#888' } } },
+      scales: {
+        x: { grid: { color: '#222' }, ticks: { color: '#888', maxTicksLimit: 10 } },
+        y: { grid: { color: '#222' }, ticks: { color: '#888' } }
+      },
+      animation: { duration: 300 }
+    }
+  });
+}
+
+
+window.initLossChart = function() {
+  const ctx = document.getElementById('lossChart');
+  if (!ctx) return;
+  
+  if (window.lossChartInstance) {
+    window.lossChartInstance.destroy();
+  }
+  
+  if (typeof Chart === 'undefined') { console.log('Chart.js not loaded'); return; }
+
+  window.lossChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        { label: 'Train Loss', data: [], borderColor: 'rgb(244, 63, 94)', backgroundColor: 'rgba(244, 63, 94, 0.1)', tension: 0.3, pointRadius: 2, fill: false },
+        { label: 'Val Loss', data: [], borderColor: 'rgb(59, 130, 246)', backgroundColor: 'rgba(59, 130, 246, 0.1)', tension: 0.3, pointRadius: 3, borderDash: [5, 5], fill: true }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: true, labels: { color: '#888' } } },
+      scales: {
+        x: { grid: { color: '#222' }, ticks: { color: '#888', maxTicksLimit: 10 } },
+        y: { grid: { color: '#222' }, ticks: { color: '#888' } }
+      },
+      animation: { duration: 300 }
+    }
+  });
+}
+
+function stopActiveProcess() {
+    if (window.activeTrainingProcess) {
+        window.activeTrainingProcess.kill();
+        logToConsole(`
+[System] Process violently terminated.
+`);
     }
 }
 
+window.stopClipProcess = function() {
+    if (window.activeClipProcess) {
+        window.activeClipProcess.kill();
+        logToConsole(`\n[System] Auto Annotation aborted safely.\n`);
+    }
+}
+
+window.chooseResumeModel = async function() {
+  const { ipcRenderer } = require('electron');
+  const file = await ipcRenderer.invoke('dialog:openModel');
+  if (file) {
+    document.getElementById('trainResumePath').value = file;
+  }
+};
+
+window.chooseMetricsFile = async function() {
+    const { ipcRenderer } = require('electron');
+    const filePath = await ipcRenderer.invoke('dialog:openMetrics');
+    if (filePath) {
+        document.getElementById('analyticsFilePath').value = filePath;
+        
+        try {
+            const fs = require('fs');
+            const data = fs.readFileSync(filePath, 'utf-8');
+            const metrics = JSON.parse(data);
+            
+            showToast('Metrics loaded & parsed successfully!', 'success');
+        } catch (e) {
+            console.error(e);
+            showToast('Error reading metrics file.', 'error');
+        }
+    }
+};

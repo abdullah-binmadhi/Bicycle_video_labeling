@@ -1,21 +1,32 @@
-import re
-
-with open('desktop-app/src/renderer.js', 'r', encoding='utf-8') as f:
+with open('desktop-app/src/renderer.js', 'r') as f:
     content = f.read()
 
-# 1. Update initAnalytics to call the filters correctly
-init_match = r'''    // 4\. Temporal Stability \(Flicker\)
-    const ctxStab = document\.getElementById\('stability-canvas'\);'''
+old_str = """
+    } else if (analyticsMap) {
+        setTimeout(() => analyticsMap.invalidateSize(), 300);
+    }
+}
+"""
 
-init_sub = '''    // UI initializations for Filters
-    window.renderTrainingFilter();
-    window.renderDistanceFilter();
+new_str = """
+    } else if (analyticsMap) {
+        setTimeout(() => analyticsMap.invalidateSize(), 300);
+    }
+    
+    // Ensure charts start in their unticked states (empty or correct visual)
+    if (typeof window.updateTrainingCharts === 'function') {
+        window.updateTrainingCharts();
+    }
+    if (typeof window.updateMapState === 'function') {
+        window.updateMapState();
+    }
+}
+"""
 
-    // 4. Temporal Stability (Flicker)
-    const ctxStab = document.getElementById('stability-canvas');'''
-
-content = re.sub(init_match, init_sub, content)
-
-with open('desktop-app/src/renderer.js', 'w', encoding='utf-8') as f:
-    f.write(content)
-
+if old_str in content:
+    content = content.replace(old_str, new_str)
+    with open('desktop-app/src/renderer.js', 'w') as f:
+        f.write(content)
+    print("Fixed initialization.")
+else:
+    print("Could not find old_str")

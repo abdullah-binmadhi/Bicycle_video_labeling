@@ -1233,7 +1233,7 @@ function initAnalytics() {
             'Asphalt': '#10b981',
             'Gravel': '#f59e0b',
             'Cobble': '#3b82f6',
-            'Pothole': '#ef4444', 'Speed Bump': '#a855f7', 'Bicycle Lane': '#2dd4bf', 'Rail Tracks': '#64748b'
+            'Pothole': '#ef4444'
         };
         
         window.currentGeoData = [];
@@ -1289,73 +1289,39 @@ window.renderLegend = function() {
     }
     
     container.innerHTML = '';
-
-    // Ensure all target classes are registered
-    const defaultClasses = ['Asphalt', 'Gravel', 'Cobble', 'Pothole', 'Speed Bump', 'Bicycle Lane', 'Rail Tracks'];
-    defaultClasses.forEach(cls => window.registerSurface(cls));
-    
-    // Segregate based on custom categories
-    const categories = {
-        'Surfaces': [],
-        'Infrastructure': [],
-        'Anomalies': [],
-        'Other': []
-    };
     
     for (const className in window.classState) {
-        const sLow = className.toLowerCase();
-        if (sLow.includes('asphalt') || sLow.includes('gravel') || sLow.includes('cobble') || sLow.includes('134') || sLow.includes('8') || sLow.includes('19')) {
-            categories['Surfaces'].push(className);
-        } else if (sLow.includes('bicycle') || sLow.includes('rail') || sLow.includes('track') || sLow.includes('133') || sLow.includes('18')) {
-            categories['Infrastructure'].push(className);
-        } else if (sLow.includes('pothole') || sLow.includes('bump') || sLow.includes('1') || sLow.includes('5') || sLow.includes('crack')) {
-            categories['Anomalies'].push(className);
-        } else {
-            categories['Other'].push(className);
-        }
-    }
-    
-    for (const category in categories) {
-        if (categories[category].length === 0) continue;
+        const state = window.classState[className];
         
-        const catHeader = document.createElement('div');
-        catHeader.className = 'text-[9px] uppercase text-gray-500 font-bold mt-3 mb-1 border-b border-[#333] pb-1';
-        catHeader.innerText = category;
-        container.appendChild(catHeader);
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex items-center gap-2 mb-2';
         
-        for (const className of categories[category]) {
-            const state = window.classState[className];
-            
-            const wrapper = document.createElement('div');
-            wrapper.className = 'flex items-center gap-2 mb-2 pl-2';
-            
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.checked = state.visible;
-            checkbox.className = 'w-4 h-4 rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-gray-800 cursor-pointer';
-            checkbox.onchange = (e) => {
-                window.classState[className].visible = e.target.checked;
-                window.updateMapState();
-            };
-            
-            const colorPicker = document.createElement('input');
-            colorPicker.type = 'color';
-            colorPicker.value = state.color;
-            colorPicker.className = 'w-6 h-6 p-0 border-0 rounded cursor-pointer bg-transparent';
-            colorPicker.oninput = (e) => {
-                window.classState[className].color = e.target.value;
-                window.updateMapState();
-            };
-            
-            const label = document.createElement('span');
-            label.className = 'text-xs text-gray-300 font-mono flex-1 capitalize';
-            label.innerText = className;
-            
-            wrapper.appendChild(checkbox);
-            wrapper.appendChild(colorPicker);
-            wrapper.appendChild(label);
-            container.appendChild(wrapper);
-        }
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = state.visible;
+        checkbox.className = 'w-4 h-4 rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-gray-800 cursor-pointer';
+        checkbox.onchange = (e) => {
+            window.classState[className].visible = e.target.checked;
+            window.updateMapState();
+        };
+        
+        const colorPicker = document.createElement('input');
+        colorPicker.type = 'color';
+        colorPicker.value = state.color;
+        colorPicker.className = 'w-6 h-6 p-0 border-0 rounded cursor-pointer bg-transparent';
+        colorPicker.oninput = (e) => {
+            window.classState[className].color = e.target.value;
+            window.updateMapState();
+        };
+        
+        const label = document.createElement('span');
+        label.className = 'text-xs text-gray-300 font-mono flex-1 capitalize';
+        label.innerText = className;
+        
+        wrapper.appendChild(checkbox);
+        wrapper.appendChild(colorPicker);
+        wrapper.appendChild(label);
+        container.appendChild(wrapper);
     }
 };
 

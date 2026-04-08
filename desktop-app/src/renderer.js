@@ -365,6 +365,21 @@ function _runScript(scriptKey) {
      if (saveFramesEl && !saveFramesEl.checked) {
          args.push('--no_save_frames');
      }
+     
+     const modelSelect = document.getElementById('clipModelSelect');
+     if (modelSelect) {
+         args.push('--model', modelSelect.value);
+     }
+     
+     const confSlider = document.getElementById('clipConfSlider');
+     if (confSlider) {
+         args.push('--conf', (parseInt(confSlider.value) / 100).toString());
+     }
+     
+     const useClip = document.getElementById('toggle-two-stage');
+     if (useClip && useClip.checked) {
+         args.push('--use_clip');
+     }
 
      const selectedClasses = [];
      document.querySelectorAll('.clip-class-checkbox:checked').forEach(cb => {
@@ -2414,8 +2429,7 @@ function setupClipClasses() {
             "Obstacles & Hazards": ["water", "bump", "cushion", "rumble_strips", "table", "manhole", "drain", "grate", "leaves", "branches", "ice", "snow", "glass", "metal_plate", "rail_tracks", "tree_root", "cone", "bollard", "barrier", "fallen_tree", "debris", "plastic_bag", "trash_can", "spill", "patch"],
             "Infrastructure & Signs": ["lines", "marking", "crosswalk", "tactile_paving", "curb", "shadow", "light", "sign", "stop", "station"],
             "Vehicles (Cars/Trucks)": ["car", "truck", "van", "suv", "jeep", "crossover", "sedan", "coupe", "convertible", "hatchback", "wagon", "sweeper", "plow", "vehicle"],
-            "Other Road Users": ["bicycle", "pedestrian", "dog", "cat", "squirrel", "motorcycle", "bus", "scooter"],
-            "Uncategorized": [] // Fallback
+            "Other Road Users": ["bicycle", "pedestrian", "dog", "cat", "squirrel", "motorcycle", "bus", "scooter"]
         };
 
         const categorizedClasses = {};
@@ -2425,14 +2439,13 @@ function setupClipClasses() {
             const clsName = cls.split(' - ')[1] || cls;
             let matched = false;
             for (const [catName, keywords] of Object.entries(categories)) {
-                if (catName === "Uncategorized") continue;
                 if (keywords.some(kw => clsName.toLowerCase().includes(kw))) {
                     categorizedClasses[catName].push(cls);
                     matched = true;
                     break;
                 }
             }
-            if (!matched) categorizedClasses["Uncategorized"].push(cls);
+            if (!matched) categorizedClasses["Obstacles & Hazards"].push(cls);
         });
 
         // Build the accordion UI for each category

@@ -487,6 +487,26 @@
               </div>
             </div>
 
+            <!-- Model Selection & Thresholds -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6 mt-2">
+              <div class="flex flex-col">
+                 <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2">Model Size</label>
+                 <select id="clipModelSelect" class="select select-sm w-full bg-black border-[#333] focus:border-indigo-400 text-white rounded-none">
+                    <option value="yolov8s-world.pt">Fast (YOLOv8s-World)</option>
+                    <option value="yolov8m-world.pt">Balanced (YOLOv8m-World)</option>
+                    <option value="yolov8l-world.pt" selected>Accurate (YOLOv8l-World)</option>
+                    <option value="yolov8x-world.pt">Max Accuracy (YOLOv8x-World)</option>
+                 </select>
+              </div>
+              <div class="flex flex-col">
+                 <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2 flex justify-between">
+                   <span>Confidence Threshold</span>
+                   <span id="clipConfLabel" class="text-indigo-400 font-mono">25%</span>
+                 </label>
+                 <input type="range" id="clipConfSlider" min="5" max="80" value="25" class="range range-xs range-primary" oninput="document.getElementById('clipConfLabel').innerText = this.value + '%'" />
+              </div>
+            </div>
+
             <!-- Two-Stage Toggle & Execution -->
             <div class="mt-6 flex items-center justify-between bg-indigo-950/20 border border-indigo-500/20 p-4">
                <div>

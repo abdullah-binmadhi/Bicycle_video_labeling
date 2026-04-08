@@ -29,34 +29,46 @@ def parse_args():
     parser.add_argument('--use_clip', action='store_true', help='Pass YOLO crops to CLIP for zero-shot description')
     parser.add_argument('--max_frames', type=int, default=0, help='Max frames to process (0 for unlimited)')
     parser.add_argument('--no_save_frames', action='store_true', help='Skip saving annotated image frames')
+    parser.add_argument('--conf', type=float, default=0.25, help='YOLO confidence threshold')
+    parser.add_argument('--model', type=str, default='yolov8x-world.pt', help='YOLO model weights')
     return parser.parse_args()
 
 class TwoStageAnnotator:
-    def __init__(self, target_classes, use_clip=False):
+    def __init__(self, target_classes, use_clip=False, model="yolov8x-world.pt", conf=0.25):
+        self.conf = conf
         self.device = "mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu")
         
-        print("\n[System] Initializing YOLO-World...")
+        print(f"\n[System] Initializing YOLO-World ({model})...")
         # Using YOLO-World for open-vocabulary zero-shot detection
-        self.yolo = YOLOWorld("yolov8s-world.pt") # Small model for fast local inference
+        self.yolo = YOLOWorld(model) # Initialize the chosen model weight
         
         # Inject the custom target vocabulary into YOLO
         self.target_classes = target_classes
         
         # Clean target classes for YOLO's zero-shot NLP engine (e.g. "133 - bicycle_lane" -> "bicycle lane")
-        self.yolo_classes = [re.sub(r'^\d+\s*-\s*', '', c).replace('_', ' ') for c in self.target_classes]
+        self.yolo_classes = []
+        for c in self.target_classes:
+            clean_c = re.sub(r'^\d+\s*-\s*', '', c).replace('_', ' ')
+            if "bicycle lane" in clean_c or "bike lane" in clean_c or "bicycle mark" in clean_c or "133" in c:
+                clean_c = "red painted bike lane or road with bicycle marking"
+            self.yolo_classes.append(clean_c)
+            
         self.yolo.set_classes(self.yolo_classes)
         print(f"[System] YOLO-World active with NLP vocabulary: {self.yolo_classes}")
         
         self.use_clip = use_clip
         if self.use_clip:
             print("[System] Initializing CLIP Foundation Model for Stage-2 Refinement...")
-            model_id = "openai/clip-vit-base-patch32"
+            model_id = "openai/clip-vit-large-patch14"
             self.clip_processor = CLIPProcessor.from_pretrained(model_id)
             self.clip_model = CLIPModel.from_pretrained(model_id).to(self.device)
             # Create highly descriptive prompt branches for the CLIP evaluator
-            self.clip_prompts = [
-                f"a close up photo of {c}" for c in self.yolo_classes
-            ]
+            self.clip_prompts = []
+            for c in self.yolo_classes:
+                if "red painted bike lane" in c:
+                    self.clip_prompts.append("a street view photo showing a red painted bike lane, or a bicycle mark on the road surface, bicycle priority lane")
+                else:
+                    self.clip_prompts.append(f"a street view photo showing a {c} on the road surface")
             print(f"[System] CLIP Prompts loaded: {self.clip_prompts}")
 
     def run(self, input_dir, csv_path, max_frames=0, save_frames=True):
@@ -106,7 +118,7 @@ class TwoStageAnnotator:
             
             try:
                 # Stage 1: YOLO-World
-                results = self.yolo.predict(img_path, conf=0.05, verbose=False)
+                results = self.yolo.predict(img_path, conf=self.conf, verbose=False)
                 objects_in_frame = 0
                 
                 # Clean the frame name to just timestamp.jpg for standardization
@@ -128,6 +140,14 @@ class TwoStageAnnotator:
                             x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
                             label = self.target_classes[cls_id]
                             
+                            # Simple mono-distance calculation to surface based on bounding box
+                            img_h = img_to_draw.shape[0] if img_to_draw is not None else 1080 
+                            horizon_y = img_h / 2.0
+                            y_diff = max(1.0, y2 - horizon_y)
+                            distance_m = (1.5 * 800) / y_diff
+                            if distance_m > 100 or distance_m < 0:
+                                distance_m = 100.0
+                                
                             clip_desc = ""
                             clip_conf = 0.0
                             
@@ -194,7 +214,7 @@ class TwoStageAnnotator:
 if __name__ == "__main__":
     args = parse_args()
     print(f"Reading frames from: {args.frames_dir}")
-    annotator = TwoStageAnnotator(target_classes=args.classes, use_clip=args.use_clip)
+    annotator = TwoStageAnnotator(target_classes=args.classes, use_clip=args.use_clip, model=args.model, conf=args.conf)
     
     # args.no_save_frames is True when the user toggles OFF saving. 
     # So if it's False, save_frames = True

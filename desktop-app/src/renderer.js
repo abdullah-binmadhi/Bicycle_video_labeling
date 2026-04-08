@@ -1,3 +1,81 @@
+window.defaultClasses = ["0 - bicycle", "1 - potholes", "2 - manhole", "3 - water_puddle", "4 - uneven_surface", "5 - speed_bump", "6 - drain", "7 - crack", "8 - gravel", "9 - sand", "10 - mud", "11 - wet_leaves", "12 - dry_leaves", "13 - branches", "14 - ice", "15 - snow", "16 - glass", "17 - metal_plate", "18 - rail_tracks", "19 - cobblestone", "20 - brick_paving", "21 - concrete_pavers", "22 - tree_root", "23 - painted_lines", "24 - road_marking", "25 - crosswalk", "26 - pedestrian", "27 - dog", "28 - cat", "29 - squirrel", "30 - car", "31 - motorcycle", "32 - truck", "33 - bus", "34 - scooter", "35 - e-scooter", "36 - traffic_cone", "37 - bollard", "38 - construction_barrier", "39 - fallen_tree", "40 - debris", "41 - plastic_bag", "42 - trash_can", "43 - standing_water", "44 - oil_spill", "45 - smooth_asphalt", "46 - rough_asphalt", "47 - grate", "48 - tactile_paving", "49 - curb", "50 - shadow", "51 - street_light", "52 - traffic_light", "53 - stop_sign", "54 - yield_sign", "55 - speed_limit_sign", "56 - bus_stop", "57 - train_station", "58 - parked_car", "59 - moving_car", "60 - turning_car", "61 - reversing_car", "62 - emergency_vehicle", "63 - construction_vehicle", "64 - farm_vehicle", "65 - delivery_truck", "66 - garbage_truck", "67 - street_sweeper", "68 - snow_plow", "69 - tow_truck", "70 - flatbed_truck", "71 - semi_truck", "72 - box_truck", "73 - pickup_truck", "74 - van", "75 - minivan", "76 - suv", "77 - jeep", "78 - crossover", "79 - sedan", "80 - coupe", "81 - convertible", "82 - hatchback", "83 - station_wagon", "84 - sports_car", "85 - luxury_car", "86 - classic_car", "87 - antique_car", "88 - muscle_car", "89 - electric_car", "90 - hybrid_car", "91 - diesel_car", "92 - gas_car", "93 - hydrogen_car", "94 - fuel_cell_car", "95 - solar_car", "96 - flying_car", "97 - hover_car", "98 - submarine_car", "99 - boat_car", "100 - dirt_road", "101 - macadam", "102 - grassy_path", "103 - wood_planks", "104 - metal_grating", "105 - paved_path", "106 - unpaved_path", "107 - pothole_cluster", "108 - alligator_cracking", "109 - longitudinal_cracks", "110 - transverse_cracks", "111 - block_cracking", "112 - edge_cracking", "113 - rutting", "114 - shoving", "115 - corrugation", "116 - bleeding", "117 - polished_aggregate", "118 - pumping", "119 - raveling", "120 - stripping", "121 - delamination", "122 - patch", "123 - traverse_speed_bump", "124 - rubber_speed_bump", "125 - concrete_speed_bump", "126 - asphalt_speed_bump", "127 - wide_speed_bump", "128 - narrow_speed_bump", "129 - rumble_strips", "130 - speed_cushion", "131 - speed_table", "132 - bycicle_lane", "133 - bicycle_lane", "134 - asphalt"];
+// --- Advanced UI Filtering ---
+window.trainingDataRaw = {
+    labels: ['134 - asphalt', '8 - gravel', '19 - cobblestone', '1 - potholes', '5 - speed_bump', '133 - bicycle_lane', '18 - rail_tracks'],
+    tp: [98, 85, 92, 76, 50, 89, 45],
+    fn: [2, 15, 8, 24, 3, 4, 10],
+    acc: [98, 85, 92, 76, 50, 89, 45], // mocked initially
+    classTotals: [1500, 800, 450, 200, 100, 150, 300]
+};
+window.trainingFilterState = {};
+
+window.renderTrainingFilter = function() {
+    const container = document.getElementById('training-filter-dropdown');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    window.trainingDataRaw.labels.forEach((lbl, idx) => {
+        if (window.trainingFilterState[lbl] === undefined) {
+            window.trainingFilterState[lbl] = true;
+        }
+        
+        const wrapper = document.createElement('label');
+        wrapper.className = 'flex items-center gap-2 mb-1 p-1 hover:bg-[#222] cursor-pointer rounded';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'w-3 h-3 rounded bg-gray-700 border-gray-600 text-emerald-500 cursor-pointer';
+        checkbox.checked = window.trainingFilterState[lbl];
+        checkbox.onchange = (e) => {
+            window.trainingFilterState[lbl] = e.target.checked;
+            window.updateTrainingCharts();
+        };
+        const text = document.createElement('span');
+        text.className = 'text-[10px] uppercase font-mono text-gray-300';
+        text.innerText = lbl;
+        wrapper.appendChild(checkbox);
+        wrapper.appendChild(text);
+        container.appendChild(wrapper);
+    });
+};
+
+window.updateTrainingCharts = function() {
+    if (!confChart || !classBarChart || !distributionChart) return;
+    
+    const fLabels = [];
+    const fTp = [];
+    const fFn = [];
+    const fAcc = [];
+    const fTotals = [];
+    const fColors = [];
+    
+    const colorBank = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#a855f7', '#2dd4bf', '#64748b'];
+    
+    window.trainingDataRaw.labels.forEach((lbl, idx) => {
+        if (window.trainingFilterState[lbl]) {
+            fLabels.push(lbl);
+            fTp.push(window.trainingDataRaw.tp[idx] || 0);
+            fFn.push(window.trainingDataRaw.fn[idx] || 0);
+            fAcc.push(window.trainingDataRaw.acc[idx] || 0);
+            fTotals.push(window.trainingDataRaw.classTotals[idx] || 0);
+            fColors.push(colorBank[idx % colorBank.length]);
+        }
+    });
+    
+    confChart.data.labels = fLabels;
+    confChart.data.datasets[0].data = fTp;
+    confChart.data.datasets[1].data = fFn;
+    confChart.update();
+    
+    classBarChart.data.labels = fLabels;
+    classBarChart.data.datasets[0].data = fAcc;
+    classBarChart.update();
+    
+    distributionChart.data.labels = fLabels;
+    distributionChart.data.datasets[0].data = fTotals;
+    distributionChart.data.datasets[0].backgroundColor = fColors;
+    distributionChart.update();
+};
+
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
@@ -1191,6 +1269,10 @@ function initAnalytics() {
         });
     }
 
+    // UI initializations for Filters
+    window.renderTrainingFilter();
+    window.renderDistanceFilter();
+
     // 4. Temporal Stability (Flicker)
     const ctxStab = document.getElementById('stability-canvas');
     if(ctxStab && !stabilityChart) {
@@ -1276,12 +1358,12 @@ function initAnalytics() {
         // Generate synthetic initial map data
         const base_lat = 52.5200;
         const base_lon = 13.4050;
-        const surfaces = ['Asphalt', 'Gravel', 'Cobble', 'Pothole', 'Speed Bump', 'Bicycle Lane', 'Rail Tracks'];
+        const surfaces = ['134 - asphalt', '8 - gravel', '19 - cobblestone', '1 - potholes', '5 - speed_bump', '133 - bicycle_lane', '18 - rail_tracks'];
         const color_map = {
-            'Asphalt': '#10b981',
-            'Gravel': '#f59e0b',
-            'Cobble': '#3b82f6',
-            'Pothole': '#ef4444', 'Speed Bump': '#a855f7', 'Bicycle Lane': '#2dd4bf', 'Rail Tracks': '#64748b'
+            '134 - asphalt': '#10b981',
+            '8 - gravel': '#f59e0b',
+            '19 - cobblestone': '#3b82f6',
+            '1 - potholes': '#ef4444', '5 - speed_bump': '#a855f7', '133 - bicycle_lane': '#2dd4bf', '18 - rail_tracks': '#64748b'
         };
         
         // Generate proper mocked map data with distances
@@ -1301,6 +1383,23 @@ function initAnalytics() {
             });
         }
         
+window.getCategory = function(className) {
+    const surface_ids = [45, 46, 134, 8, 19, 20, 21, 100, 101, 103, 104, 105, 106, 9]; // asphalt, gravel, cobblestone, macadam, etc.
+    const infra_ids = [18, 132, 133, 47, 48, 49, 51, 52, 53, 54, 55, 56, 57, 23, 24, 25, 36, 37, 38]; 
+    const anomaly_ids = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 16, 17, 22, 39, 40, 41, 42, 43, 44, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131];
+    
+    // Extract numeric ID from "134 - asphalt"
+    const match = className.match(/^(\d+)\s-/);
+    if (!match) return 'Other';
+    const id = parseInt(match[1]);
+    
+    if (surface_ids.includes(id)) return 'Surfaces';
+    if (infra_ids.includes(id)) return 'Infrastructure';
+    if (anomaly_ids.includes(id)) return 'Anomalies';
+    // Everything else (Cars, people, animals)
+    return 'Other';
+};
+
 window.classState = {};
 
 window.updateMapState = function() {
@@ -1318,9 +1417,7 @@ window.updateMapState = function() {
     // Arrays for distance calculation
     const distanceAgg = {};
 
-    let prevPt = null;
-    let prevColor = null;
-    let prevVisible = false;
+    let prevSurfacePt = null;
 
     // We process sequentially, connecting visible points
     for (const pt of window.currentGeoData) {
@@ -1329,6 +1426,7 @@ window.updateMapState = function() {
         let isVisible = window.classState[s] && window.classState[s].visible;
         let color = window.classState[s] ? window.classState[s].color : '#fff';
         let dist = parseFloat(pt.distance_m || 0);
+        let cat = window.getCategory(s);
 
         if (isVisible) {
             // Aggregate distance
@@ -1336,17 +1434,19 @@ window.updateMapState = function() {
             distanceAgg[s] += dist;
 
             // Draw either Line segment or Dot
-            if (drawLinesMode) {
-                if (prevVisible && prevPt) {
-                    L.polyline([[prevPt.lat, prevPt.lon], [pt.lat, pt.lon]], {
+            if (drawLinesMode && cat === 'Surfaces') {
+                // In line mode, surfaces ONLY render as a continuous line (NO dots for surfaces)
+                if (prevSurfacePt) {
+                    L.polyline([[prevSurfacePt.lat, prevSurfacePt.lon], [pt.lat, pt.lon]], {
                         color: color, // color by current point's surface
                         weight: 4,
-                        opacity: 0.8
+                        opacity: 0.6
                     }).bindTooltip(`<b>${s}</b><br/>Dist: ${dist}m`, {
                         className: 'bg-[#111] text-white border-[#333]'
                     }).addTo(geoLayerGroup);
                 }
             } else {
+                // If NOT a surface, or we are in Dots mode, render as a dot
                 L.circleMarker([pt.lat, pt.lon], {
                     radius: 4,
                     fillColor: color,
@@ -1360,9 +1460,14 @@ window.updateMapState = function() {
             }
         }
 
-        prevPt = pt;
-        prevVisible = isVisible;
-        prevColor = color;
+        if (cat === 'Surfaces') {
+            if (isVisible) {
+                prevSurfacePt = pt;
+            } else {
+                // Break path if there's a hidden surface segment
+                prevSurfacePt = null;
+            }
+        }
     }
     
     // Fallback: draw unified gray path underneath if in dots mode
@@ -1380,13 +1485,24 @@ window.updateMapState = function() {
 
     // Update Distance Bar Chart
     if (distanceChart) {
-        const labels = Object.keys(distanceAgg);
-        const data = labels.map(l => distanceAgg[l].toFixed(2));
-        const colors = labels.map(l => window.classState[l] ? window.classState[l].color : '#888');
+        // Enforce the distance filter dropdown bounds!
+        // We only show items if they are checked in distanceFilterState AND they appeared in distanceAgg
+        // OR they are checked in distanceFilterState but have 0 distance.
+        const fLabels = [];
+        const fData = [];
+        const fColors = [];
         
-        distanceChart.data.labels = labels;
-        distanceChart.data.datasets[0].data = data;
-        distanceChart.data.datasets[0].backgroundColor = colors;
+        Object.keys(window.distanceFilterState).forEach(lbl => {
+            if (window.distanceFilterState[lbl]) {
+                fLabels.push(lbl);
+                fData.push(distanceAgg[lbl] ? distanceAgg[lbl].toFixed(2) : "0.00");
+                fColors.push(window.classState[lbl] ? window.classState[lbl].color : '#888');
+            }
+        });
+        
+        distanceChart.data.labels = fLabels;
+        distanceChart.data.datasets[0].data = fData;
+        distanceChart.data.datasets[0].backgroundColor = fColors;
         distanceChart.update();
     }
 };
@@ -1404,8 +1520,8 @@ window.renderLegend = function() {
     container.innerHTML = '';
 
     // Ensure all target classes are registered
-    const defaultClasses = ['Asphalt', 'Gravel', 'Cobble', 'Pothole', 'Speed Bump', 'Bicycle Lane', 'Rail Tracks'];
-    defaultClasses.forEach(cls => window.registerSurface(cls));
+    window.defaultClasses = window.defaultClasses || ["0 - bicycle", "1 - potholes", "2 - manhole", "3 - water_puddle", "4 - uneven_surface", "5 - speed_bump", "6 - drain", "7 - crack", "8 - gravel", "9 - sand", "10 - mud", "11 - wet_leaves", "12 - dry_leaves", "13 - branches", "14 - ice", "15 - snow", "16 - glass", "17 - metal_plate", "18 - rail_tracks", "19 - cobblestone", "20 - brick_paving", "21 - concrete_pavers", "22 - tree_root", "23 - painted_lines", "24 - road_marking", "25 - crosswalk", "26 - pedestrian", "27 - dog", "28 - cat", "29 - squirrel", "30 - car", "31 - motorcycle", "32 - truck", "33 - bus", "34 - scooter", "35 - e-scooter", "36 - traffic_cone", "37 - bollard", "38 - construction_barrier", "39 - fallen_tree", "40 - debris", "41 - plastic_bag", "42 - trash_can", "43 - standing_water", "44 - oil_spill", "45 - smooth_asphalt", "46 - rough_asphalt", "47 - grate", "48 - tactile_paving", "49 - curb", "50 - shadow", "51 - street_light", "52 - traffic_light", "53 - stop_sign", "54 - yield_sign", "55 - speed_limit_sign", "56 - bus_stop", "57 - train_station", "58 - parked_car", "59 - moving_car", "60 - turning_car", "61 - reversing_car", "62 - emergency_vehicle", "63 - construction_vehicle", "64 - farm_vehicle", "65 - delivery_truck", "66 - garbage_truck", "67 - street_sweeper", "68 - snow_plow", "69 - tow_truck", "70 - flatbed_truck", "71 - semi_truck", "72 - box_truck", "73 - pickup_truck", "74 - van", "75 - minivan", "76 - suv", "77 - jeep", "78 - crossover", "79 - sedan", "80 - coupe", "81 - convertible", "82 - hatchback", "83 - station_wagon", "84 - sports_car", "85 - luxury_car", "86 - classic_car", "87 - antique_car", "88 - muscle_car", "89 - electric_car", "90 - hybrid_car", "91 - diesel_car", "92 - gas_car", "93 - hydrogen_car", "94 - fuel_cell_car", "95 - solar_car", "96 - flying_car", "97 - hover_car", "98 - submarine_car", "99 - boat_car", "100 - dirt_road", "101 - macadam", "102 - grassy_path", "103 - wood_planks", "104 - metal_grating", "105 - paved_path", "106 - unpaved_path", "107 - pothole_cluster", "108 - alligator_cracking", "109 - longitudinal_cracks", "110 - transverse_cracks", "111 - block_cracking", "112 - edge_cracking", "113 - rutting", "114 - shoving", "115 - corrugation", "116 - bleeding", "117 - polished_aggregate", "118 - pumping", "119 - raveling", "120 - stripping", "121 - delamination", "122 - patch", "123 - traverse_speed_bump", "124 - rubber_speed_bump", "125 - concrete_speed_bump", "126 - asphalt_speed_bump", "127 - wide_speed_bump", "128 - narrow_speed_bump", "129 - rumble_strips", "130 - speed_cushion", "131 - speed_table", "132 - bycicle_lane", "133 - bicycle_lane", "134 - asphalt"];
+    window.defaultClasses.forEach(cls => window.registerSurface(cls));
     
     // Segregate based on custom categories
     const categories = {
@@ -1415,16 +1531,10 @@ window.renderLegend = function() {
         'Other': []
     };
     
+    // Only render exact keys that are in defaultClasses (YOLO Vocab), preventing unnumbered/redundant junk.
     for (const className in window.classState) {
-        const sLow = className.toLowerCase();
-        if (sLow.includes('asphalt') || sLow.includes('gravel') || sLow.includes('cobble') || sLow.includes('134') || sLow.includes('8') || sLow.includes('19')) {
-            categories['Surfaces'].push(className);
-        } else if (sLow.includes('bicycle') || sLow.includes('rail') || sLow.includes('track') || sLow.includes('133') || sLow.includes('18')) {
-            categories['Infrastructure'].push(className);
-        } else if (sLow.includes('pothole') || sLow.includes('bump') || sLow.includes('1') || sLow.includes('5') || sLow.includes('crack')) {
-            categories['Anomalies'].push(className);
-        } else {
-            categories['Other'].push(className);
+        if (window.defaultClasses.includes(className)) {
+            categories[window.getCategory(className)].push(className);
         }
     }
     
@@ -2830,26 +2940,28 @@ window.chooseMetricsFile = async function() {
                 const tp = cm.map((row, i) => row[i] || 0);
                 const fn = cm.map((row, i) => row.reduce((sum, val) => sum + val, 0) - (row[i] || 0));
                 
-                confChart.data.datasets[0].data = tp;
-                confChart.data.datasets[1].data = fn;
-                confChart.update();
+                const acc = tp.map((val, i) => {
+                    const total = val + fn[i];
+                    return total > 0 ? (val / total) * 100 : 0;
+                });
+                const classTotals = cm.map(row => row.reduce((sum, val) => sum + val, 0));
                 
-                // Update Per-Class Accuracy based on TP / (TP+FN)
-                if (classBarChart) {
-                    const acc = tp.map((val, i) => {
-                        const total = val + fn[i];
-                        return total > 0 ? (val / total) * 100 : 0;
-                    });
-                    classBarChart.data.datasets[0].data = acc;
-                    classBarChart.update();
+                // Update global data container and redraw charts through filter
+                // If CM returns fewer/more labels, we rely on the static 7 labels mapped to indexes,
+                // or we adapt if metrics.classes exists. For now, assume lengths match up to defaultClasses.
+                if (metrics.classes && metrics.classes.length > 0) {
+                    window.trainingDataRaw.labels = metrics.classes;
                 }
-
-                // Update Data Distribution Chart
-                if (distributionChart) {
-                    const classTotals = cm.map(row => row.reduce((sum, val) => sum + val, 0));
-                    distributionChart.data.datasets[0].data = classTotals;
-                    distributionChart.update();
-                }
+                window.trainingDataRaw.tp = tp;
+                window.trainingDataRaw.fn = fn;
+                window.trainingDataRaw.acc = acc;
+                window.trainingDataRaw.classTotals = classTotals;
+                
+                // Reset filter state if new labels loaded
+                if (metrics.classes) window.trainingFilterState = {};
+                
+                window.renderTrainingFilter();
+                window.updateTrainingCharts();
             }
 
             // Update Loss Convergence Chart (if history exists, plot array; else single point)

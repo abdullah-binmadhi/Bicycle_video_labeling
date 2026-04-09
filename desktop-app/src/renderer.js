@@ -20,6 +20,7 @@ const scripts = {
   'extract': path.join(rootDir, 'data_pipeline/frame_extractor.py'),
   'roboflow': path.join(rootDir, 'data_pipeline/roboflow_manager.py'),
   'clip': path.join(rootDir, 'data_pipeline/yolo_clip_auto.py'),
+  'dino': path.join(rootDir, 'data_pipeline/grounding_dino_auto.py'),
   'sync': path.join(rootDir, 'data_pipeline/synchronizer.py'),
   'train': path.join(rootDir, 'train_unified.py'),
   'inference': path.join(rootDir, 'run_inference.py')
@@ -341,7 +342,7 @@ function _runScript(scriptKey) {
 
   // Parse custom args if it's the extract step
   let args = ['-u', targetScript];
-  if (scriptKey === 'clip') {
+  if (scriptKey === 'clip' || scriptKey === 'dino') {
      const dirPath = document.getElementById('annoDirPath') ? document.getElementById('annoDirPath').value : "";
      if(!dirPath) {
          logToConsole("[WARN] Please select an Image Extracted Folder first.\n", true);
@@ -376,14 +377,18 @@ function _runScript(scriptKey) {
          args.push('--classes', ...selectedClasses);
      }
      
-     const modelSelectEl = document.getElementById('clipModelSelect');
-     if (modelSelectEl && modelSelectEl.value) {
-         args.push('--model', modelSelectEl.value);
-     }
-     
-     const confSliderEl = document.getElementById('clipConfSlider');
-     if (confSliderEl && confSliderEl.value) {
-         args.push('--conf', (parseFloat(confSliderEl.value) / 100).toFixed(2));
+     if (scriptKey === 'clip') {
+         const modelSelectEl = document.getElementById('clipModelSelect');
+         if (modelSelectEl && modelSelectEl.value) {
+             args.push('--model', modelSelectEl.value);
+         }
+         const confSliderEl = document.getElementById('clipConfSlider');
+         if (confSliderEl && confSliderEl.value) {
+             args.push('--conf', (parseFloat(confSliderEl.value) / 100).toFixed(2));
+         }
+     } else if (scriptKey === 'dino') {
+         args.push('--conf', '0.25'); 
+         args.push('--text_conf', '0.25');
      }
   }
   if (scriptKey === 'extract') {
@@ -1814,6 +1819,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // Auto-Generated Dataset Review Logic
 let currentDatasetImages = [];
 let currentDatasetIndex = 0;
+let currentCsvPath = null;
+let currentCsvData = [];
 let isDrawingDataset = false;
 let datasetStartX = 0;
 let datasetStartY = 0;

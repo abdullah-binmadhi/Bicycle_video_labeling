@@ -50,7 +50,7 @@ class TwoStageAnnotator:
         for c in self.target_classes:
             clean_c = re.sub(r'^\d+\s*-\s*', '', c).replace('_', ' ')
             if "bicycle lane" in clean_c or "bike lane" in clean_c or "bicycle mark" in clean_c or "133" in c:
-                clean_c = "red painted bike lane or road with bicycle marking"
+                clean_c = "bicycle lane marking"
             self.yolo_classes.append(clean_c)
             
         self.yolo.set_classes(self.yolo_classes)
@@ -65,10 +65,7 @@ class TwoStageAnnotator:
             # Create highly descriptive prompt branches for the CLIP evaluator
             self.clip_prompts = []
             for c in self.yolo_classes:
-                if "red painted bike lane" in c:
-                    self.clip_prompts.append("a street view photo showing a red painted bike lane, or a bicycle mark on the road surface, bicycle priority lane")
-                else:
-                    self.clip_prompts.append(f"a street view photo showing a {c} on the road surface")
+                self.clip_prompts.append(f"a zoomed in cropped photo of a {c}")
             print(f"[System] CLIP Prompts loaded: {self.clip_prompts}")
 
     def run(self, input_dir, csv_path, max_frames=0, save_frames=True):
@@ -165,9 +162,14 @@ class TwoStageAnnotator:
                                         outputs = self.clip_model(**inputs)
                                         probs = outputs.logits_per_image.softmax(dim=1)[0]
                                         best_idx = probs.argmax().item()
+                                        best_conf = probs[best_idx].item()
                                         
-                                        clip_desc = self.clip_prompts[best_idx].replace(',', '')
-                                        clip_conf = probs[best_idx].item()
+                                        if best_idx != cls_id and best_conf > 0.40:
+                                            clip_desc = self.clip_prompts[best_idx].replace(',', '')
+                                            clip_conf = best_conf
+                                        else:
+                                            clip_desc = self.clip_prompts[cls_id].replace(',', '')
+                                            clip_conf = probs[cls_id].item()
                             
                             if img_to_draw is not None:
                                 import cv2

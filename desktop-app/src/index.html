@@ -1171,8 +1171,8 @@
             <div class="flex justify-between items-center mb-3 border-b border-[#333] pb-2">
                 <h3 class="text-xs uppercase tracking-widest font-bold text-emerald-400">Filters</h3>
                 <div class="flex gap-2">
-                    <button onclick="for(const k in window.classState) window.classState[k].visible=true; window.renderLegend(); window.updateMapState();" class="text-[10px] uppercase font-mono text-cyan-500 hover:text-cyan-300">All</button>
-                    <button onclick="for(const k in window.classState) window.classState[k].visible=false; window.renderLegend(); window.updateMapState();" class="text-[10px] uppercase font-mono text-rose-500 hover:text-rose-300">None</button>
+                    <button onclick="for(const k in window.classState) window.classState[k].active=true; window.renderLegend(); window.updateMapState();" class="text-[10px] uppercase font-mono text-cyan-500 hover:text-cyan-300">All</button>
+                    <button onclick="for(const k in window.classState) window.classState[k].active=false; window.renderLegend(); window.updateMapState();" class="text-[10px] uppercase font-mono text-rose-500 hover:text-rose-300">None</button>
                 </div>
             </div>
             

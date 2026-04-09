@@ -48,9 +48,55 @@ class TwoStageAnnotator:
         # Clean target classes for YOLO's zero-shot NLP engine (e.g. "133 - bicycle_lane" -> "bicycle lane")
         self.yolo_classes = []
         for c in self.target_classes:
-            clean_c = re.sub(r'^\d+\s*-\s*', '', c).replace('_', ' ')
-            if "bicycle lane" in clean_c or "bike lane" in clean_c or "bicycle mark" in clean_c or "133" in c:
-                clean_c = "bicycle lane marking"
+            clean_c = re.sub(r'^\d+\s*-\s*', '', c).lower().replace('_', ' ')
+            
+            # Dictionary mapping for common ambiguous or difficult zero-shot classes
+            if "bicycle lane" in clean_c or "bike lane" in clean_c or "bicycle mark" in clean_c or "133" in clean_c:
+                clean_c = "bicycle lane marking on the road"
+            elif "asphalt" in clean_c:
+                clean_c = "patch of dark asphalt road surface"
+            elif "concrete" in clean_c:
+                clean_c = "patch of concrete road surface"
+            elif "paving" in clean_c or "block" in clean_c or "cobblestone" in clean_c:
+                clean_c = "paving block cobblestone brick road surface"
+            elif "dirt" in clean_c or "unpaved" in clean_c or "gravel" in clean_c:
+                clean_c = "unpaved dirt or gravel road surface"
+            elif "stop sign" in clean_c:
+                clean_c = "red octagonal stop sign"
+            elif "pothole" in clean_c:
+                clean_c = "pothole damage on road surface"
+            elif "traffic light" in clean_c:
+                clean_c = "traffic light set against the sky"
+            elif "crosswalk" in clean_c or "zebra" in clean_c:
+                clean_c = "painted pedestrian crosswalk zebra crossing on road"
+            elif "sidewalk" in clean_c or "pavement" in clean_c:
+                clean_c = "pedestrian sidewalk next to the road"
+            elif "speed bump" in clean_c:
+                clean_c = "speed bump on the road surface"
+            elif "manhole" in clean_c:
+                clean_c = "circular metal manhole cover on the road"
+            elif "pedestrian" in clean_c or "person" in clean_c:
+                clean_c = "pedestrian walking on or near the street"
+            elif "car" == clean_c or "automobile" in clean_c:
+                clean_c = "car driving or parked on the street"
+            elif "bus" in clean_c:
+                clean_c = "large passenger bus on the street"
+            elif "truck" in clean_c or "lorry" in clean_c:
+                clean_c = "delivery truck or lorry on the street"
+            elif "van" in clean_c:
+                clean_c = "passenger or delivery van on the street"
+            elif "motorcycle" in clean_c or "motorbike" in clean_c:
+                clean_c = "motorcycle or motorbike on the street"
+            elif "bicycle" in clean_c and "lane" not in clean_c and "mark" not in clean_c:
+                clean_c = "person riding a bicycle or a parked bicycle"
+            elif "yield" in clean_c and "sign" in clean_c:
+                clean_c = "triangular yield sign"
+            elif "speed limit" in clean_c:
+                clean_c = "speed limit traffic sign"
+            else:
+                # Contextual fallback for anything else
+                clean_c = f"{clean_c} on the street or road"
+                
             self.yolo_classes.append(clean_c)
             
         self.yolo.set_classes(self.yolo_classes)
@@ -115,7 +161,9 @@ class TwoStageAnnotator:
             
             try:
                 # Stage 1: YOLO-World
-                results = self.yolo.predict(img_path, conf=self.conf, verbose=False)
+                # Lower base conf to cast a wider net when CLIP is active, and lower iou to allow overlapping surface/object boxes
+                run_conf = max(0.05, self.conf - 0.15) if self.use_clip else self.conf
+                results = self.yolo.predict(img_path, conf=run_conf, iou=0.45, verbose=False)
                 objects_in_frame = 0
                 
                 # Clean the frame name to just timestamp.jpg for standardization

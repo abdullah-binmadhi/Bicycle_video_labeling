@@ -22,6 +22,7 @@ def parse_args():
     # Extra parameters we don't strictly need but electron might send
     parser.add_argument('--use_clip', action='store_true')
     parser.add_argument('--max_frames', type=int, default=0)
+    parser.add_argument('--no_save_frames', action='store_true')
     parser.add_argument('--conf', type=float, default=0.25)
     parser.add_argument('--text_conf', type=float, default=0.25)
     parser.add_argument('--model', type=str, default='')

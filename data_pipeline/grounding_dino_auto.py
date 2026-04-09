@@ -67,7 +67,7 @@ def main():
             results = processor.post_process_grounded_object_detection(
                 outputs,
                 inputs.input_ids,
-                box_threshold=args.conf,
+                threshold=args.conf,
                 text_threshold=args.text_conf,
                 target_sizes=[image.size[::-1]]
             )[0]

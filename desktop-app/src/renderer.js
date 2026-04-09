@@ -375,6 +375,16 @@ function _runScript(scriptKey) {
      if (selectedClasses.length > 0) {
          args.push('--classes', ...selectedClasses);
      }
+     
+     const modelSelectEl = document.getElementById('clipModelSelect');
+     if (modelSelectEl && modelSelectEl.value) {
+         args.push('--model', modelSelectEl.value);
+     }
+     
+     const confSliderEl = document.getElementById('clipConfSlider');
+     if (confSliderEl && confSliderEl.value) {
+         args.push('--conf', (parseFloat(confSliderEl.value) / 100).toFixed(2));
+     }
   }
   if (scriptKey === 'extract') {
     const extractVideoPathValue = document.getElementById('extractVideoPath') ? document.getElementById('extractVideoPath').value.trim() : "";

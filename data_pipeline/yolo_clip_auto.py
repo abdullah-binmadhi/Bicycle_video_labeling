@@ -15,7 +15,7 @@ os.environ["TRANSFORMERS_VERBOSITY"] = "error"
 ssl._create_default_https_context = ssl._create_unverified_context
 
 try:
-    from ultralytics import YOLOWorld
+    from ultralytics import YOLO
 except ImportError:
     print("Please run: pip install ultralytics")
     sys.exit(1)
@@ -33,23 +33,31 @@ def parse_args():
     parser.add_argument('--max_frames', type=int, default=0, help='Max frames to process (0 for unlimited)')
     parser.add_argument('--no_save_frames', action='store_true', help='Skip saving annotated image frames')
     parser.add_argument('--conf', type=float, default=0.25, help='YOLO confidence threshold')
-    parser.add_argument('--model', type=str, default='yolov8x-world.pt', help='YOLO model weights')
+    parser.add_argument('--model', type=str, default='yolo11x.pt', help='YOLO model weights')
     return parser.parse_args()
 
 class TwoStageAnnotator:
-    def __init__(self, target_classes, use_clip=False, model="yolov8x-world.pt", conf=0.25):
+    def __init__(self, target_classes, use_clip=False, model="yolo11x.pt", conf=0.25):
         self.conf = conf
         self.device = "mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu")
         
-        print(f"\n[System] Initializing YOLO-World ({model})...")
-        # Using YOLO-World for open-vocabulary zero-shot detection
-        self.yolo = YOLOWorld(model) # Initialize the chosen model weight
+        print(f"\n[System] Initializing Standard YOLO ({model})...")
+        self.yolo = YOLO(model)
         
-        # Inject the custom target vocabulary into YOLO
         self.target_classes = target_classes
         
-        # Split target classes into YOLO objects vs CLIP surface textures
+        coco_mapping = {
+            "person": 0, "pedestrian": 0,
+            "bicycle": 1, "bike": 1,
+            "car": 2, "automobile": 2,
+            "motorcycle": 3, "motorbike": 3,
+            "bus": 5, "truck": 7, "lorry": 7,
+            "traffic light": 9, "stop sign": 11
+        }
+        self.coco_mapping = coco_mapping
+        
         self.yolo_classes = []
+        self.yolo_ids = []
         self.yolo_original_labels = []
         self.surface_classes = []
         self.surface_original_labels = []
@@ -109,16 +117,21 @@ class TwoStageAnnotator:
                 # Contextual fallback for anything else
                 clean_c = f"{clean_c} on the street or road"
                 
-            if is_surface:
+            matched_id = None
+            for k, v in self.coco_mapping.items():
+                if k in clean_c:
+                    matched_id = v
+                    break
+            
+            if matched_id is not None and not is_surface:
+                self.yolo_classes.append(clean_c)
+                self.yolo_ids.append(matched_id)
+                self.yolo_original_labels.append(c)
+            else:
                 self.surface_classes.append(clean_c)
                 self.surface_original_labels.append(c)
-            else:
-                self.yolo_classes.append(clean_c)
-                self.yolo_original_labels.append(c)
-            
-        if self.yolo_classes:
-            self.yolo.set_classes(self.yolo_classes)
-        print(f"[System] YOLO-World active with Object vocabulary: {self.yolo_classes}")
+                
+        print(f"[System] YOLO COCO Object classes active: {list(zip(self.yolo_classes, self.yolo_ids))}")
         print(f"[System] CLIP Full-Frame Surface vocabulary: {self.surface_classes}")
         
         self.use_clip = use_clip
@@ -243,13 +256,15 @@ class TwoStageAnnotator:
                             boxes = r.boxes
                             for box in boxes:
                                 cls_id = int(box.cls[0].item())
+                                
+                                # Only process object if it's in our requested target IDs
+                                if cls_id not in self.yolo_ids:
+                                    continue
+                                    
+                                idx_in_labels = self.yolo_ids.index(cls_id)
+                                label = self.yolo_original_labels[idx_in_labels]
                                 conf = float(box.conf[0].item())
                                 x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
-                                label = self.yolo_original_labels[cls_id]
-                                
-                                # Extra strictness for false positive prone items like potholes on purely YOLO boxes
-                                if "pothole" in label.lower() and conf < 0.40 and not self.use_clip:
-                                    continue
                                     
                                 clip_desc = ""
                                 clip_conf = 0.0
@@ -271,12 +286,12 @@ class TwoStageAnnotator:
                                         best_idx = probs.argmax().item()
                                         best_conf = probs[best_idx].item()
                                         
-                                        if best_idx != cls_id and best_conf > 0.40:
+                                        if best_idx != idx_in_labels and best_conf > 0.40:
                                             clip_desc = self.clip_prompts[best_idx].replace(',', '')
                                             clip_conf = best_conf
                                         else:
-                                            clip_desc = self.clip_prompts[cls_id].replace(',', '')
-                                            clip_conf = probs[cls_id].item()
+                                            clip_desc = self.clip_prompts[idx_in_labels].replace(',', '')
+                                            clip_conf = probs[idx_in_labels].item()
                                 
                                 if img_to_draw is not None:
                                     import cv2

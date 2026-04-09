@@ -45,22 +45,31 @@ class TwoStageAnnotator:
         # Inject the custom target vocabulary into YOLO
         self.target_classes = target_classes
         
-        # Clean target classes for YOLO's zero-shot NLP engine (e.g. "133 - bicycle_lane" -> "bicycle lane")
+        # Split target classes into YOLO objects vs CLIP surface textures
         self.yolo_classes = []
+        self.yolo_original_labels = []
+        self.surface_classes = []
+        self.surface_original_labels = []
+        
         for c in self.target_classes:
             clean_c = re.sub(r'^\d+\s*-\s*', '', c).lower().replace('_', ' ')
+            is_surface = False
             
             # Dictionary mapping for common ambiguous or difficult zero-shot classes
             if "bicycle lane" in clean_c or "bike lane" in clean_c or "bicycle mark" in clean_c or "133" in clean_c:
                 clean_c = "bicycle lane marking on the road"
             elif "asphalt" in clean_c:
                 clean_c = "patch of dark asphalt road surface"
+                is_surface = True
             elif "concrete" in clean_c:
                 clean_c = "patch of concrete road surface"
+                is_surface = True
             elif "paving" in clean_c or "block" in clean_c or "cobblestone" in clean_c:
                 clean_c = "paving block cobblestone brick road surface"
+                is_surface = True
             elif "dirt" in clean_c or "unpaved" in clean_c or "gravel" in clean_c:
                 clean_c = "unpaved dirt or gravel road surface"
+                is_surface = True
             elif "stop sign" in clean_c:
                 clean_c = "red octagonal stop sign"
             elif "pothole" in clean_c:
@@ -97,14 +106,22 @@ class TwoStageAnnotator:
                 # Contextual fallback for anything else
                 clean_c = f"{clean_c} on the street or road"
                 
-            self.yolo_classes.append(clean_c)
+            if is_surface:
+                self.surface_classes.append(clean_c)
+                self.surface_original_labels.append(c)
+            else:
+                self.yolo_classes.append(clean_c)
+                self.yolo_original_labels.append(c)
             
-        self.yolo.set_classes(self.yolo_classes)
-        print(f"[System] YOLO-World active with NLP vocabulary: {self.yolo_classes}")
+        if self.yolo_classes:
+            self.yolo.set_classes(self.yolo_classes)
+        print(f"[System] YOLO-World active with Object vocabulary: {self.yolo_classes}")
+        print(f"[System] CLIP Full-Frame Surface vocabulary: {self.surface_classes}")
         
-        self.use_clip = use_clip
-        if self.use_clip:
-            print("[System] Initializing CLIP Foundation Model for Stage-2 Refinement...")
+        # Force CLIP initialization if surfaces are requested, even if YOLO refinement is off
+        self.requires_clip = self.use_clip or len(self.surface_classes) > 0
+        if self.requires_clip:
+            print("[System] Initializing CLIP Foundation Model...")
             model_id = "openai/clip-vit-large-patch14"
             self.clip_processor = CLIPProcessor.from_pretrained(model_id)
             self.clip_model = CLIPModel.from_pretrained(model_id).to(self.device)
@@ -112,7 +129,13 @@ class TwoStageAnnotator:
             self.clip_prompts = []
             for c in self.yolo_classes:
                 self.clip_prompts.append(f"a zoomed in cropped photo of a {c}")
-            print(f"[System] CLIP Prompts loaded: {self.clip_prompts}")
+            
+            self.surface_prompts = []
+            for c in self.surface_classes:
+                self.surface_prompts.append(f"a photo looking down at a {c}")
+                
+            print(f"[System] CLIP Object Prompts loaded: {self.clip_prompts}")
+            print(f"[System] CLIP Surface Prompts loaded: {self.surface_prompts}")
 
     def run(self, input_dir, csv_path, max_frames=0, save_frames=True):
         os.makedirs(os.path.dirname(csv_path), exist_ok=True)
@@ -160,10 +183,6 @@ class TwoStageAnnotator:
             img_path = os.path.join(input_dir, img_name)
             
             try:
-                # Stage 1: YOLO-World
-                # Lower base conf to cast a wider net when CLIP is active, and lower iou to allow overlapping surface/object boxes
-                run_conf = max(0.05, self.conf - 0.15) if self.use_clip else self.conf
-                results = self.yolo.predict(img_path, conf=run_conf, iou=0.45, verbose=False)
                 objects_in_frame = 0
                 
                 # Clean the frame name to just timestamp.jpg for standardization
@@ -172,35 +191,69 @@ class TwoStageAnnotator:
                 
                 # Setup drawing for annotated frame saving
                 img_to_draw = None
+                img_h, img_w = 1080, 1920
                 if save_frames and annotated_dir:
                     import cv2
                     img_to_draw = cv2.imread(img_path)
-                
+                    if img_to_draw is not None:
+                        img_h, img_w = img_to_draw.shape[:2]
+                        
                 with open(csv_path, 'a') as f:
-                    for r in results:
-                        boxes = r.boxes
-                        for box in boxes:
-                            cls_id = int(box.cls[0].item())
-                            conf = float(box.conf[0].item())
-                            x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
-                            label = self.target_classes[cls_id]
+                    # Stage 1: Surface Detection (Global CLIP)
+                    if self.surface_classes:
+                        img_pil = Image.open(img_path).convert('RGB')
+                        # Crop the bottom 50% for road surface analysis
+                        surface_crop = img_pil.crop((0, img_pil.height // 2, img_pil.width, img_pil.height))
+                        
+                        inputs = self.clip_processor(text=self.surface_prompts, images=surface_crop, return_tensors="pt", padding=True)
+                        inputs = {k: v.to(self.device) for k, v in inputs.items()}
+                        with torch.no_grad():
+                            outputs = self.clip_model(**inputs)
+                            probs = outputs.logits_per_image.softmax(dim=1)[0]
+                            best_idx = probs.argmax().item()
+                            surf_conf = probs[best_idx].item()
                             
-                            # Simple mono-distance calculation to surface based on bounding box
-                            img_h = img_to_draw.shape[0] if img_to_draw is not None else 1080 
-                            horizon_y = img_h / 2.0
-                            y_diff = max(1.0, y2 - horizon_y)
-                            distance_m = (1.5 * 800) / y_diff
-                            if distance_m > 100 or distance_m < 0:
-                                distance_m = 100.0
-                                
-                            clip_desc = ""
-                            clip_conf = 0.0
+                            surf_label = self.surface_original_labels[best_idx]
+                            surf_desc = self.surface_classes[best_idx].replace(',', '')
                             
-                            # Stage 2: CLIP Refinement
+                            # Log surface as a global frame tag (coords set to 0)
                             if self.use_clip:
-                                # OpenCV reads as BGR, PIL reads as RGB. YOLO uses OpenCV generally. Let's lazily crop using PIL
-                                img_pil = Image.open(img_path).convert('RGB')
-                                crop = img_pil.crop((x1, y1, x2, y2))
+                                f.write(f"{clean_name},{surf_label},{surf_conf:.3f},0,0,0,0,{surf_desc},{surf_conf:.3f}\n")
+                            else:
+                                f.write(f"{clean_name},{surf_label},{surf_conf:.3f},0,0,0,0\n")
+                            
+                            objects_in_frame += 1
+                            total_objects += 1
+                            
+                            if img_to_draw is not None:
+                                cv2.putText(img_to_draw, f"Surface: {surf_label} ({surf_conf:.2f})", (10, img_h - 20), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 100, 100), 2)
+                            
+                    # Stage 2: Object Detection (YOLO + CLIP Refinement)
+                    if self.yolo_classes:
+                        # Lower base conf to cast a wider net when CLIP is active, and lower iou to allow overlapping boxes
+                        run_conf = max(0.05, self.conf - 0.15) if self.use_clip else self.conf
+                        results = self.yolo.predict(img_path, conf=run_conf, iou=0.45, verbose=False)
+                        
+                        for r in results:
+                            boxes = r.boxes
+                            for box in boxes:
+                                cls_id = int(box.cls[0].item())
+                                conf = float(box.conf[0].item())
+                                x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
+                                label = self.yolo_original_labels[cls_id]
+                                
+                                # Extra strictness for false positive prone items like potholes on purely YOLO boxes
+                                if "pothole" in label.lower() and conf < 0.40 and not self.use_clip:
+                                    continue
+                                    
+                                clip_desc = ""
+                                clip_conf = 0.0
+                                
+                                # Stage 3: YOLO Object Refinement
+                                if self.use_clip:
+                                    # OpenCV reads as BGR, PIL reads as RGB. YOLO uses OpenCV generally. Let's lazily crop using PIL
+                                    img_pil = Image.open(img_path).convert('RGB')
+                                    crop = img_pil.crop((x1, y1, x2, y2))
                                 
                                 # Safety catch if crop is basically 0px
                                 if crop.width > 5 and crop.height > 5:

@@ -8,6 +8,9 @@ import numpy as np
 import ssl
 from PIL import Image
 
+os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
+os.environ["TRANSFORMERS_VERBOSITY"] = "error"
+
 # Bypass SSL certificate verification for model downloads on macOS
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -118,12 +121,14 @@ class TwoStageAnnotator:
         print(f"[System] YOLO-World active with Object vocabulary: {self.yolo_classes}")
         print(f"[System] CLIP Full-Frame Surface vocabulary: {self.surface_classes}")
         
+        self.use_clip = use_clip
+        
         # Force CLIP initialization if surfaces are requested, even if YOLO refinement is off
         self.requires_clip = self.use_clip or len(self.surface_classes) > 0
         if self.requires_clip:
             print("[System] Initializing CLIP Foundation Model...")
             model_id = "openai/clip-vit-large-patch14"
-            self.clip_processor = CLIPProcessor.from_pretrained(model_id)
+            self.clip_processor = CLIPProcessor.from_pretrained(model_id, use_fast=False)
             self.clip_model = CLIPModel.from_pretrained(model_id).to(self.device)
             # Create highly descriptive prompt branches for the CLIP evaluator
             self.clip_prompts = []
@@ -248,6 +253,7 @@ class TwoStageAnnotator:
                                     
                                 clip_desc = ""
                                 clip_conf = 0.0
+                                crop = None
                                 
                                 # Stage 3: YOLO Object Refinement
                                 if self.use_clip:
@@ -256,7 +262,7 @@ class TwoStageAnnotator:
                                     crop = img_pil.crop((x1, y1, x2, y2))
                                 
                                 # Safety catch if crop is basically 0px
-                                if crop.width > 5 and crop.height > 5:
+                                if crop is not None and crop.width > 5 and crop.height > 5:
                                     inputs = self.clip_processor(text=self.clip_prompts, images=crop, return_tensors="pt", padding=True)
                                     inputs = {k: v.to(self.device) for k, v in inputs.items()}
                                     with torch.no_grad():
@@ -271,23 +277,23 @@ class TwoStageAnnotator:
                                         else:
                                             clip_desc = self.clip_prompts[cls_id].replace(',', '')
                                             clip_conf = probs[cls_id].item()
-                            
-                            if img_to_draw is not None:
-                                import cv2
-                                cv2.rectangle(img_to_draw, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                                text_label = f"{label} {conf:.2f}"
-                                if self.use_clip and clip_desc:
-                                    text_label = f"{clip_desc} {clip_conf:.2f}"
-                                cv2.putText(img_to_draw, text_label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                                 
-                            # Save
-                            if self.use_clip:
-                                f.write(f"{clean_name},{label},{conf:.3f},{x1},{y1},{x2},{y2},{clip_desc},{clip_conf:.3f}\\n")
-                            else:
-                                f.write(f"{clean_name},{label},{conf:.3f},{x1},{y1},{x2},{y2}\\n")
-                            
-                            objects_in_frame += 1
-                            total_objects += 1
+                                if img_to_draw is not None:
+                                    import cv2
+                                    cv2.rectangle(img_to_draw, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                                    text_label = f"{label} {conf:.2f}"
+                                    if self.use_clip and clip_desc:
+                                        text_label = f"{clip_desc} {clip_conf:.2f}"
+                                    cv2.putText(img_to_draw, text_label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                                    
+                                # Save
+                                if self.use_clip:
+                                    f.write(f"{clean_name},{label},{conf:.3f},{x1},{y1},{x2},{y2},{clip_desc},{clip_conf:.3f}\\n")
+                                else:
+                                    f.write(f"{clean_name},{label},{conf:.3f},{x1},{y1},{x2},{y2}\\n")
+                                
+                                objects_in_frame += 1
+                                total_objects += 1
                     
                 if img_to_draw is not None and objects_in_frame > 0:
                     import cv2

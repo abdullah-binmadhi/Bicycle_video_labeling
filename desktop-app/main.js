@@ -10,7 +10,10 @@ const createWindow = () => {
       contextIsolation: false
     }
   })
-  win.loadFile('src/index.html')
+  win.loadFile('src/index.html');
+  win.webContents.openDevTools();
+  win.webContents.on('console-message', (event, level, message, line, sourceId) => { require('fs').appendFileSync('/tmp/elec.log', message + '\n'); });
+
 }
 
 

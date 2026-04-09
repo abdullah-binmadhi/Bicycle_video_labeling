@@ -63,7 +63,7 @@ class MultimodalRoadDataset(Dataset):
         
         # Load the synchronized dataset
         try:
-            self.data_df = pd.read_csv(csv_path)
+            self.data_df = pd.read_csv(csv_path, low_memory=False)
             
             # Ensure the necessary columns exist, dynamically ignoring missing IMU sensors
             available_features = [c for c in feature_cols if c in self.data_df.columns]
@@ -232,6 +232,8 @@ class MultimodalRoadDataset(Dataset):
                         matched_idx = v
                         break
                 raw_label = matched_idx
+        elif pd.isna(raw_label):
+            raw_label = 0
              
         # Treat as classification index
         sample['label'] = torch.tensor(int(raw_label), dtype=torch.long)

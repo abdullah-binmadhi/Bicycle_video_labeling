@@ -140,7 +140,7 @@ def main():
             csv_path=csv_path,
             config=cfg,
             feature_cols=feature_columns,
-            label_col='Label' # Updated to match paper UI nomenclature
+            label_col='class' # Updated to match DINO/YOLO output class col
         )
     except FileNotFoundError:
         logging.error(f"Cannot start training! '{csv_path}' missing. Run data_pipeline/synchronizer.py first.")

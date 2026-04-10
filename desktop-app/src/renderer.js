@@ -1195,6 +1195,49 @@ window.generatePDFReport = function() {
 
 window.currentGeoData = [];
 
+const ALLOWED_LABELS = {
+    "bicycle": "1",
+    "person": "2",
+    "car": "3",
+    "motorcycle": "4",
+    "bus": "5",
+    "truck": "6",
+    "traffic light": "7",
+    "stop sign": "8"
+};
+
+const REVERSE_LABELS = Object.fromEntries(
+    Object.entries(ALLOWED_LABELS).map(([k, v]) => [v, k])
+);
+
+function normalizeLabel(rawLabel) {
+    if (!rawLabel) return 'Unclassified';
+    
+    let labelLower = rawLabel.trim().toLowerCase();
+    
+    // Strip numeric prefixes if formatted like "3 - car"
+    const match = labelLower.match(/^\d+\s*-\s*(.+)$/);
+    if (match) {
+        labelLower = match[1];
+    }
+    
+    // Handle specific mappings
+    if (labelLower.includes('bike')) labelLower = 'bicycle';
+    if (labelLower.includes('pedestrian')) labelLower = 'person';
+    if (labelLower.includes('automobile')) labelLower = 'car';
+    if (labelLower.includes('lorry')) labelLower = 'truck';
+    
+    if (ALLOWED_LABELS[labelLower]) {
+        return labelLower;
+    }
+    
+    if (REVERSE_LABELS[labelLower]) {
+        return REVERSE_LABELS[labelLower];
+    }
+    
+    return 'Unclassified';
+}
+
 window.scrapeGeospatialFolder = async function() {
     const { ipcRenderer } = require('electron');
     const { opendirSync, statSync, readFileSync } = require('fs');
@@ -1280,7 +1323,8 @@ window.scrapeGeospatialFolder = async function() {
                 if (isNaN(lat) || isNaN(lon) || lat === 0 || lon === 0) continue;
                 
                 // If it doesn't exist, log as Unknown
-                let surfaceType = classIdx !== -1 && cols[classIdx] ? cols[classIdx].trim() : 'Unclassified'; if (!surfaceType || surfaceType==='Unknown') surfaceType = 'Unclassified';
+                let rawSurface = classIdx !== -1 && cols[classIdx] ? cols[classIdx] : '';
+                let surfaceType = normalizeLabel(rawSurface);
                 
                 let plusCode = 'N/A';
                 try {
@@ -1377,7 +1421,8 @@ window.loadGeospatialCSV = async function() {
             
             let lat = parseFloat(row[latIdx !== -1 ? latIdx : 0]);
             let lon = parseFloat(row[lonIdx !== -1 ? lonIdx : 1]);
-            let surface = classIdx !== -1 && row[classIdx] ? row[classIdx].trim() : 'Unclassified'; if (!surface || surface==='Unknown') surface = 'Unclassified';
+            let rawSurface = classIdx !== -1 && row[classIdx] ? row[classIdx] : '';
+            let surface = normalizeLabel(rawSurface);
             
             if (isNaN(lat) || isNaN(lon) || lat === 0 || lon === 0) continue;
             

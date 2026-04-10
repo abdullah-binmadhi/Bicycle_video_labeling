@@ -4,6 +4,7 @@ import argparse
 import csv
 import torch
 import cv2
+import re
 from pathlib import Path
 from PIL import Image
 
@@ -42,8 +43,25 @@ def main():
     frames_dir = Path(args.frames_dir)
     out_csv_path = Path(args.output_csv)
     
-    # Text prompt for Grounding DINO needs dot separation
-    text_prompt = ". ".join(args.classes) + "."
+    # Process classes to extract IDs and clean names
+    class_mapping = {}
+    clean_classes = []
+    
+    for c in args.classes:
+        # Match pattern "ID - class_name" or just "class_name"
+        match = re.match(r'^(\d+)\s*-\s*(.+)$', c)
+        if match:
+            class_id, class_name = match.groups()
+            clean_name = class_name.lower().replace('_', ' ')
+            class_mapping[clean_name] = f"{class_id} - {class_name}" # Store original format for CSV
+            clean_classes.append(clean_name)
+        else:
+            clean_name = c.lower().replace('_', ' ')
+            class_mapping[clean_name] = c # Fallback
+            clean_classes.append(clean_name)
+            
+    # Text prompt for Grounding DINO needs dot separation and only clean names
+    text_prompt = " . ".join(clean_classes) + " ."
     print(f"[System] Text prompt: {text_prompt}")
     
     image_paths = sorted([p for p in frames_dir.glob("*.[jp][pn][g]*")])
@@ -52,13 +70,27 @@ def main():
 
     out_csv_path.parent.mkdir(parents=True, exist_ok=True)
     
+    # Also create an annotated images directory
+    anno_frames_dir = None
+    if not args.no_save_frames:
+        anno_frames_dir = out_csv_path.parent / "annotated_frames"
+        anno_frames_dir.mkdir(parents=True, exist_ok=True)
+    
     with open(out_csv_path, mode='w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(["frame", "class", "confidence", "xmin", "ymin", "xmax", "ymax", "distance_m"])
         
         for idx, img_path in enumerate(image_paths):
             print(f"Processing {idx+1}/{len(image_paths)}: {img_path.name}")
-            image = Image.open(img_path).convert("RGB")
+            
+            # Read with cv2 for drawing
+            cv_img = cv2.imread(str(img_path))
+            if cv_img is None:
+                print(f"Failed to read image: {img_path}")
+                continue
+                
+            # Convert to PIL for DINO
+            image = Image.fromarray(cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB))
             
             inputs = processor(images=image, text=text_prompt, return_tensors="pt").to(device)
             with torch.no_grad():
@@ -73,18 +105,35 @@ def main():
                 target_sizes=[image.size[::-1]]
             )[0]
             
-            for score, label, box in zip(results["scores"], results["labels"], results["boxes"]):
+            for score, label_detected, box in zip(results["scores"], results["labels"], results["boxes"]):
                 if score.item() < args.conf:
                     continue
                 
+                # Match detected label to original format
+                detected_name = label_detected.lower()
+                
+                # Find best matching class from our mapping
+                mapped_label = detected_name
+                for clean_name, orig_format in class_mapping.items():
+                    if clean_name in detected_name or detected_name in clean_name:
+                        mapped_label = orig_format
+                        break
+                
                 x_min, y_min, x_max, y_max = box.tolist()
+                
+                # Draw bounding box if saving frames
+                if not args.no_save_frames and anno_frames_dir:
+                    cv2.rectangle(cv_img, (int(x_min), int(y_min)), (int(x_max), int(y_max)), (0, 255, 0), 2)
+                    label_text = f"{mapped_label} {score.item():.2f}"
+                    cv2.putText(cv_img, label_text, (int(x_min), int(y_min)-10), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                 
                 # Pseudo distance for structure matching
                 distance_m = 10.0
                 
                 writer.writerow([
                     img_path.name,
-                    label,
+                    mapped_label,
                     f"{score.item():.2f}",
                     int(x_min),
                     int(y_min),
@@ -92,6 +141,11 @@ def main():
                     int(y_max),
                     f"{distance_m:.1f}"
                 ])
+                
+            # Save annotated frame
+            if not args.no_save_frames and anno_frames_dir:
+                out_img_path = anno_frames_dir / img_path.name
+                cv2.imwrite(str(out_img_path), cv_img)
                 
     print(f"[System] Finished. Output saved to {out_csv_path}")
 

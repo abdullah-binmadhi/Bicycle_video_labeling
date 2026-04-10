@@ -46,6 +46,17 @@ class TwoStageAnnotator:
         
         self.target_classes = target_classes
         
+        ALLOWED_LABELS = {
+            "bicycle": "1",
+            "person": "2",
+            "car": "3",
+            "motorcycle": "4",
+            "bus": "5",
+            "truck": "6",
+            "traffic light": "7",
+            "stop sign": "8"
+        }
+        
         coco_mapping = {
             "person": 0, "pedestrian": 0,
             "bicycle": 1, "bike": 1,
@@ -55,6 +66,7 @@ class TwoStageAnnotator:
             "traffic light": 9, "stop sign": 11
         }
         self.coco_mapping = coco_mapping
+        self.allowed_labels = ALLOWED_LABELS
         
         self.yolo_classes = []
         self.yolo_ids = []
@@ -262,7 +274,20 @@ class TwoStageAnnotator:
                                     continue
                                     
                                 idx_in_labels = self.yolo_ids.index(cls_id)
-                                label = self.yolo_original_labels[idx_in_labels]
+                                orig_label = self.yolo_original_labels[idx_in_labels]
+                                
+                                # Convert to standard ALLOWED_LABELS format
+                                base_class = re.sub(r'^\d+\s*-\s*', '', orig_label).lower().replace('_', ' ')
+                                matched_k = None
+                                for ak, av in self.allowed_labels.items():
+                                    if ak in base_class or base_class in ak:
+                                        matched_k = ak
+                                        break
+                                if matched_k:
+                                    label = f"{self.allowed_labels[matched_k]} - {matched_k}"
+                                else:
+                                    continue # Skip if not in allowed labels
+                                
                                 conf = float(box.conf[0].item())
                                 x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
                                     

@@ -47,19 +47,43 @@ def main():
     class_mapping = {}
     clean_classes = []
     
+    ALLOWED_LABELS = {
+        "bicycle": "1",
+        "person": "2",
+        "car": "3",
+        "motorcycle": "4",
+        "bus": "5",
+        "truck": "6",
+        "traffic light": "7",
+        "stop sign": "8"
+    }
+
     for c in args.classes:
-        # Match pattern "ID - class_name" or just "class_name"
+        clean_name = c.lower().replace('_', ' ')
+        # extract name if formatted
         match = re.match(r'^(\d+)\s*-\s*(.+)$', c)
         if match:
-            class_id, class_name = match.groups()
-            clean_name = class_name.lower().replace('_', ' ')
-            class_mapping[clean_name] = f"{class_id} - {class_name}" # Store original format for CSV
-            clean_classes.append(clean_name)
-        else:
-            clean_name = c.lower().replace('_', ' ')
-            class_mapping[clean_name] = c # Fallback
-            clean_classes.append(clean_name)
+            clean_name = match.group(2).lower().replace('_', ' ')
             
+        # Verify if class is in allowed labels
+        matched_allowed = None
+        for allowed_k, allowed_v in ALLOWED_LABELS.items():
+            if allowed_k in clean_name or clean_name in allowed_k:
+                matched_allowed = allowed_k
+                break
+                
+        if matched_allowed:
+            formatted_name = f"{ALLOWED_LABELS[matched_allowed]} - {matched_allowed}"
+            class_mapping[matched_allowed] = formatted_name
+            if matched_allowed not in clean_classes:
+                clean_classes.append(matched_allowed)
+        else:
+            print(f"[Warning] Class '{c}' not in ALLOWED_LABELS, skipping.")
+            
+    if not clean_classes:
+        print("[Error] No valid classes found from ALLOWED_LABELS. Exiting.")
+        return
+        
     # Text prompt for Grounding DINO needs dot separation and only clean names
     text_prompt = " . ".join(clean_classes) + " ."
     print(f"[System] Text prompt: {text_prompt}")
@@ -113,13 +137,16 @@ def main():
                 detected_name = label_detected.lower()
                 
                 # Find best matching class from our mapping
-                mapped_label = detected_name
+                mapped_label = None
                 for clean_name, orig_format in class_mapping.items():
                     if clean_name in detected_name or detected_name in clean_name:
                         mapped_label = orig_format
                         break
+                        
+                if not mapped_label:
+                    continue
                 
-                x_min, y_min, x_max, y_max = box.tolist()
+                x_min, y_min, x_max, y_max = map(int, box.tolist())
                 
                 # Draw bounding box if saving frames
                 if not args.no_save_frames and anno_frames_dir:

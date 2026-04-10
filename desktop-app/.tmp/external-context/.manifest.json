@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "last_updated": "2026-04-10T00:00:00Z",
+  "libraries": {
+    "grounding-dino": {
+      "files": [
+        {
+          "filename": "ml-pipeline-usage.md",
+          "topic": "ml-pipeline-usage",
+          "tech_stack": "Python, ML",
+          "fetched": "2026-04-10T00:00:00Z",
+          "source": "Official docs"
+        }
+      ]
+    }
+  }
+}

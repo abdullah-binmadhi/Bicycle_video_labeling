@@ -1123,52 +1123,20 @@
         </div>
 
         <!-- Live Monitoring Dashboard -->
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 w-full animate-fade-in hidden" id="inf-monitoring-dashboard">
+        <div class="flex flex-col gap-6 w-full animate-fade-in hidden" id="inf-monitoring-dashboard">
             <!-- 1. Multi-Stream Sync Scrubbing (IMU) -->
-            <div class="border border-[#222] bg-[#0c0c0c] p-4 lg:col-span-2">
+            <div class="border border-[#222] bg-[#0c0c0c] p-4 flex flex-col h-[300px]">
                 <h3 class="text-emerald-400 font-medium tracking-widest text-[10px] uppercase mb-2">Live IMU Scrubbing (Physics)</h3>
-                <div class="w-full h-40 relative bg-black border border-[#333]">
+                <div class="flex-1 w-full relative bg-black border border-[#333]">
                     <canvas id="inf-imu-chart" class="w-full h-full"></canvas>
-                </div>
-            </div>
-            
-            <!-- 4. Frequency Waterfall (FFT Spectrogram) -->
-            <div class="border border-[#222] bg-[#0c0c0c] p-4 lg:col-span-2">
-                <h3 class="text-blue-400 font-medium tracking-widest text-[10px] uppercase mb-2">Frequency Waterfall (FFT Spectrogram)</h3>
-                <div class="w-full h-40 relative bg-black border border-[#333]">
-                    <canvas id="inf-spectrogram-canvas" class="w-full h-full"></canvas>
-                </div>
-            </div>
-
-            <!-- 2 & 6. Surface Confidence (Radar) -->
-            <div class="border border-[#222] bg-[#0c0c0c] p-4 lg:col-span-2 flex flex-col items-center justify-center min-h-[300px]">
-                <h3 class="text-purple-400 font-medium tracking-widest text-[10px] uppercase self-start mb-2">Surface Confidence (Radar)</h3>
-                <div class="w-full h-64 relative bg-black border border-[#333]">
-                    <canvas id="inf-radar-chart" class="w-full h-full"></canvas>
                 </div>
             </div>
 
             <!-- 3. Integrated Map Overlay -->
-            <div class="border border-[#222] bg-[#0c0c0c] p-4 lg:col-span-1">
+            <div class="border border-[#222] bg-[#0c0c0c] p-4 flex flex-col h-[400px]">
                 <h3 class="text-cyan-400 font-medium tracking-widest text-[10px] uppercase mb-2">Live Geolocation Trace</h3>
-                <div class="w-full h-[270px] relative bg-[#111] z-0 overflow-hidden border border-[#333]" id="inf-playback-map">
+                <div class="flex-1 relative bg-[#111] z-0 overflow-hidden border border-[#333]" id="inf-playback-map">
                     <!-- Leaflet injected here -->
-                </div>
-            </div>
-
-            <!-- 5 & 7. G-Force Vector Ball & Severity Spike -->
-            <div class="border border-[#222] bg-[#0c0c0c] p-4 lg:col-span-1 flex flex-col gap-4">
-                <div class="flex-1">
-                    <h3 class="text-fuchsia-400 font-medium tracking-widest text-[10px] uppercase mb-2">G-Force Vector Ball</h3>
-                    <div class="w-full h-32 relative bg-black border border-[#333]">
-                        <canvas id="inf-vector-ball-canvas" class="w-full h-full"></canvas>
-                    </div>
-                </div>
-                <div class="h-20">
-                    <h3 class="text-rose-400 font-medium tracking-widest text-[10px] uppercase mb-2">Anomaly Severity Spike</h3>
-                    <div class="w-full h-8 bg-slate-900 border border-[#333] relative">
-                        <div id="inf-severity-bar" class="h-full bg-rose-500 w-0 transition-all duration-100"></div>
-                    </div>
                 </div>
             </div>
         </div>

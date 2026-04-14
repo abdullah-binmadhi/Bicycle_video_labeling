@@ -1059,13 +1059,14 @@ window.startAIOverlay = function() {
     setTimeout(() => {
         // Load GPS route from predictions.json to power the live map
         let gpsLatlngs = [];
+        let gpsData = [];
         try {
             const predPath = require('path').join(__dirname, '../../predictions.json');
             if (require('fs').existsSync(predPath)) {
                 const preds = JSON.parse(require('fs').readFileSync(predPath, 'utf8'));
-                gpsLatlngs = preds
-                    .filter(p => p.lat && p.lng && !isNaN(p.lat) && !isNaN(p.lng))
-                    .map(p => [p.lat, p.lng]);
+                const validPreds = preds.filter(p => p.lat && p.lng && !isNaN(p.lat) && !isNaN(p.lng));
+                gpsLatlngs = validPreds.map(p => [p.lat, p.lng]);
+                gpsData = validPreds;
             }
         } catch(e) {}
         
@@ -1080,15 +1081,45 @@ window.startAIOverlay = function() {
             if (latlngs.length < 2) {
                 // Fallback mock route
                 latlngs = [];
+                gpsData = [];
                 let curl = firstLat, curlg = firstLng;
                 for(let i = 0; i < 150; i++) {
                     latlngs.push([curl, curlg]);
+                    gpsData.push({lat: curl, lng: curlg, surface: 'Unknown'});
                     curl += (Math.sin(i * 0.1) - 0.5) * 0.0004;
                     curlg += (Math.cos(i * 0.2) + 0.5) * 0.0004;
                 }
             }
             window.infLatlngs = latlngs;
-            L.polyline(latlngs, {color: '#475569', weight: 3, dashArray: '4, 6'}).addTo(infMap);
+            
+            // Clear old layers from infMap except the tile layer to avoid duplicates
+            infMap.eachLayer((layer) => {
+                if (!layer._url) { // Not a tile layer
+                    infMap.removeLayer(layer);
+                }
+            });
+            
+            // Draw background trace line
+            L.polyline(latlngs, {color: '#666666', weight: 2, opacity: 0.5}).addTo(infMap);
+            
+            // Draw colored segments
+            for (const pt of gpsData) {
+                let surf = pt.surface || 'Unclassified';
+                if (typeof window.registerSurface === 'function') window.registerSurface(surf);
+                
+                const color = (window.classState && window.classState[surf]) ? window.classState[surf].color : '#10b981';
+                
+                L.circleMarker([pt.lat, pt.lng], {
+                    radius: 3,
+                    fillColor: color,
+                    color: color,
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(infMap);
+            }
+            
+            mapMarker = null; // Reset tracker so it gets re-rendered
             infMap.fitBounds(L.latLngBounds(latlngs), { padding: [12, 12] });
             setTimeout(() => infMap.invalidateSize(), 350);
         }

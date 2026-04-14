@@ -2,3 +2,5 @@ video,timestamp,x,y,w,h,label,confidence
 /Users/abdullahbinmadhi/Desktop/Bicycle Video ML Model/Project Surface Detection/LM-17.06/876ED8BA-AF81-4DCD-9A29-8702D236B21D/bicycle ride.mov,137.640,867,173,229,211,signs,1.0
 /Users/abdullahbinmadhi/Desktop/Bicycle Video ML Model/Project Surface Detection/LM-17.06/876ED8BA-AF81-4DCD-9A29-8702D236B21D/bicycle ride.mov,137.640,849,170,276,198,signssigns,1.0
 /Users/abdullahbinmadhi/Desktop/Bicycle Video ML Model/Project Surface Detection/LM-17.06/876ED8BA-AF81-4DCD-9A29-8702D236B21D/bicycle ride.mov,137.640,189,118,378,285,signs,1.0
+/Users/abdullahbinmadhi/Desktop/Bicycle Video ML Model/Project Surface Detection/LM-17.06/876ED8BA-AF81-4DCD-9A29-8702D236B21D/bicycle ride.mov,2.017,285,381,1152,938,bicycles,1.0
+/Users/abdullahbinmadhi/Desktop/Bicycle Video ML Model/Project Surface Detection/LM-17.06/876ED8BA-AF81-4DCD-9A29-8702D236B21D/bicycle ride.mov,2.017,53,802,926,988,cobblestone,1.0

@@ -123,6 +123,10 @@ function setVideoFile() {
 
 function logToConsole(message, isError = false) {
   const consoleDisplay = document.getElementById('console-output');
+  if (!consoleDisplay) {
+      console.log(message);
+      return;
+  }
   
   // Use Tailwind or custom green/red text colors for clarity
   let colorClass = 'text-green-400'; // Default green for successful operations 

@@ -37,20 +37,22 @@
           display: none !important;
       }
       
-      /* Fullscreen fixes so controls aren't pushed off-screen */
+      /* Fullscreen fixes so controls aren't pushed off-screen and video doesn't collapse */
       #video-preview-card:fullscreen {
-          display: flex !important;
-          flex-direction: column;
-          overflow-y: auto;
           background: #0c0c0c;
-          padding: 2rem;
+          overflow-y: auto;
+          display: block; /* reset flex layout */
+      }
+      
+      #video-preview-card:fullscreen > .p-6 {
+          /* Force width to never exceed a safe 16:9 vertical limit so aspect-video height fits */
+          max-width: calc((100vh - 250px) * 16 / 9 + 48px);
+          margin: 0 auto;
       }
 
       #video-preview-card:fullscreen .aspect-video {
-          flex: 1 1 auto;
-          max-height: calc(100vh - 220px); /* Leave room below for controls */
           width: 100%;
-          aspect-ratio: auto; /* De-constrain aspect ratio so it can shrink vertically */
+          aspect-ratio: 16 / 9 !important; /* Keep canvas mapping locked 1:1 with UI coordinates */
       }
   </style>
 </head>

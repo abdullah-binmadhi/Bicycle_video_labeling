@@ -1175,23 +1175,7 @@ window.switchView = function(viewId) {
     }
 }
 
-window.generatePDFReport = function() {
-    showToast('Compiling analytical snapshot...', 'info');
-    const elem = document.getElementById('view-analytics');
-    
-    // HTML2PDF settings
-    const opt = {
-      margin:       1,
-      filename:     'CycleSafe_Report.pdf',
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true },
-      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-    };
-    
-    html2pdf().set(opt).from(elem).save().then(() => {
-        showToast('PDF Exported Successfully!', 'success');
-    });
-};
+
 
 window.currentGeoData = [];
 
@@ -1687,7 +1671,12 @@ window.saveManualAnnotation = function() {
   
   const fs = require('fs');
   const path = require('path');
-  const csvPath = path.join(__dirname, '../../manual_annotations.csv');
+  
+  // Use the selected Output Folder if one is set, else default to project root
+  const outputDir = (typeof manualCaptureFolder !== 'undefined' && manualCaptureFolder) 
+      ? manualCaptureFolder 
+      : path.join(__dirname, '../../');
+  const csvPath = path.join(outputDir, 'manual_annotations.csv');
   
   if (!fs.existsSync(csvPath)) {
       fs.writeFileSync(csvPath, "video,timestamp,x,y,w,h,label,confidence\n");
@@ -2446,24 +2435,7 @@ window.chooseResumeModel = async function() {
   }
 };
 
-window.chooseMetricsFile = async function() {
-    const { ipcRenderer } = require('electron');
-    const filePath = await ipcRenderer.invoke('dialog:openMetrics');
-    if (filePath) {
-        document.getElementById('analyticsFilePath').value = filePath;
-        
-        try {
-            const fs = require('fs');
-            const data = fs.readFileSync(filePath, 'utf-8');
-            const metrics = JSON.parse(data);
-            
-            showToast('Metrics loaded & parsed successfully!', 'success');
-        } catch (e) {
-            console.error(e);
-            showToast('Error reading metrics file.', 'error');
-        }
-    }
-};
+
 
 
 // Added back missing Map rendering logic

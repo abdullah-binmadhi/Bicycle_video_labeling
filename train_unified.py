@@ -225,10 +225,6 @@ def main():
             # Ensure the directory exists before saving metrics
             checkpoint_dir.mkdir(parents=True, exist_ok=True)
             
-            # Export metrics.json only on best validation
-            with open(checkpoint_dir / 'metrics.json', 'w') as f:
-                json.dump(metrics_dict, f, indent=4)
-            
         print(f"EPOCH_STATS:{json.dumps(metrics_dict)}")
             
         save_checkpoint({

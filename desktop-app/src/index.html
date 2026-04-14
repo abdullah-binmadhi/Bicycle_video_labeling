@@ -1106,7 +1106,8 @@
           </div>
           
           <div class="border border-[#222] bg-[#0c0c0c] p-8 p-4 rounded-none border border-[#222]  flex flex-col items-center justify-center relative min-h-[350px] bg-black overflow-hidden">
-             <video id="inf-video" class="w-full h-full object-cover hidden rounded" controls muted></video>
+             <video id="inf-video" class="w-full h-full object-contain hidden rounded" controls muted></video>
+             <canvas id="inf-overlay-canvas" class="absolute top-0 left-0 w-full h-full pointer-events-none hidden"></canvas>
              
              <div id="inf-overlay" class="absolute bottom-16 transform transition-all duration-300 scale-95 opacity-0 flex flex-col items-center">
                  <div class="bg-black/80 backdrop-blur-md px-8 py-3 rounded-none border border-white/20 shadow-[0_0_20px_rgba(0,0,0,0.8)]">

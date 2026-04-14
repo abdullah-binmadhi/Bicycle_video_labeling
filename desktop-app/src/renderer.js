@@ -472,6 +472,14 @@ function _runScript(scriptKey) {
       if (syncOut) args.push('--output_dir', syncOut);
   }
 
+    if (scriptKey === 'inference') {
+      const infModel = document.getElementById('infModelPath') ? document.getElementById('infModelPath').value.trim() : "";
+      const infCsv = document.getElementById('infCsvPath') ? document.getElementById('infCsvPath').value.trim() : "";
+      
+      if (infModel) args.push('--model', infModel);
+      if (infCsv) args.push('--csv', infCsv);
+    }
+  
     if (scriptKey === 'train') {
         const customTrainData = document.getElementById('trainDataPath') ? document.getElementById('trainDataPath').value.trim() : "";
         if (customTrainData) args.push('--data', customTrainData);
@@ -739,10 +747,11 @@ let threeScene = null, threeCamera = null, threeRenderer = null, threeCube = nul
 
 function initLeaflet(lat=52.5200, lng=13.4050) {
     if(!infMap) {
-        const mapContainer = document.getElementById('inf-map');
+        // Corrected: HTML uses id="inf-playback-map"
+        const mapContainer = document.getElementById('inf-playback-map');
         if(!mapContainer) return;
         
-        infMap = L.map('inf-map').setView([lat, lng], 16);
+        infMap = L.map('inf-playback-map').setView([lat, lng], 15);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; OpenStreetMap',
             subdomains: 'abcd',
@@ -855,17 +864,19 @@ window.initLiveDashboard = function() {
         });
     }
 
-    // 2. Radar Chart
+    // 2. Radar Chart – 7 classes matching the trained model
+    const RADAR_LABELS = ['Asphalt', 'Gravel', 'Cobblestone', 'Pothole', 'Speed Bump', 'Bicycle Lane', 'Rail Tracks'];
+    window._radarLabels = RADAR_LABELS;
     const radarCanvas = document.getElementById('inf-radar-chart');
     if (radarCanvas && !liveRadarChart) {
         liveRadarChart = new Chart(radarCanvas, {
             type: 'radar',
             data: {
-                labels: ['Asphalt', 'Gravel', 'Cobblestone', 'Grass', 'Pothole', 'SpeedBump', 'Braking', 'Turning', 'Wet', 'Sand'],
+                labels: RADAR_LABELS,
                 datasets: [{
-                    label: 'Confidence',
-                    data: Array(10).fill(10),
-                    backgroundColor: 'rgba(168, 85, 247, 0.2)',
+                    label: 'Confidence %',
+                    data: Array(7).fill(0),
+                    backgroundColor: 'rgba(168, 85, 247, 0.25)',
                     borderColor: '#a855f7',
                     pointBackgroundColor: '#a855f7',
                     pointBorderColor: '#fff',
@@ -874,8 +885,8 @@ window.initLiveDashboard = function() {
                 }]
             },
             options: {
-                responsive: true, maintainAspectRatio: false, animation: { duration: 150 },
-                scales: { r: { min: 0, max: 100, ticks: { display: false }, grid: { color: '#333' }, angleLines: { color: '#333' }, pointLabels: { color: '#888', font: { size: 9 } } } },
+                responsive: true, maintainAspectRatio: false, animation: { duration: 200 },
+                scales: { r: { min: 0, max: 100, ticks: { display: false, stepSize: 25 }, grid: { color: '#2a2a2a' }, angleLines: { color: '#333' }, pointLabels: { color: '#aaa', font: { size: 9 } } } },
                 plugins: { legend: { display: false } }
             }
         });
@@ -901,41 +912,54 @@ window.initLiveDashboard = function() {
 window.updateLiveDashboard = function(pred, time) {
     if (!pred) return;
     
-    let variance = pred.variance_metric || 0.5;
-    let mainSurface = pred.surface || "";
-    let conf = pred.confidence || 100;
+    const mainSurface = pred.surface || "";
+    const probabilities = pred.probabilities || {}; // {"Asphalt (Smooth)": 98.4, ...}
+    const conf = pred.confidence || 0;
+    
+    // Derive a variance proxy: anomaly = inverse of asphalt confidence (0–100 scale → 0–1)
+    const asphaltConf = probabilities['Asphalt (Smooth)'] || conf;
+    const anomalyScore = Math.max(0, 100 - asphaltConf) / 100; // 0 = clean road, 1 = severe anomaly
 
-    // 1. Update IMU Chart (simulate noisy sine waves scaled by variance)
+    // 1. Update IMU Chart – amplitude scales with anomaly score
     if (liveImuChart) {
         liveImuChart.data.datasets.forEach((dataset, idx) => {
-            dataset.data.shift(); // remove first
-            let noise = (Math.random() - 0.5) * variance * (idx + 2) * 5;
-            let val = Math.sin(time * 10 + idx) * (variance) + noise;
+            dataset.data.shift();
+            const amplitude = 2 + anomalyScore * 18;
+            const noise = (Math.random() - 0.5) * anomalyScore * 8;
+            let val = Math.sin(time * (6 + idx * 2)) * amplitude + noise;
             val = Math.max(-20, Math.min(20, val));
             dataset.data.push(val);
         });
         liveImuChart.update();
     }
 
-    // 2. Update Radar (spike the correct class)
+    // 2. Update Radar – read direct class percentages from probabilities
     if (liveRadarChart) {
-        const labels = liveRadarChart.data.labels;
-        let newData = labels.map((l) => {
-            if (mainSurface.includes(l) || l.includes(mainSurface.split(' ')[0])) {
-                return conf;
-            }
-            return Math.random() * 20; // Background noise probabilities
-        });
+        // Map full label names to their display values in the radar
+        const labelMap = {
+            'Asphalt':      probabilities['Asphalt (Smooth)']   || 0,
+            'Gravel':       probabilities['Gravel (Bumpy)']     || 0,
+            'Cobblestone':  probabilities['Cobblestone (Harsh)']|| 0,
+            'Pothole':      probabilities['Pothole (Anomaly)']  || 0,
+            'Speed Bump':   probabilities['Speed Bump']         || 0,
+            'Bicycle Lane': probabilities['Bicycle Lane']       || 0,
+            'Rail Tracks':  probabilities['Rail Tracks']        || 0,
+        };
+        const newData = (window._radarLabels || liveRadarChart.data.labels).map(l => labelMap[l] || 0);
         liveRadarChart.data.datasets[0].data = newData;
         liveRadarChart.update();
     }
 
-    // 3. Update Spectrogram Waterfall
+    // 3. Update Spectrogram Waterfall – frequency energy scales with anomaly score
     if (spectrogramCtx) {
         const w = spectrogramCtx.canvas.width;
         const h = spectrogramCtx.canvas.height;
         spectrogramData.shift();
-        let newCol = Array(25).fill(0).map((_, i) => Math.random() * variance * (25 - i) / 5);
+        // High anomaly = high energy in lower frequency bins
+        const newCol = Array(25).fill(0).map((_, i) => {
+            const freqDecay = (25 - i) / 25; // low freq = high i index
+            return (Math.random() * 0.3 + anomalyScore * freqDecay) * 10;
+        });
         spectrogramData.push(newCol);
         
         spectrogramCtx.clearRect(0, 0, w, h);
@@ -943,49 +967,57 @@ window.updateLiveDashboard = function(pred, time) {
         const rowH = h / 25;
         for (let x = 0; x < 80; x++) {
             for (let y = 0; y < 25; y++) {
-                let val = spectrogramData[x][y];
-                // Jet colormap logic
-                let r = Math.min(255, val * 10);
-                let g = Math.min(255, val * 30);
-                let b = Math.max(0, 255 - val * 10);
+                const val = Math.min(10, spectrogramData[x]?.[y] || 0);
+                // Thermal colormap: cold blue→warm yellow→hot red
+                const t = val / 10;
+                const r = Math.round(Math.min(255, t < 0.5 ? t * 2 * 255 : 255));
+                const g = Math.round(Math.min(255, t < 0.5 ? t * 2 * 180 : (1 - (t - 0.5) * 2) * 180));
+                const b = Math.round(Math.max(0, t < 0.5 ? 255 - t * 2 * 255 : 0));
                 spectrogramCtx.fillStyle = `rgb(${r},${g},${b})`;
-                spectrogramCtx.fillRect(x * colW, h - (y * rowH) - rowH, colW+1, rowH+1); // +1 fixes gaps
+                spectrogramCtx.fillRect(x * colW, h - (y + 1) * rowH, colW + 1, rowH + 1);
             }
         }
     }
 
-    // 4. Update Vector Ball
+    // 4. Update Vector Ball – ball deflection proportional to anomaly score
     if (vectorBallCtx) {
         const w = vectorBallCtx.canvas.width;
         const h = vectorBallCtx.canvas.height;
         const cx = w / 2; const cy = h / 2;
         vectorBallCtx.clearRect(0, 0, w, h);
         
-        // Radar Crosshairs
-        vectorBallCtx.strokeStyle = '#333';
+        // Grid lines
+        vectorBallCtx.strokeStyle = '#2a2a2a';
+        vectorBallCtx.lineWidth = 1;
         vectorBallCtx.beginPath();
         vectorBallCtx.moveTo(cx, 0); vectorBallCtx.lineTo(cx, h);
         vectorBallCtx.moveTo(0, cy); vectorBallCtx.lineTo(w, cy);
         vectorBallCtx.stroke();
-        vectorBallCtx.beginPath(); vectorBallCtx.arc(cx, cy, h/3, 0, 2*Math.PI); vectorBallCtx.stroke();
-
-        let dx = (Math.random() - 0.5) * variance * 15;
-        let dy = (Math.random() - 0.5) * variance * 15;
+        vectorBallCtx.beginPath(); vectorBallCtx.arc(cx, cy, Math.min(cx, cy) * 0.6, 0, 2 * Math.PI);
+        vectorBallCtx.stroke();
+        
+        const maxDeflect = Math.min(cx, cy) * 0.8;
+        const dx = (Math.random() - 0.5) * 2 * anomalyScore * maxDeflect;
+        const dy = (Math.random() - 0.5) * 2 * anomalyScore * maxDeflect;
+        
+        // Ball color: green=smooth, yellow=moderate, red=severe
+        const ballColor = anomalyScore < 0.1 ? '#10b981' : anomalyScore < 0.4 ? '#f59e0b' : '#ef4444';
         
         vectorBallCtx.beginPath();
-        vectorBallCtx.arc(cx + dx, cy + dy, 8, 0, 2 * Math.PI);
-        vectorBallCtx.fillStyle = '#f43f5e';
-        vectorBallCtx.shadowBlur = 10; vectorBallCtx.shadowColor = '#f43f5e';
-        vectorBallCtx.fill(); 
+        vectorBallCtx.arc(cx + dx, cy + dy, 7, 0, 2 * Math.PI);
+        vectorBallCtx.fillStyle = ballColor;
+        vectorBallCtx.shadowBlur = 12; vectorBallCtx.shadowColor = ballColor;
+        vectorBallCtx.fill();
         vectorBallCtx.shadowBlur = 0;
     }
 
-    // 5. Update Severity Spike ProgressBar
+    // 5. Update Severity Bar – driven by non-road probability
     const sevBar = document.getElementById('inf-severity-bar');
     if (sevBar) {
-        let pct = Math.min(100, (variance / 8.0) * 100);
+        const nonRoadConf = 100 - (probabilities['Asphalt (Smooth)'] || 0) - (probabilities['Bicycle Lane'] || 0);
+        const pct = Math.max(0, Math.min(100, nonRoadConf));
         sevBar.style.width = pct + '%';
-        sevBar.style.backgroundColor = pct > 60 ? '#ef4444' : (pct > 30 ? '#f59e0b' : '#10b981');
+        sevBar.style.backgroundColor = pct > 50 ? '#ef4444' : (pct > 20 ? '#f59e0b' : '#10b981');
     }
     
     // 6. Update Map Marker
@@ -1025,25 +1057,40 @@ window.startAIOverlay = function() {
     
     // Init Phase 2 components
     setTimeout(() => {
-        if(typeof initLeaflet === 'function') initLeaflet();
-        if(typeof initThreeJS === 'function') initThreeJS();
+        // Load GPS route from predictions.json to power the live map
+        let gpsLatlngs = [];
+        try {
+            const predPath = require('path').join(__dirname, '../../predictions.json');
+            if (require('fs').existsSync(predPath)) {
+                const preds = JSON.parse(require('fs').readFileSync(predPath, 'utf8'));
+                gpsLatlngs = preds
+                    .filter(p => p.lat && p.lng && !isNaN(p.lat) && !isNaN(p.lng))
+                    .map(p => [p.lat, p.lng]);
+            }
+        } catch(e) {}
         
-        // Setup static mock path trace
+        // Use real GPS coords if available, else fall back to mock
+        const firstLat = gpsLatlngs.length > 0 ? gpsLatlngs[0][0] : 52.5200;
+        const firstLng = gpsLatlngs.length > 0 ? gpsLatlngs[0][1] : 13.4050;
+        
+        if(typeof initLeaflet === 'function') initLeaflet(firstLat, firstLng);
+        
         if(typeof infMap !== 'undefined' && infMap) {
-            const startLat = 52.5200;
-            const startLng = 13.4050;
-            const latlngs = [];
-            let curl = startLat, curlg = startLng;
-            for(let i=0; i<150; i++) {
-                latlngs.push([curl, curlg]);
-                // Smoother route pathing
-                curl += (Math.sin(i*0.1) - 0.5) * 0.0005;
-                curlg += (Math.cos(i*0.2) + 0.5) * 0.0005;
+            let latlngs = gpsLatlngs;
+            if (latlngs.length < 2) {
+                // Fallback mock route
+                latlngs = [];
+                let curl = firstLat, curlg = firstLng;
+                for(let i = 0; i < 150; i++) {
+                    latlngs.push([curl, curlg]);
+                    curl += (Math.sin(i * 0.1) - 0.5) * 0.0004;
+                    curlg += (Math.cos(i * 0.2) + 0.5) * 0.0004;
+                }
             }
             window.infLatlngs = latlngs;
-            L.polyline(latlngs, {color: '#94a3b8', weight: 4, dashArray: '4, 6'}).addTo(infMap);
-            infMap.fitBounds(L.latLngBounds(latlngs));
-            setTimeout(() => infMap.invalidateSize(), 500);
+            L.polyline(latlngs, {color: '#475569', weight: 3, dashArray: '4, 6'}).addTo(infMap);
+            infMap.fitBounds(L.latLngBounds(latlngs), { padding: [12, 12] });
+            setTimeout(() => infMap.invalidateSize(), 350);
         }
     }, 500);
     
@@ -1076,23 +1123,139 @@ window.startAIOverlay = function() {
     } catch(err) {
         console.error("Error loading predictions.json", err);
     }
+    
+    // Load Auto Annotation Labels if provided
+    let frameAnnotations = [];
+    const infLabelInput = document.getElementById('infLabelPath');
+    if (infLabelInput && infLabelInput.value && require('fs').existsSync(infLabelInput.value)) {
+        try {
+            const csvData = require('fs').readFileSync(infLabelInput.value, 'utf8');
+            const lines = csvData.split('\n');
+            let minRawTime = Number.MAX_VALUE;
+            lines.slice(1).forEach(line => {
+                if(!line.trim()) return;
+                const p = line.split(',');
+                if(p.length >= 7) {
+                    // format: frame,class,confidence,xmin,ymin,xmax,ymax,distance_m
+                    const frameStr = p[0];
+                    const match = frameStr.match(/frame_([\d.]+)\.jpg/);
+                    let rawTime = 0;
+                    if (match) rawTime = parseFloat(match[1]);
+                    
+                    if (rawTime > 0) minRawTime = Math.min(minRawTime, rawTime);
+
+                    const x1 = parseFloat(p[3]);
+                    const y1 = parseFloat(p[4]);
+                    const x2 = parseFloat(p[5]);
+                    const y2 = parseFloat(p[6]);
+
+                    frameAnnotations.push({
+                        rawTime: rawTime,
+                        timestamp: 0, // will be corrected
+                        label: p[1],
+                        confidence: parseFloat(p[2]),
+                        x: x1,
+                        y: y1,
+                        w: Math.max(0, x2 - x1),
+                        h: Math.max(0, y2 - y1)
+                    });
+                }
+            });
+            // Align timestamps relative to the earliest frame being T=0
+            if (minRawTime !== Number.MAX_VALUE) {
+                frameAnnotations.forEach(a => a.timestamp = Math.max(0, a.rawTime - minRawTime));
+            }
+        } catch(err) {
+            console.error("Error loading Label CSV", err);
+        }
+    }
 
     if (window.aiInterval) clearInterval(window.aiInterval);
     window.aiInterval = setInterval(() => {
-        if(!vidPlayer.paused && predictions.length > 0) {
-           const currentTime = vidPlayer.currentTime; // seconds
-           // Find matching prediction based on timestamp
-           const currentPred = predictions.find(p => p.timestamp <= currentTime && (p.timestamp + 1) > currentTime);
+        if(!vidPlayer.paused) {
+           const currentTime = vidPlayer.currentTime; // seconds into the video
+           const videoDuration = vidPlayer.duration || 66; // fallback 66s based on recording
            
-           if(currentPred) {
-               window.updateLiveDashboard(currentPred, currentTime);
-               label.innerText = currentPred.surface.toUpperCase();
-               if(currentPred.surface.includes("Asphalt")) label.className = "text-2xl font-black tracking-widest text-emerald-400 switch-anim";
-               else if(currentPred.surface.includes("Grass")) label.className = "text-2xl font-black tracking-widest text-warning switch-anim";
-               else label.className = "text-2xl font-black tracking-widest text-rose-400 switch-anim";
+           // ── Prediction lookup ─────────────────────────────────────────────
+           // predictions.json spans the entire IMU recording (0–3299s).
+           // Map video playback position proportionally to the predictions array.
+           if (predictions.length > 0) {
+               let currentPred;
+               if (videoDuration && videoDuration > 1) {
+                   // Proportional mapping: video progress → predictions index
+                   const progress = Math.max(0, Math.min(1, currentTime / videoDuration));
+                   const idx = Math.floor(progress * (predictions.length - 1));
+                   currentPred = predictions[idx];
+               } else {
+                   // Fallback: direct timestamp search (works if video and IMU are synchronized)
+                   currentPred = predictions.find(p => p.timestamp <= currentTime && (p.timestamp + 1) > currentTime);
+               }
+               if(currentPred) {
+                   window.updateLiveDashboard(currentPred, currentTime);
+                   label.innerText = currentPred.surface.toUpperCase();
+                   if(currentPred.surface.includes('Asphalt'))
+                       label.className = 'text-2xl font-black tracking-widest text-emerald-400 switch-anim';
+                   else if(currentPred.surface.includes('Gravel') || currentPred.surface.includes('Cobblestone'))
+                       label.className = 'text-2xl font-black tracking-widest text-yellow-400 switch-anim';
+                   else if(currentPred.surface.includes('Bicycle') || currentPred.surface.includes('Rail'))
+                       label.className = 'text-2xl font-black tracking-widest text-cyan-400 switch-anim';
+                   else
+                       label.className = 'text-2xl font-black tracking-widest text-rose-400 switch-anim';
+               }
+           }
+           
+           // ── Bounding box overlay ──────────────────────────────────────────
+           const canvas = document.getElementById('inf-overlay-canvas');
+           if (canvas) {
+               canvas.classList.remove('hidden');
+               if (canvas.width !== vidPlayer.clientWidth || canvas.height !== vidPlayer.clientHeight) {
+                   canvas.width = vidPlayer.clientWidth;
+                   canvas.height = vidPlayer.clientHeight;
+               }
+               
+               const ctx = canvas.getContext('2d');
+               ctx.clearRect(0, 0, canvas.width, canvas.height);
+               
+               if (frameAnnotations.length > 0) {
+                   const rawVidW = vidPlayer.videoWidth || 1920;
+                   const rawVidH = vidPlayer.videoHeight || 1080;
+                   const scaleX = canvas.width / rawVidW;
+                   const scaleY = canvas.height / rawVidH;
+                   
+                   // Map video playback position proportionally to the annotations array.
+                   // Frame filenames have an 8-hour UTC offset vs IMU NTP, so we avoid
+                   // direct timestamp subtraction and instead use proportional indexing.
+                   const vidProgress   = Math.max(0, Math.min(1, currentTime / videoDuration));
+                   const annoIdx       = Math.floor(vidProgress * (frameAnnotations.length - 1));
+                   // Show a small window of nearby annotations (±3 frames at 30fps ≈ 0.1s window)
+                   const windowSize    = Math.max(1, Math.floor(frameAnnotations.length * (0.1 / videoDuration)));
+                   const start         = Math.max(0, annoIdx - windowSize);
+                   const end           = Math.min(frameAnnotations.length - 1, annoIdx + windowSize);
+                   const currentAnnos  = frameAnnotations.slice(start, end + 1);
+                   
+                   currentAnnos.forEach(a => {
+                       const drawX = a.x * scaleX;
+                       const drawY = a.y * scaleY;
+                       const drawW = a.w * scaleX;
+                       const drawH = a.h * scaleY;
+                       if (drawW < 5 || drawH < 5) return; // skip degenerate boxes
+                       
+                       ctx.strokeStyle = '#a855f7';
+                       ctx.lineWidth = 2;
+                       ctx.strokeRect(drawX, drawY, drawW, drawH);
+                       
+                       const cleanLabel = a.label.trim();
+                       const textW = ctx.measureText(cleanLabel).width + 16;
+                       ctx.fillStyle = 'rgba(168,85,247,0.85)';
+                       ctx.fillRect(drawX, Math.max(0, drawY - 22), textW, 22);
+                       ctx.fillStyle = '#FFFFFF';
+                       ctx.font = 'bold 11px monospace';
+                       ctx.fillText(cleanLabel, drawX + 8, Math.max(14, drawY - 6));
+                   });
+               }
            }
         }
-    }, 500); // Check half-second ticks
+    }, 50); // 20fps tick rate
 };
 
 // Intercept setProcessStatus to tie in Toasts on command ends

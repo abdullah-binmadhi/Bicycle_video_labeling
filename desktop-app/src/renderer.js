@@ -1628,127 +1628,85 @@ window.chooseInfVideo = async function() {
 
 // --- App-Based Annotation & Canvas ---
 
-// 1. Interactive CLIP Search Handlers
-window.triggerInteractiveClip = function() {
+// 1. Manual Annotation Saving Handler
+let currentManualBox = null;
+
+window.saveManualAnnotation = function() {
   const promptInput = document.getElementById('interactive-clip-prompt');
   const videoPlayer = document.getElementById('video-player');
+  const canvas = document.getElementById('annotation-layer');
   
   if (!promptInput.value) {
-      showToast('Please type a search phrase first.', 'error');
+      showToast('Please type a label name first.', 'error');
       return;
   }
   
-  if (!videoPlayer || !videoPlayer.src) {
-      showToast('Please map a master video first prior to searching frames.', 'error');
+  if (!currentManualBox) {
+      showToast('Please draw a bounding box on the video first.', 'error');
       return; 
   }
   
-  const currentTime = videoPlayer.currentTime;
-  const promptTxt = promptInput.value;
+  if (!videoPlayer || !videoPlayer.src) {
+      showToast('Please map a master video first prior to saving.', 'error');
+      return; 
+  }
+
   const videoPath = document.getElementById('annoVideoPath').value;
+  const rawVidW = videoPlayer.videoWidth || 1920; 
+  const rawVidH = videoPlayer.videoHeight || 1080;
   
-  logToConsole(`[Interactive Search] Triggering specialized zero-shot inference for: "${promptTxt}" @ ${currentTime.toFixed(3)}s`);
-  document.getElementById('spinner-clip-interactive').classList.remove('hidden');
+  // Calculate correct scaling accounting for object-fit: contain
+  const vidRatio = rawVidW / rawVidH;
+  const canvasRatio = canvas.width / canvas.height;
   
-  const { spawn } = require('child_process');
-  const path = require('path');
+  let renderW = canvas.width;
+  let renderH = canvas.height;
+  let offsetX = 0;
+  let offsetY = 0;
+  
+  if (canvasRatio > vidRatio) {
+      // Pillarboxing (black bars on sides)
+      renderW = canvas.height * vidRatio;
+      offsetX = (canvas.width - renderW) / 2;
+  } else if (canvasRatio < vidRatio) {
+      // Letterboxing (black bars on top/bottom)
+      renderH = canvas.width / vidRatio;
+      offsetY = (canvas.height - renderH) / 2;
+  }
+
+  const { startX, startY, width, height } = currentManualBox;
+  
+  // Map coordinates removing the offset bars, scaling relative to raw video
+  const realX = Math.round((startX - offsetX) * (rawVidW / renderW));
+  const realY = Math.round((startY - offsetY) * (rawVidH / renderH));
+  const realW = Math.round(width * (rawVidW / renderW));
+  const realH = Math.round(height * (rawVidH / renderH));
+  
+  let label = promptInput.value;
+  const currentTime = videoPlayer.currentTime;
+  
   const fs = require('fs');
-  const interactiveScript = path.join(__dirname, '../../data_pipeline/clip_interactive.py');
+  const path = require('path');
+  const csvPath = path.join(__dirname, '../../manual_annotations.csv');
   
-  // Choose python env
-  const pythonPath = fs.existsSync(path.join(__dirname, '../../venv/bin/python')) 
-    ? path.join(__dirname, '../../venv/bin/python') 
-    : 'python3';
-    
-  const child = spawn(pythonPath, [
-      interactiveScript,
-      '--video', videoPath,
-      '--time', currentTime.toString(),
-      '--prompt', promptTxt
-  ]);
+  if (!fs.existsSync(csvPath)) {
+      fs.writeFileSync(csvPath, "video,timestamp,x,y,w,h,label,confidence\n");
+  }
+  
+  const row = `${videoPath},${currentTime.toFixed(3)},${realX},${realY},${realW},${realH},${label},1.0\n`;
+  fs.appendFileSync(csvPath, row);
+  logToConsole(`[Manual Annotation] Saved box: [${realX}, ${realY}, ${realW}, ${realH}] as '${label}'`);
+  showToast(`Annotation '${label}' saved successfully.`, 'success');
 
-  let outputData = '';
+  // Draw final saved bubble
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#F43F5E';
+  ctx.fillRect(startX, Math.max(0, startY - 24), ctx.measureText(label).width + 16, 24);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 12px monospace';
+  ctx.fillText(label, startX + 8, Math.max(0, startY - 24) + 16);
   
-  child.stdout.on('data', (data) => {
-      outputData += data.toString();
-  });
-  
-  child.stderr.on('data', (data) => {
-      console.warn('Interactive CLIP STDERR:', data.toString());
-  });
-  
-  child.on('close', (code) => {
-      document.getElementById('spinner-clip-interactive').classList.add('hidden');
-      
-      if (code !== 0) {
-          showToast('Inference failed.', 'error');
-          logToConsole('[Interactive Search] Inference failed (Script error).');
-          return;
-      }
-      
-      try {
-          const res = JSON.parse(outputData.trim().split('\n').pop()); // last line
-          if (res.error) {
-              showToast(res.error, 'error'); return;
-          }
-          if (res.success) {
-              logToConsole(`[Interactive Search] Identified "${promptTxt}" cluster! Score: ${res.score.toFixed(3)}`);
-              
-              const box = res.box; // [x, y, w, h] in original video dimensions
-              const videoWidth = res.original_width;
-              const videoHeight = res.original_height;
-              
-              drawBoundingBox(promptTxt, box, videoWidth, videoHeight);
-              
-              // Automatically save to manual_annotations.csv
-              const csvPath = path.join(__dirname, '../../manual_annotations.csv');
-              
-              if (!fs.existsSync(csvPath)) {
-                  fs.writeFileSync(csvPath, "video,timestamp,x,y,w,h,label,confidence\n");
-              }
-              
-              const row = `${videoPath},${currentTime.toFixed(3)},${box[0]},${box[1]},${box[2]},${box[3]},${promptTxt},1.0\n`;
-              fs.appendFileSync(csvPath, row);
-              logToConsole(`Saved point data to ${csvPath}`);
-          }
-      } catch (err) {
-          showToast('Failed to parse Python response', 'error');
-          console.error(err, outputData);
-      }
-  });
-}
-
-function drawBoundingBox(label, boxCoords, rawVidW, rawVidH) {
-    const canvas = document.getElementById('annotation-layer');
-    if (!canvas) return;
-    
-    // Internal canvas resolution
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
-    
-    const ctx = canvas.getContext('2d');
-    
-    // Scale coords to match frontend CSS box
-    const scaleX = canvas.width / rawVidW;
-    const scaleY = canvas.height / rawVidH;
-    
-    const x = boxCoords[0] * scaleX;
-    const y = boxCoords[1] * scaleY;
-    const w = boxCoords[2] * scaleX;
-    const h = boxCoords[3] * scaleY;
-    
-    ctx.strokeStyle = '#10B981'; // Emerald
-    ctx.lineWidth = 3;
-    ctx.setLineDash([8, 4]); // Dashed line for search result
-    ctx.strokeRect(x, y, w, h);
-    
-    // Draw Label bubble
-    ctx.fillStyle = '#10B981';
-    ctx.fillRect(x, Math.max(0, y - 24), ctx.measureText(label).width + 16, 24);
-    
-    ctx.fillStyle = '#111827';
-    ctx.font = 'bold 12px monospace';
-    ctx.fillText(label, x + 8, Math.max(0, y - 24) + 16);
+  currentManualBox = null;
 }
 
 // 2. Manual Canvas Drawing Logic
@@ -1806,56 +1764,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const endX = e.clientX - rect.left;
         const endY = e.clientY - rect.top;
         
-        const width = endX - startX;
-        const height = endY - startY;
+        // Ensure width/height are positive values from top-left logic
+        let finalStartX = Math.min(startX, endX);
+        let finalStartY = Math.min(startY, endY);
+        let finalW = Math.abs(endX - startX);
+        let finalH = Math.abs(endY - startY);
         
-        if (Math.abs(width) > 10 && Math.abs(height) > 10) {
-            logToConsole(`[Manual Annotation] Appended bounding box: [${startX.toFixed(1)}, ${startY.toFixed(1)}, ${width.toFixed(1)}, ${height.toFixed(1)}]`);
-            showToast('Manual bounding box locked.', 'success');
-            
-            const videoPlayer = document.getElementById('video-player');
-            const promptInput = document.getElementById('interactive-clip-prompt');
-            const videoPath = document.getElementById('annoVideoPath').value;
-            
-            if (videoPlayer && videoPlayer.src) {
-                // Map from canvas sizing back to native video sizing
-                const rawVidW = videoPlayer.videoWidth || 1920; 
-                const rawVidH = videoPlayer.videoHeight || 1080;
-                
-                const scaleX = rawVidW / canvas.width;
-                const scaleY = rawVidH / canvas.height;
-                
-                const realX = Math.round(startX * scaleX);
-                const realY = Math.round(startY * scaleY);
-                const realW = Math.round(width * scaleX);
-                const realH = Math.round(height * scaleY);
-                
-                let label = promptInput.value || "pothole"; // Default label if empty
-                const currentTime = videoPlayer.currentTime;
-                
-                const fs = require('fs');
-                const path = require('path');
-                const csvPath = path.join(__dirname, '../../manual_annotations.csv');
-                
-                // Write header if file doesn't exist
-                if (!fs.existsSync(csvPath)) {
-                    fs.writeFileSync(csvPath, "video,timestamp,x,y,w,h,label,confidence\n");
-                }
-                
-                const row = `${videoPath},${currentTime.toFixed(3)},${realX},${realY},${realW},${realH},${label},1.0\n`;
-                fs.appendFileSync(csvPath, row);
-                logToConsole(`Saved manual annotation to backend dataset (labels.csv context).`);
-                
-                // Draw label bubble to confirm it's captured
-                ctx.fillStyle = '#F43F5E';
-                ctx.fillRect(startX, Math.max(0, startY - 24), ctx.measureText(label).width + 16, 24);
-                ctx.fillStyle = '#FFFFFF';
-                ctx.font = 'bold 12px monospace';
-                ctx.fillText(label, startX + 8, Math.max(0, startY - 24) + 16);
-            }
-            
+        if (finalW > 10 && finalH > 10) {
+            currentManualBox = {
+                startX: finalStartX,
+                startY: finalStartY,
+                width: finalW,
+                height: finalH
+            };
+            logToConsole(`[Manual Annotation] Bounding box locked: [${finalStartX.toFixed(1)}, ${finalStartY.toFixed(1)}, ${finalW.toFixed(1)}, ${finalH.toFixed(1)}]. Waiting for label text...`);
+            showToast('Box locked. Now type a label and click Save Annotation.', 'success');
         } else {
             ctx.clearRect(0, 0, canvas.width, canvas.height); // Too small, clear it
+            currentManualBox = null;
         }
     });
 });
@@ -2384,8 +2310,31 @@ document.addEventListener('DOMContentLoaded', () => {
             // Draw video frame
             hCtx.drawImage(videoPlayer, 0, 0, rawVidW, rawVidH);
 
-            // Draw annotations on top
-            hCtx.drawImage(annotationLayer, 0, 0, rawVidW, rawVidH);
+            // Fix canvas scale stretching by removing implicit letterboxing scaling differences
+            const vidRatio = rawVidW / rawVidH;
+            const canvasRatio = annotationLayer.width / annotationLayer.height;
+            
+            let renderW = annotationLayer.width;
+            let renderH = annotationLayer.height;
+            let offsetX = 0;
+            let offsetY = 0;
+            
+            if (canvasRatio > vidRatio) {
+                // Pillarboxing
+                renderW = annotationLayer.height * vidRatio;
+                offsetX = (annotationLayer.width - renderW) / 2;
+            } else if (canvasRatio < vidRatio) {
+                // Letterboxing
+                renderH = annotationLayer.width / vidRatio;
+                offsetY = (annotationLayer.height - renderH) / 2;
+            }
+
+            // Draw annotations on top, perfectly extracting only the portion overlaying the video
+            hCtx.drawImage(
+                annotationLayer, 
+                offsetX, offsetY, renderW, renderH, // source crop
+                0, 0, rawVidW, rawVidH              // destination rect
+            );
 
             // Export to PNG base64
             const dataUrl = hiddenCanvas.toDataURL('image/png');

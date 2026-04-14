@@ -745,7 +745,7 @@ window.setDirectory = function() {
 let infMap = null;
 let threeScene = null, threeCamera = null, threeRenderer = null, threeCube = null;
 
-function initLeaflet(lat=52.5200, lng=13.4050) {
+function initLeaflet(lat=51.3127, lng=9.4797) {
     if(!infMap) {
         // Corrected: HTML uses id="inf-playback-map"
         const mapContainer = document.getElementById('inf-playback-map');
@@ -1071,8 +1071,8 @@ window.startAIOverlay = function() {
         } catch(e) {}
         
         // Use real GPS coords if available, else fall back to mock
-        const firstLat = gpsLatlngs.length > 0 ? gpsLatlngs[0][0] : 52.5200;
-        const firstLng = gpsLatlngs.length > 0 ? gpsLatlngs[0][1] : 13.4050;
+        const firstLat = gpsLatlngs.length > 0 ? gpsLatlngs[0][0] : 51.3127;
+        const firstLng = gpsLatlngs.length > 0 ? gpsLatlngs[0][1] : 9.4797;
         
         if(typeof initLeaflet === 'function') initLeaflet(firstLat, firstLng);
         
@@ -1339,7 +1339,7 @@ function initAnalytics() {
         analyticsMap = L.map('analytics-map', {
             zoomControl: false,
             attributionControl: false
-        }).setView([52.5200, 13.4050], 13);
+        }).setView([51.3127, 9.4797], 13);
         
         // Use a dark-themed tile layer 
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {

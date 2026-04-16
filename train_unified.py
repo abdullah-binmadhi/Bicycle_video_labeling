@@ -98,6 +98,65 @@ def validate_epoch(model: torch.nn.Module, dataloader: DataLoader, device: torch
     avg_loss = running_loss / len(dataloader)
     return avg_loss, all_targets, all_preds
 
+def validate_master_annotations(csv_path: Path) -> bool:
+    """
+    Pre-flight check for master_annotations.csv before training.
+    Validates schema, coordinate sanity, and label integrity.
+    Returns True if file is valid, False if critical errors found.
+    """
+    import pandas as pd
+    required_cols = {'image_id', 'label_code', 'class_name', 'xmin', 'ymin', 'xmax', 'ymax', 'score'}
+
+    if not csv_path.exists():
+        logging.warning(f"[Validation] master_annotations.csv not found at {csv_path}. Skipping annotation check.")
+        return True  # Not fatal — training can proceed without manual annotations
+
+    try:
+        df = pd.read_csv(csv_path)
+    except Exception as e:
+        logging.error(f"[Validation] Cannot parse master_annotations.csv: {e}")
+        return False
+
+    # Check schema
+    missing = required_cols - set(df.columns.str.lower())
+    if missing:
+        logging.error(f"[Validation] master_annotations.csv missing columns: {missing}")
+        return False
+
+    total = len(df)
+    errors = []
+
+    # Check coordinate sanity
+    bad_coords = df[(df['xmin'] >= df['xmax']) | (df['ymin'] >= df['ymax'])]
+    if len(bad_coords):
+        errors.append(f"{len(bad_coords)} rows with invalid bbox (xmin>=xmax or ymin>=ymax)")
+
+    # Check for NaN in critical columns
+    nan_rows = df[['xmin', 'ymin', 'xmax', 'ymax', 'score']].isnull().any(axis=1).sum()
+    if nan_rows:
+        errors.append(f"{nan_rows} rows with NaN in coordinate or score columns")
+
+    # Check label_code is numeric
+    non_numeric = df[pd.to_numeric(df['label_code'], errors='coerce').isna()]
+    if len(non_numeric):
+        errors.append(f"{len(non_numeric)} rows with non-numeric label_code")
+
+    # Check score range
+    invalid_score = df[(df['score'] < 0) | (df['score'] > 1)]
+    if len(invalid_score):
+        errors.append(f"{len(invalid_score)} rows with score outside [0, 1]")
+
+    if errors:
+        logging.warning(f"[Validation] master_annotations.csv — {total} total rows, issues found:")
+        for err in errors:
+            logging.warning(f"  ⚠  {err}")
+        logging.warning("[Validation] Annotation issues detected. Training will continue but review your annotation data.")
+    else:
+        logging.info(f"[Validation] ✅ master_annotations.csv passed all checks ({total} rows, schema valid).")
+
+    return True  # Warn but don't block training — errors are non-fatal
+
+
 def main():
     """Master executor routing config, data, model, and the training loop."""
     parser = argparse.ArgumentParser(description="Unified PyTorch Training.")
@@ -109,7 +168,14 @@ def main():
     parser.add_argument("--use_vision", action="store_true", help="Enable vision parameters")
     parser.add_argument("--use_imu", action="store_true", help="Enable IMU parameters")
     parser.add_argument("--output_dir", type=str, help="Output directory to save checkpoints", default="checkpoints")
+    parser.add_argument("--annotations", type=str, help="Path to master_annotations.csv to validate", default="")
     args = parser.parse_args()
+
+    # 0. Pre-flight: Validate master_annotations.csv if present
+    annotations_path = Path(args.annotations) if args.annotations else Path("desktop-app/master_annotations.csv")
+    if not validate_master_annotations(annotations_path):
+        logging.error("Annotation validation failed critically. Fix master_annotations.csv before training.")
+        return
 
     # 1. Load Configurations
     config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.yaml")
@@ -145,6 +211,7 @@ def main():
     except FileNotFoundError:
         logging.error(f"Cannot start training! '{csv_path}' missing. Run data_pipeline/synchronizer.py first.")
         return
+
 
     # Split dataset 80/20 for Train/Validation
     train_size = int(0.8 * len(full_dataset))

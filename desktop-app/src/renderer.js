@@ -1165,37 +1165,64 @@ window.startAIOverlay = function() {
     if (infLabelInput && infLabelInput.value && require('fs').existsSync(infLabelInput.value)) {
         try {
             const csvData = require('fs').readFileSync(infLabelInput.value, 'utf8');
-            const lines = csvData.split('\n');
+            const lines = csvData.trim().split('\n');
             let minRawTime = Number.MAX_VALUE;
-            lines.slice(1).forEach(line => {
-                if(!line.trim()) return;
-                const p = line.split(',');
-                if(p.length >= 7) {
-                    // format: frame,class,confidence,xmin,ymin,xmax,ymax,distance_m
-                    const frameStr = p[0];
-                    const match = frameStr.match(/frame_([\d.]+)\.jpg/);
-                    let rawTime = 0;
-                    if (match) rawTime = parseFloat(match[1]);
-                    
-                    if (rawTime > 0) minRawTime = Math.min(minRawTime, rawTime);
 
-                    const x1 = parseFloat(p[3]);
-                    const y1 = parseFloat(p[4]);
-                    const x2 = parseFloat(p[5]);
-                    const y2 = parseFloat(p[6]);
+            if (lines.length > 0) {
+                // Check headers to assign dynamic indices
+                const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
+                
+                // Fallbacks matching old legacy offsets
+                let idxFrame = 0, idxLabel = 1, idxConf = 2, idxX1 = 3, idxY1 = 4, idxX2 = 5, idxY2 = 6;
+                
+                let maybeFrame = headers.findIndex(h => h.includes('image_id') || h.includes('frame'));
+                if (maybeFrame !== -1) idxFrame = maybeFrame;
+                
+                let maybeLabel = headers.findIndex(h => h === 'class_name' || h === 'class');
+                if (maybeLabel === -1) maybeLabel = headers.findIndex(h => h.includes('label') && !h.includes('code'));
+                if (maybeLabel !== -1) idxLabel = maybeLabel;
+                
+                let maybeConf = headers.findIndex(h => h.includes('score') || h.includes('conf'));
+                if (maybeConf !== -1) idxConf = maybeConf;
+                
+                let tmpX1 = headers.findIndex(h => h === 'xmin' || h === 'x1'); if(tmpX1 !== -1) idxX1 = tmpX1;
+                let tmpY1 = headers.findIndex(h => h === 'ymin' || h === 'y1'); if(tmpY1 !== -1) idxY1 = tmpY1;
+                let tmpX2 = headers.findIndex(h => h === 'xmax' || h === 'x2'); if(tmpX2 !== -1) idxX2 = tmpX2;
+                let tmpY2 = headers.findIndex(h => h === 'ymax' || h === 'y2'); if(tmpY2 !== -1) idxY2 = tmpY2;
 
-                    frameAnnotations.push({
-                        rawTime: rawTime,
-                        timestamp: 0, // will be corrected
-                        label: p[1],
-                        confidence: parseFloat(p[2]),
-                        x: x1,
-                        y: y1,
-                        w: Math.max(0, x2 - x1),
-                        h: Math.max(0, y2 - y1)
-                    });
-                }
-            });
+                // Process data rows
+                lines.slice(1).forEach(line => {
+                    if(!line.trim()) return;
+                    const p = line.split(',').map(v => v.trim());
+                    if(p.length >= 7) {
+                        const frameStr = p[idxFrame] || '';
+                        const match = frameStr.match(/frame_([\d.]+)\.jpg/);
+                        let rawTime = 0;
+                        if (match) rawTime = parseFloat(match[1]);
+                        
+                        if (rawTime > 0) minRawTime = Math.min(minRawTime, rawTime);
+
+                        const x1 = parseFloat(p[idxX1]);
+                        const y1 = parseFloat(p[idxY1]);
+                        const x2 = parseFloat(p[idxX2]);
+                        const y2 = parseFloat(p[idxY2]);
+
+                        let conf = parseFloat(p[idxConf]);
+                        if (isNaN(conf)) conf = 0;
+
+                        frameAnnotations.push({
+                            rawTime: rawTime,
+                            timestamp: 0,
+                            label: p[idxLabel] || "Unknown",
+                            confidence: conf,
+                            x: x1,
+                            y: y1,
+                            w: Math.max(0, x2 - x1),
+                            h: Math.max(0, y2 - y1)
+                        });
+                    }
+                });
+            }
             // Align timestamps relative to the earliest frame being T=0
             if (minRawTime !== Number.MAX_VALUE) {
                 frameAnnotations.forEach(a => a.timestamp = Math.max(0, a.rawTime - minRawTime));
@@ -1874,16 +1901,28 @@ window.saveManualAnnotation = function() {
   const outputDir = (typeof manualCaptureFolder !== 'undefined' && manualCaptureFolder) 
       ? manualCaptureFolder 
       : path.join(__dirname, '../../');
-  const csvPath = path.join(outputDir, 'manual_annotations.csv');
   
-  if (!fs.existsSync(csvPath)) {
-      fs.writeFileSync(csvPath, "video,timestamp,x,y,w,h,label,confidence\n");
-  }
-  
-  const row = `${videoPath},${currentTime.toFixed(3)},${realX},${realY},${realW},${realH},${label},1.0\n`;
-  fs.appendFileSync(csvPath, row);
-  logToConsole(`[Manual Annotation] Saved box: [${realX}, ${realY}, ${realW}, ${realH}] as '${label}'`);
-  showToast(`Annotation '${label}' saved successfully.`, 'success');
+  // Format for ML pipeline: image_id, label_code, class_name, xmin, ymin, xmax, ymax, score
+  const xmax = realX + realW;
+  const ymax = realY + realH;
+
+  // Use IIFE to allow await inside a non-async function
+  (async () => {
+    const success = await require('electron').ipcRenderer.invoke('save-master-annotation', {
+        image_id: videoPath + '_frame_' + currentTime.toFixed(3),
+        class_name: label,
+        score: 1.0,
+        bbox: [realX, realY, xmax, ymax],
+        masterDir: outputDir
+    });
+
+    if (success) {
+        logToConsole(`[Manual Annotation] Saved via IPC: [${realX}, ${realY}, ${xmax}, ${ymax}] as '${label}'`);
+        showToast(`Annotation '${label}' saved successfully to master_annotations.csv.`, 'success');
+    } else {
+        showToast('Error saving to master annotations via Backend.', 'error');
+    }
+  })();
 
   // Draw final saved bubble
   const ctx = canvas.getContext('2d');
@@ -2059,18 +2098,80 @@ function setupDatasetGallery() {
             datasetCounter.innerText = (index + 1) + " / " + currentDatasetImages.length;
             currentBoxes = [];
             selectedBoxIndex = -1;
-            
+
+            // Try to load persisted annotations from master_annotations.csv
+            const imagePath = currentDatasetImages[index];
+            const imageDir = require('path').dirname(imagePath);
+            const csvPath = require('path').join(imageDir, 'master_annotations.csv');
+            try {
+                if (require('fs').existsSync(csvPath)) {
+                    const raw = require('fs').readFileSync(csvPath, 'utf8').trim();
+                    const rows = raw.split('\n');
+                    if (rows.length > 1) {
+                        const headers = rows[0].split(',').map(h => h.trim().toLowerCase());
+                        const idxId    = headers.indexOf('image_id');
+                        const idxCls   = headers.indexOf('class_name');
+                        const idxXmin  = headers.indexOf('xmin');
+                        const idxYmin  = headers.indexOf('ymin');
+                        const idxXmax  = headers.indexOf('xmax');
+                        const idxYmax  = headers.indexOf('ymax');
+                        const idxScore = headers.indexOf('score');
+
+                        rows.slice(1).forEach(row => {
+                            if (!row.trim()) return;
+                            const cols = row.split(',').map(c => c.trim());
+                            if (cols[idxId] !== imagePath) return; // only this image
+                            const xmin = parseFloat(cols[idxXmin]);
+                            const ymin = parseFloat(cols[idxYmin]);
+                            const xmax = parseFloat(cols[idxXmax]);
+                            const ymax = parseFloat(cols[idxYmax]);
+                            if (isNaN(xmin) || isNaN(ymin) || isNaN(xmax) || isNaN(ymax)) return;
+
+                            // Convert image-pixel coords to canvas-display coords after image loads
+                            // We store raw image coords first, then scale in onload below
+                            currentBoxes.push({
+                                _imgX: xmin, _imgY: ymin, _imgW: xmax - xmin, _imgH: ymax - ymin,
+                                label: cols[idxCls] || 'unknown',
+                                score: idxScore !== -1 ? parseFloat(cols[idxScore]) : 1.0,
+                                colorBox: '#00bfff',    // Persistent annotations styled in blue
+                                colorFont: '#ffffff',
+                                thickness: 2,
+                                opacity: 100,
+                                _persisted: true
+                            });
+                        });
+                    }
+                }
+            } catch (e) {
+                console.warn('[Dataset Gallery] Could not read master_annotations.csv:', e);
+            }
+
             if (datasetAnnotationCanvas.width > 0) {
                 renderDatasetCanvas();
             }
-            // Update label select UI if needed
             if (datasetLabelSelect) datasetLabelSelect.value = "0 - bicycle";
         }
     }
 
+    // After image loads, scale _img* coords from image-space into canvas-display-space
     datasetPreviewImg.onload = () => {
-        datasetAnnotationCanvas.width = datasetPreviewImg.clientWidth;
+        datasetAnnotationCanvas.width  = datasetPreviewImg.clientWidth;
         datasetAnnotationCanvas.height = datasetPreviewImg.clientHeight;
+
+        const imgW = datasetPreviewImg.naturalWidth  || datasetPreviewImg.clientWidth;
+        const imgH = datasetPreviewImg.naturalHeight || datasetPreviewImg.clientHeight;
+        const scaleX = datasetAnnotationCanvas.width  / imgW;
+        const scaleY = datasetAnnotationCanvas.height / imgH;
+
+        currentBoxes.forEach(box => {
+            if (box._persisted) {
+                box.x = box._imgX * scaleX;
+                box.y = box._imgY * scaleY;
+                box.w = box._imgW * scaleX;
+                box.h = box._imgH * scaleY;
+            }
+        });
+
         renderDatasetCanvas();
     };
 
@@ -2106,23 +2207,45 @@ function setupDatasetGallery() {
 
     btnDatasetSave.addEventListener('click', async () => {
         if (currentDatasetImages.length === 0) return;
-        selectedBoxIndex = -1; // hide selection before saving
-        renderDatasetCanvas();
-        
-        const offscreen = document.createElement('canvas');
-        offscreen.width = datasetPreviewImg.clientWidth;
-        offscreen.height = datasetPreviewImg.clientHeight;
-        const ctx = offscreen.getContext('2d');
-        
-        ctx.drawImage(datasetPreviewImg, 0, 0, offscreen.width, offscreen.height);
-        ctx.drawImage(datasetAnnotationCanvas, 0, 0);
+        if (currentBoxes.length === 0) {
+            showToast('No boxes to save. Draw at least one bounding box.', 'error');
+            return;
+        }
 
-        const dataUrl = offscreen.toDataURL('image/jpeg', 1.0);
-        const success = await ipcRenderer.invoke('save-annotated-image', currentDatasetImages[currentDatasetIndex], dataUrl);
-        if (success) {
-            logToConsole("[SUCCESS] Saved frame: " + currentDatasetImages[currentDatasetIndex]);
-            btnDatasetSave.innerHTML = "SAVED!";
-            setTimeout(() => btnDatasetSave.innerHTML = "[SAVE] Overwrite Frame", 1500);
+        const imagePath = currentDatasetImages[currentDatasetIndex];
+        const imageDir = require('path').dirname(imagePath);
+        let savedCount = 0;
+
+        for (const box of currentBoxes) {
+            // Convert canvas display coordinates to xmin,ymin,xmax,ymax
+            // Canvas dimensions match the display image - scale to image pixel space
+            const imgW = datasetPreviewImg.naturalWidth || datasetPreviewImg.clientWidth;
+            const imgH = datasetPreviewImg.naturalHeight || datasetPreviewImg.clientHeight;
+            const scaleX = imgW / datasetAnnotationCanvas.width;
+            const scaleY = imgH / datasetAnnotationCanvas.height;
+
+            const xmin = Math.round(box.x * scaleX);
+            const ymin = Math.round(box.y * scaleY);
+            const xmax = Math.round((box.x + box.w) * scaleX);
+            const ymax = Math.round((box.y + box.h) * scaleY);
+
+            const ok = await ipcRenderer.invoke('save-master-annotation', {
+                image_id: imagePath,
+                class_name: box.label || 'unknown',
+                score: 1.0,
+                bbox: [xmin, ymin, xmax, ymax],
+                masterDir: imageDir
+            });
+            if (ok) savedCount++;
+        }
+
+        if (savedCount > 0) {
+            logToConsole(`[Dataset Gallery] Saved ${savedCount} annotation(s) for: ${imagePath}`);
+            btnDatasetSave.innerHTML = `SAVED ${savedCount} BOX${savedCount > 1 ? 'ES' : ''}!`;
+            setTimeout(() => btnDatasetSave.innerHTML = "[SAVE] Overwrite Frame", 2000);
+            showToast(`${savedCount} annotation(s) written to master_annotations.csv`, 'success');
+        } else {
+            showToast('Failed to save annotations. Check console.', 'error');
         }
     });
 

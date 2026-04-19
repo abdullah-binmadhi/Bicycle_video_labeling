@@ -28,8 +28,8 @@ def parse_args():
     parser.add_argument('--use_clip', action='store_true', help='Use CLIP for full-frame surface tagging')
     parser.add_argument('--max_frames', type=int, default=0, help='Max frames to process')
     parser.add_argument('--no_save_frames', action='store_true', help='Skip saving annotated images')
-    parser.add_argument('--conf', type=float, default=0.25, help='Base confidence threshold')
-    parser.add_argument('--text_conf', type=float, default=0.25, help='Text confidence for DINO')
+    parser.add_argument('--conf', type=float, default=0.30, help='Base confidence threshold')
+    parser.add_argument('--text_conf', type=float, default=0.35, help='Text confidence for DINO')
     parser.add_argument('--model', type=str, default='yolo11x.pt', help='YOLO model weights')
     return parser.parse_args()
 
@@ -50,7 +50,7 @@ def calculate_iou(box1, box2):
     return iou
 
 class EnsembleAnnotator:
-    def __init__(self, target_classes, model="yolo11x.pt", conf=0.25, text_conf=0.25):
+    def __init__(self, target_classes, model="yolo11x.pt", conf=0.30, text_conf=0.35):
         self.conf = conf
         self.text_conf = text_conf
         self.device = "mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu")
@@ -145,7 +145,8 @@ class EnsembleAnnotator:
                 
             self.dino_class_mapping[clean_name] = formatted_name
             if clean_name not in dino_clean_names:
-                dino_clean_names.append(clean_name)
+                # Append context
+                dino_clean_names.append(f"{clean_name} on a road")
         
         self.dino_prompt = " . ".join(dino_clean_names) + " ." if dino_clean_names else ""
         
@@ -162,29 +163,9 @@ class EnsembleAnnotator:
             self.history_buffer.pop(0)
 
     def temporal_smooth(self, current_frame_boxes):
-        if not self.history_buffer:
-            return current_frame_boxes
-            
-        smoothed_boxes = []
-        for box in current_frame_boxes:
-            box_coords = box['bbox']
-            label = box['label']
-            
-            # Count appearances in history
-            appearances = 1 # Appears in current frame
-            for hist_frame in self.history_buffer[:-1]: # exclude current
-                found = False
-                for hist_box in hist_frame:
-                    if hist_box['label'] == label and calculate_iou(box_coords, hist_box['bbox']) > 0.5:
-                        found = True
-                        break
-                if found:
-                    appearances += 1
-                    
-            if appearances >= min(2, len(self.history_buffer)):
-                smoothed_boxes.append(box)
-                
-        return smoothed_boxes
+        # Disabled aggressive temporal smoothing to improve recall and prevent missed/wrong object filtering
+        # Can be re-enabled for high FPS video if needed.
+        return current_frame_boxes
 
     def run(self, input_dir, csv_path, max_frames=0, save_frames=True):
         os.makedirs(os.path.dirname(csv_path), exist_ok=True)
@@ -225,7 +206,7 @@ class EnsembleAnnotator:
                 
                 # 1. CLIP Surface Tagging
                 if self.surface_prompts:
-                    surface_crop = img_pil.crop((0, img_pil.height // 2, img_pil.width, img_pil.height))
+                    surface_crop = img_pil.crop((0, img_pil.height * 2 // 3, img_pil.width, img_pil.height))
                     inputs = self.clip_processor(text=self.surface_prompts, images=surface_crop, return_tensors="pt", padding=True)
                     inputs = {k: v.to(self.device) for k, v in inputs.items()}
                     with torch.no_grad():
@@ -277,7 +258,7 @@ class EnsembleAnnotator:
                             # IoU Merging with YOLO
                             is_duplicate = False
                             for d in current_detections:
-                                if calculate_iou([x1, y1, x2, y2], d['bbox']) > 0.6:
+                                if calculate_iou([x1, y1, x2, y2], d['bbox']) > 0.45:
                                     is_duplicate = True
                                     if score.item() > d['conf']:
                                         d['conf'] = score.item()

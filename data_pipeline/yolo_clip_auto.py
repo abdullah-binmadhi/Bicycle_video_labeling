@@ -232,8 +232,8 @@ class TwoStageAnnotator:
                     # Stage 1: Surface Detection (Global CLIP)
                     if self.surface_classes:
                         img_pil = Image.open(img_path).convert('RGB')
-                        # Crop the bottom 50% for road surface analysis
-                        surface_crop = img_pil.crop((0, img_pil.height // 2, img_pil.width, img_pil.height))
+                        # Crop the bottom 1/3rd for road surface analysis
+                        surface_crop = img_pil.crop((0, img_pil.height * 2 // 3, img_pil.width, img_pil.height))
                         
                         inputs = self.clip_processor(text=self.surface_prompts, images=surface_crop, return_tensors="pt", padding=True)
                         inputs = {k: v.to(self.device) for k, v in inputs.items()}

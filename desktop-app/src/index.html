@@ -205,25 +205,25 @@
                 <li class="step step-neutral">
                   <div class="text-left w-full pl-6 py-3">
                     <h4 class="font-medium text-lg text-white">1. Frame Extraction</h4>
-                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Cameras record at 30Hz, while IMU sensors record down to 50Hz. Python extracts precise RGB frames strictly tied to hardware UNIX timestamps.</p>
+                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Python extracts precise RGB frames strictly tied to hardware UNIX timestamps to align high-speed video frames with slower physics data.</p>
                   </div>
                 </li>
                 <li class="step step-neutral">
                   <div class="text-left w-full pl-6 py-3">
-                    <h4 class="font-medium text-lg text-white">2. Automated Annotation (YOLO + CLIP)</h4>
-                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">100% automated offline pipeline. YOLO-World generates spatial bounding boxes from a custom vocabulary, before PIPING crops directly to CLIP for zero-shot text description profiling.</p>
+                    <h4 class="font-medium text-lg text-white">2. Ensemble Pipeline Annotation (YOLO + DINO + CLIP)</h4>
+                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">100% automated offline pipeline. YOLO generates bounding boxes from a custom vocabulary, Grounding DINO ensures spatial accuracy, and CLIP tags deep semantics.</p>
                   </div>
                 </li>
                 <li class="step step-neutral">
                   <div class="text-left w-full pl-6 py-3">
                     <h4 class="font-medium text-lg text-white">3. Manual Feature Refinement</h4>
-                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Scrub through the video dataset and manually draw bounding boxes through the interactive Canvas UI for the rarest edge-cases or missed items.</p>
+                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Review the auto-generated dataset and manually draw bounding boxes through the interactive Canvas UI for edge-cases or complex conditions.</p>
                   </div>
                 </li>
                 <li class="step step-neutral">
                   <div class="text-left w-full pl-6 py-3">
                     <h4 class="font-medium text-lg text-white">4. High-Frequency Synchronization</h4>
-                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">The backend matches disparate time-domains (33ms video vs 20ms physics) using Pandas <code>merge_asof</code>, applies SciPy Butterworth DSP filters, and drops anomalous gap data.</p>
+                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">The backend matches disparate time-domains (video vs IMU physics) using Pandas <code>merge_asof</code>, applies DSP filters, and drops anomalous gap data.</p>
                   </div>
                 </li>
                 <li class="step step-neutral">
@@ -235,7 +235,7 @@
                 <li class="step">
                   <div class="text-left w-full pl-6 py-3">
                     <h4 class="font-medium text-lg text-white">6. Real-Time Inference</h4>
-                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Simulate predictions seamlessly utilizing PyTorch evaluation modes over unseen synchronized sensor feeds.</p>
+                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Simulate predictions seamlessly utilizing PyTorch evaluation modes over unseen synchronized sensor feeds to validate road classifications visually.</p>
                   </div>
                 </li>
               </ul>
@@ -305,7 +305,7 @@
                     <!-- Feature: Diagnostics -->
                     <div class="border border-[#222] bg-[#0c0c0c] p-6 rounded-none hover:border-emerald-500/30 transition-all duration-300 group">
                         <div class="w-10 h-10 rounded-none bg-emerald-500/20 text-[#e0e0e0] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002-2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                         </div>
                         <h3 class="text-lg font-medium text-white mb-2">Clear Error Checking</h3>
                         <p class="text-sm text-[#888888] leading-relaxed">
@@ -339,7 +339,7 @@
                 <div>
                   <h1 class="text-3xl lg:text-4xl font-normal tracking-tight text-white tracking-tight mb-2">State-of-the-Art (SOTA) Analysis</h1>
                   <p class="text-[#888888] max-w-4xl leading-relaxed text-sm">
-                    A peer-reviewed architectural derivation highlighting critical divergences between the <strong class="text-[#e0e0e0]">CycleSafe Multimodal framework</strong> and contemporary baseline methodologies within micro-mobility surface classification literature.
+                    A clear comparison showing how the <strong class="text-[#e0e0e0]">CycleSafe Framework</strong> improves upon standard methods for classifying road surfaces and detecting hazards.
                   </p>
                 </div>
               </div>
@@ -352,15 +352,15 @@
                         <svg class="w-6 h-6 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path></svg>
                     </div>
                     <div>
-                        <h3 class="text-xl font-medium text-white mb-2">1. Resolution of the "Visual-Blindness" Paradigm</h3>
+                        <h3 class="text-xl font-medium text-white mb-2">1. Overcoming the Limitations of Vision-Only Systems</h3>
                         <p class="text-[#888888] text-sm leading-relaxed mb-4">
                             <span class="badge badge-sm bg-rose-500/20 text-rose-400 border-none mr-2 font-medium tracking-widest text-[10px]">THE SOTA FLAW</span>
-                            Contemporary road classification models heavily depend on active Computer Vision pipelines (e.g., YOLO/CNN configurations mounted on handlebars). These fail precipitously under sub-optimal parameters: twilight operations, lens occlusions from mud, or solar glare. Continuous real-time visual processing also incurs high computational overhead, degrading battery endurance.
+                            Standard road classification models rely entirely on live camera feeds (like YOLO). These systems fail in poor conditions—such as low light, muddy lenses, or glaring sun. Processing video in real-time also drains battery life significantly.
                         </p>
                         <div class="bg-emerald-500/5 rounded-none p-4 border border-emerald-500/10 ">
                             <p class="text-emerald-200/90 text-sm leading-relaxed flex items-start gap-2">
                                 <svg class="w-5 h-5 text-[#e0e0e0] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                <span><strong class="text-[#e0e0e0] font-medium">CycleSafe Methodology:</strong> We execute an architectural inversion. Computer Vision (CLIP/App-Based Annotator) is strictly relegated to offline preprocessing to automate ground truth assignment. Real-time inference executes "blindly" via a `PhysicsTransformer` analyzing purely 1-Dimensional IMU telemetry, achieving zero-degradation performance during total visual occlusion.</span>
+                                <span><strong class="text-[#e0e0e0] font-medium">CycleSafe Solution:</strong> CycleSafe flips this approach. Heavy video processing is handled offline to build the training data. The actual real-time system relies exclusively on lightweight IMU vibration data, ensuring perfect performance even in complete darkness while saving battery power.</span>
                             </p>
                         </div>
                     </div>

@@ -1,43 +1,7 @@
-import os
+import sys
+import re
 
-html_path = "/Users/abdullahbinmadhi/Desktop/Bicycle Video ML Model/desktop-app/src/index.html"
-
-with open(html_path, "r") as f:
-    html = f.read()
-
-# Locate the exact block we want to replace
-start_marker = '<div id="view-instructions"'
-end_marker = '          <!-- View: Extract Frames -->'
-
-# Extract the part to replace
-start_idx = html.find(start_marker)
-end_idx = html.find(end_marker)
-
-if start_idx != -1 and end_idx != -1:
-    old_block = html[start_idx:end_idx]
-    
-    new_instructions = """<div id="view-instructions" class="flex flex-col gap-8 w-full max-w-6xl mx-auto pb-16 animate-fade-in">
-            <!-- Hero Header -->
-            <div class="mb-4 relative rounded-3xl p-8 overflow-hidden bg-gradient-to-br from-slate-900 to-black border border-white/5 shadow-2xl">
-              <div class="absolute -right-20 -top-20 w-64 h-64 bg-emerald-500/10 blur-3xl rounded-full"></div>
-              <div class="absolute -left-20 -bottom-20 w-64 h-64 bg-purple-500/10 blur-3xl rounded-full"></div>
-              <div class="relative z-10">
-                <h1 class="text-4xl lg:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-purple-400 tracking-tight drop-shadow-md mb-2">CycleSafe Studio</h1>
-                <p class="text-lg text-slate-300 max-w-3xl leading-relaxed">
-                  Your professional workbench for Multi-Dimensional Sensor Fusion. Transform raw telemetry streams and video into deployment-ready PyTorch neural networks.
-                </p>
-                <div class="flex gap-3 mt-6">
-                    <span class="badge bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 py-3 px-4 font-mono font-bold tracking-widest text-xs">v2.0.0 ENGINE UPDATE</span>
-                    <span class="badge bg-purple-500/20 text-purple-400 border border-purple-500/30 py-3 px-4 font-mono font-bold tracking-widest text-xs">LIVE TELEMETRY</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Features Grid -->
-            <div>
-                <h2 class="text-2xl font-bold border-b border-white/10 pb-3 mb-6 text-white tracking-widest uppercase text-sm">Next-Generation Capabilities</h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+new_content = """<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <!-- Feature: Smart Video Tagging -->
                     <div class="glass-card p-6 rounded-2xl border border-white/5 hover:border-indigo-500/30 transition-all duration-300 group">
                         <div class="w-10 h-10 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -103,45 +67,25 @@ if start_idx != -1 and end_idx != -1:
                             Easily spot where the AI got confused or where data went missing. Visual tools help you quickly find and fix issues in your dataset.
                         </p>
                     </div>
-                </div>
-            </div>
-            </div>
+                </div>"""
 
-            <!-- Legacy Pipeline Steps -->
-            <div class="glass-card rounded-2xl p-8 border border-white/10 mt-4 bg-slate-900/30">
-              <h2 class="text-xl font-bold border-b border-white/10 pb-3 mb-6 text-white">Legacy Training Pipeline Roadmap</h2>
-              <ul class="steps steps-vertical w-full text-slate-300">
-                <li class="step step-primary">
-                  <div class="text-left w-full pl-6 py-3">
-                    <h4 class="font-bold text-lg text-white">1. Frame Extraction</h4>
-                    <p class="text-sm text-slate-400 mt-1 max-w-3xl">Cameras record at 30Hz, while sensors record at 50Hz. Extract precise frames tied to UNIX timestamps.</p>
-                  </div>
-                </li>
-                <li class="step step-info">
-                  <div class="text-left w-full pl-6 py-3">
-                    <h4 class="font-bold text-lg text-white">2. Ground Truth Parsing (CLIP/Roboflow)</h4>
-                    <p class="text-sm text-slate-400 mt-1 max-w-3xl">Automated HuggingFace tagging or manual outlier resolution in the Hub.</p>
-                  </div>
-                </li>
-                <li class="step step-accent">
-                  <div class="text-left w-full pl-6 py-3">
-                    <h4 class="font-bold text-lg text-white">3. High-Frequency Temporal Sync</h4>
-                    <p class="text-sm text-slate-400 mt-1 max-w-3xl">Weave video ground truth against sliding windows of purely 1-D physics telemetry streams.</p>
-                  </div>
-                </li>
-                <li class="step">
-                  <div class="text-left w-full pl-6 py-3">
-                    <h4 class="font-bold text-lg text-white">4. Core Physics Transformer Model</h4>
-                    <p class="text-sm text-slate-400 mt-1 max-w-3xl">PyTorch training utilizing high-batch sizes and validation slicing to yield absolute road classifications.</p>
-                  </div>
-                </li>
-              </ul>
-            </div>
-          </div>\n\n          <!-- View: Extract Frames -->"""
-    
-    html = html.replace(old_block, new_instructions)
-    with open(html_path, "w") as f:
-        f.write(html)
-    print("UI Updated")
-else:
-    print("Failed to find block!")
+def patch_file(filepath):
+    with open(filepath, 'r') as f:
+        content = f.read()
+
+    # Regex to capture everything between <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"> and its matching closing div
+    # In these files, it ends right before <!-- Legacy Pipeline Steps --> or similar.
+    # Let's use a simpler pattern
+    pattern = r'<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">[\s\S]*?</div>\s*</div>'
+    match = re.search(pattern, content)
+    if match:
+        new_text = new_content + "\n            </div>"
+        patched = content[:match.start()] + new_text + content[match.end():]
+        with open(filepath, 'w') as f:
+            f.write(patched)
+        print(f"Patched {filepath}")
+    else:
+        print(f"Could not find target in {filepath}")
+
+patch_file('desktop-app/update_docs.py')
+patch_file('desktop-app/update_docs_force.py')

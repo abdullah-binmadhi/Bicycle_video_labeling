@@ -3049,6 +3049,9 @@
   .cursor-not-allowed {
     cursor: not-allowed;
   }
+  .cursor-ns-resize {
+    cursor: ns-resize;
+  }
   .cursor-pointer {
     cursor: pointer;
   }
@@ -3425,6 +3428,9 @@
   }
   .bg-\[\#111\] {
     background-color: #111;
+  }
+  .bg-\[\#222\] {
+    background-color: #222;
   }
   .bg-\[\#333\] {
     background-color: #333;
@@ -4942,6 +4948,16 @@
         background-color: color-mix(in srgb, oklch(69.6% 0.17 162.48) 20%, transparent);
         @supports (color: color-mix(in lab, red, red)) {
           background-color: color-mix(in oklab, var(--color-emerald-500) 20%, transparent);
+        }
+      }
+    }
+  }
+  .hover\:bg-emerald-500\/50 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: color-mix(in srgb, oklch(69.6% 0.17 162.48) 50%, transparent);
+        @supports (color: color-mix(in lab, red, red)) {
+          background-color: color-mix(in oklab, var(--color-emerald-500) 50%, transparent);
         }
       }
     }

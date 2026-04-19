@@ -1620,6 +1620,26 @@
 
   </div>
         
+        <!-- Draggable Console UI -->
+        <div id="console-wrapper" class="absolute bottom-0 left-0 w-full bg-[#050505] border-t border-[#333] flex flex-col z-[100]" style="height: 250px;">
+            <!-- Resizer Handle -->
+            <div id="console-resizer" class="w-full h-2 bg-[#222] hover:bg-emerald-500/50 cursor-ns-resize flex-shrink-0 transition-colors"></div>
+            
+            <!-- Header -->
+            <div class="flex justify-between items-center bg-[#111] border-b border-[#222] px-4 py-2 flex-shrink-0 cursor-pointer" onclick="toggleConsole()">
+                <span class="text-xs uppercase tracking-widest text-[#888] font-bold flex items-center gap-2 select-none">
+                    <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M4 6h16M4 18h16M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"></path></svg>
+                    Execution Terminal
+                </span>
+                <button class="btn btn-ghost btn-xs text-[#888] hover:text-white" id="console-chevron">
+                    <svg class="w-4 h-4 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+            </div>
+            
+            <!-- Output Area -->
+            <div id="console-output" class="p-4 flex-1 overflow-y-auto text-xs font-mono text-[#e0e0e0]"></div>
+        </div>
+
 </div>
       </main>
       </div> <!-- End Content & Layout -->

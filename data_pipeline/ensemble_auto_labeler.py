@@ -300,7 +300,7 @@ class EnsembleAnnotator:
                         cv2.rectangle(img_to_draw, (d['bbox'][0], d['bbox'][1]), (d['bbox'][2], d['bbox'][3]), color, 2)
                         cv2.putText(img_to_draw, f"{d['label']} {d['conf']:.2f}", (d['bbox'][0], d['bbox'][1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-                if save_frames and img_to_draw is not None and (smoothed_detections or self.surface_prompts):
+                if save_frames and img_to_draw is not None:
                     cv2.imwrite(os.path.join(annotated_dir, clean_name), img_to_draw)
                     
                 if idx % 1 == 0:

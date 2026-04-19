@@ -553,18 +553,56 @@ function _runScript(scriptKey) {
 
 
 let consoleOpen = true;
+let currentConsoleHeight = 250;
 window.toggleConsole = function() {
   const wrapper = document.getElementById('console-wrapper');
   const chevron = document.getElementById('console-chevron');
   consoleOpen = !consoleOpen;
   if (consoleOpen) {
-    wrapper.style.height = '220px';
+    wrapper.style.height = currentConsoleHeight + 'px';
     if(chevron) chevron.style.transform = 'rotate(0deg)';
   } else {
-    wrapper.style.height = '0px';
+    wrapper.style.height = '42px'; // Height of resizer + header
     if(chevron) chevron.style.transform = 'rotate(180deg)';
   }
 };
+
+document.addEventListener('DOMContentLoaded', () => {
+    const resizer = document.getElementById('console-resizer');
+    const wrapper = document.getElementById('console-wrapper');
+    let isResizing = false;
+    let startY, startHeight;
+
+    if (resizer && wrapper) {
+        resizer.addEventListener('mousedown', (e) => {
+            if (!consoleOpen) return;
+            isResizing = true;
+            startY = e.clientY;
+            startHeight = parseInt(document.defaultView.getComputedStyle(wrapper).height, 10);
+            document.body.style.cursor = 'ns-resize';
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            const dy = startY - e.clientY;
+            let newHeight = startHeight + dy;
+            
+            if (newHeight < 100) newHeight = 100;
+            if (newHeight > window.innerHeight * 0.85) newHeight = window.innerHeight * 0.85;
+            
+            wrapper.style.height = newHeight + 'px';
+            currentConsoleHeight = newHeight;
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isResizing) {
+                isResizing = false;
+                document.body.style.cursor = 'default';
+            }
+        });
+    }
+});
 
 let settingsOpen = false;
 window.toggleSettings = function() {

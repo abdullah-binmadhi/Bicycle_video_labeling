@@ -21,6 +21,7 @@ const scripts = {
   'roboflow': path.join(rootDir, 'data_pipeline/roboflow_manager.py'),
   'clip': path.join(rootDir, 'data_pipeline/yolo_clip_auto.py'),
   'dino': path.join(rootDir, 'data_pipeline/grounding_dino_auto.py'),
+  'ensemble': path.join(rootDir, 'data_pipeline/ensemble_auto_labeler.py'),
   'sync': path.join(rootDir, 'data_pipeline/synchronizer.py'),
   'train': path.join(rootDir, 'train_unified.py'),
   'inference': path.join(rootDir, 'run_inference.py')
@@ -346,7 +347,7 @@ function _runScript(scriptKey) {
 
   // Parse custom args if it's the extract step
   let args = ['-u', targetScript];
-  if (scriptKey === 'clip' || scriptKey === 'dino') {
+  if (scriptKey === 'clip' || scriptKey === 'dino' || scriptKey === 'ensemble') {
      const dirPath = document.getElementById('annoDirPath') ? document.getElementById('annoDirPath').value : "";
      if(!dirPath) {
          logToConsole("[WARN] Please select an Image Extracted Folder first.\n", true);
@@ -381,7 +382,7 @@ function _runScript(scriptKey) {
          args.push('--classes', ...selectedClasses);
      }
      
-     if (scriptKey === 'clip') {
+     if (scriptKey === 'clip' || scriptKey === 'ensemble') {
          const modelSelectEl = document.getElementById('clipModelSelect');
          if (modelSelectEl && modelSelectEl.value) {
              args.push('--model', modelSelectEl.value);
@@ -392,6 +393,9 @@ function _runScript(scriptKey) {
          }
      } else if (scriptKey === 'dino') {
          args.push('--conf', '0.25'); 
+         args.push('--text_conf', '0.25');
+     }
+     if (scriptKey === 'ensemble') {
          args.push('--text_conf', '0.25');
      }
   }

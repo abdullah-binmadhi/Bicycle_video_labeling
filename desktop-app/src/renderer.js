@@ -525,7 +525,8 @@ function _runScript(scriptKey) {
   
   // Inject common macOS paths so packaged Electron apps can find python3
   const customEnv = Object.assign({}, process.env, {
-    PATH: (process.env.PATH || '') + ':/Library/Frameworks/Python.framework/Versions/3.14/bin:/opt/homebrew/bin:/usr/local/bin'
+    PATH: (process.env.PATH || '') + ':/Library/Frameworks/Python.framework/Versions/3.14/bin:/opt/homebrew/bin:/usr/local/bin',
+    YOLO_CONFIG_DIR: rootDir // Force UI-driven scripts to cache YOLO assets in workspace root
   });
   
   activeProcess = spawn(pythonPath, args, { cwd: cwdPath, env: customEnv });

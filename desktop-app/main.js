@@ -247,6 +247,53 @@ const ALLOWED_LABELS = {
     "asphalt": "135"
 };
 
+
+ipcMain.handle('overwrite-master-annotations', async (event, payload) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    
+    const outputDir = payload.masterDir || path.join(__dirname, '../../');
+    const csvPath = path.join(outputDir, 'master_annotations.csv');
+    const schemaHeader = "image_id,label_code,class_name,xmin,ymin,xmax,ymax,score\n";
+
+    if (!fs.existsSync(csvPath)) {
+        fs.writeFileSync(csvPath, schemaHeader, 'utf8');
+    }
+
+    const lines = fs.readFileSync(csvPath, 'utf8').split('\n');
+    const newLines = [];
+    
+    for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim() === '') continue;
+        if (i === 0) {
+            newLines.push(lines[i]); 
+            continue;
+        }
+        const cols = lines[i].split(',');
+        if (cols[0] !== payload.image_id) {
+            newLines.push(lines[i]);
+        }
+    }
+    
+    for (const ann of payload.annotations) {
+        let rawLabel = (ann.class_name || "unknown").toLowerCase().trim();
+        rawLabel = rawLabel.replace(/^\d+\s*-\s*/, '');
+        let label_code = ALLOWED_LABELS[rawLabel] || "0";
+        
+        const [xmin, ymin, xmax, ymax] = ann.bbox;
+        const row = `${payload.image_id},${label_code},${rawLabel},${xmin},${ymin},${xmax},${ymax},${ann.score}`;
+        newLines.push(row);
+    }
+    
+    fs.writeFileSync(csvPath, newLines.join('\n') + '\n', 'utf8');
+    return true;
+  } catch (e) {
+    console.error("Overwrite Annotation Error:", e);
+    return false;
+  }
+});
+
 ipcMain.handle('save-master-annotation', async (event, payload) => {
   try {
     const fs = require('fs');

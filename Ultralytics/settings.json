@@ -1,0 +1,21 @@
+{
+  "settings_version": "0.0.6",
+  "datasets_dir": "/Users/abdullahbinmadhi/Desktop/Bicycle Video ML Model/desktop-app/CycleSafe Studio.app/Contents/Resources/datasets",
+  "weights_dir": "weights",
+  "runs_dir": "runs",
+  "uuid": "842d6f2a816ea57bc12ddfdf3dc113837eefaf5fa88b2823c54f5defcdc33dd9",
+  "sync": true,
+  "api_key": "",
+  "openai_api_key": "",
+  "clearml": true,
+  "comet": true,
+  "dvc": true,
+  "hub": true,
+  "mlflow": true,
+  "neptune": true,
+  "raytune": true,
+  "tensorboard": false,
+  "wandb": false,
+  "vscode_msg": true,
+  "openvino_msg": true
+}

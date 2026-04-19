@@ -33,11 +33,11 @@ def parse_args():
     parser.add_argument('--max_frames', type=int, default=0, help='Max frames to process (0 for unlimited)')
     parser.add_argument('--no_save_frames', action='store_true', help='Skip saving annotated image frames')
     parser.add_argument('--conf', type=float, default=0.25, help='YOLO confidence threshold')
-    parser.add_argument('--model', type=str, default='yolo11x.pt', help='YOLO model weights')
+    parser.add_argument('--model', type=str, default='yolov8x.pt', help='YOLO model weights')
     return parser.parse_args()
 
 class TwoStageAnnotator:
-    def __init__(self, target_classes, use_clip=False, model="yolo11x.pt", conf=0.25):
+    def __init__(self, target_classes, use_clip=False, model="yolov8x.pt", conf=0.25):
         self.conf = conf
         self.device = "mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu")
         

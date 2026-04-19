@@ -30,7 +30,7 @@ def parse_args():
     parser.add_argument('--no_save_frames', action='store_true', help='Skip saving annotated images')
     parser.add_argument('--conf', type=float, default=0.30, help='Base confidence threshold')
     parser.add_argument('--text_conf', type=float, default=0.35, help='Text confidence for DINO')
-    parser.add_argument('--model', type=str, default='yolo11x.pt', help='YOLO model weights')
+    parser.add_argument('--model', type=str, default='yolov8x.pt', help='YOLO model weights')
     return parser.parse_args()
 
 def calculate_iou(box1, box2):
@@ -50,7 +50,7 @@ def calculate_iou(box1, box2):
     return iou
 
 class EnsembleAnnotator:
-    def __init__(self, target_classes, model="yolo11x.pt", conf=0.30, text_conf=0.35):
+    def __init__(self, target_classes, model="yolov8x.pt", conf=0.30, text_conf=0.35):
         self.conf = conf
         self.text_conf = text_conf
         self.device = "mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu")

@@ -47,7 +47,6 @@
     --color-indigo-500: oklch(58.5% 0.233 277.117);
     --color-indigo-600: oklch(51.1% 0.262 276.966);
     --color-indigo-900: oklch(35.9% 0.144 278.697);
-    --color-indigo-950: oklch(25.7% 0.09 281.288);
     --color-purple-300: oklch(82.7% 0.119 306.383);
     --color-purple-400: oklch(71.4% 0.203 305.504);
     --color-purple-500: oklch(62.7% 0.265 303.9);
@@ -76,7 +75,6 @@
     --color-black: #000;
     --color-white: #fff;
     --spacing: 0.25rem;
-    --container-sm: 24rem;
     --container-lg: 32rem;
     --container-xl: 36rem;
     --container-3xl: 48rem;
@@ -2998,9 +2996,6 @@
   .max-w-lg {
     max-width: var(--container-lg);
   }
-  .max-w-sm {
-    max-width: var(--container-sm);
-  }
   .max-w-xl {
     max-width: var(--container-xl);
   }
@@ -3327,12 +3322,6 @@
   .border-indigo-500 {
     border-color: var(--color-indigo-500);
   }
-  .border-indigo-500\/20 {
-    border-color: color-mix(in srgb, oklch(58.5% 0.233 277.117) 20%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      border-color: color-mix(in oklab, var(--color-indigo-500) 20%, transparent);
-    }
-  }
   .border-indigo-500\/30 {
     border-color: color-mix(in srgb, oklch(58.5% 0.233 277.117) 30%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
@@ -3595,12 +3584,6 @@
   }
   .bg-indigo-600 {
     background-color: var(--color-indigo-600);
-  }
-  .bg-indigo-950\/20 {
-    background-color: color-mix(in srgb, oklch(25.7% 0.09 281.288) 20%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      background-color: color-mix(in oklab, var(--color-indigo-950) 20%, transparent);
-    }
   }
   .bg-orange-500\/5 {
     background-color: color-mix(in srgb, oklch(70.5% 0.213 47.604) 5%, transparent);
@@ -4282,12 +4265,6 @@
   }
   .text-green-400 {
     color: var(--color-green-400);
-  }
-  .text-indigo-200\/60 {
-    color: color-mix(in srgb, oklch(87% 0.065 274.039) 60%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      color: color-mix(in oklab, var(--color-indigo-200) 60%, transparent);
-    }
   }
   .text-indigo-200\/70 {
     color: color-mix(in srgb, oklch(87% 0.065 274.039) 70%, transparent);

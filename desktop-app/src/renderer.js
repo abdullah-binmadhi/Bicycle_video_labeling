@@ -2453,10 +2453,9 @@ function setupClipClasses() {
             "Anomalies & Defects": ["pothole", "crack", "uneven_surface", "rutting", "shoving", "corrugation", "bleeding", "polished_aggregate", "pumping", "raveling", "stripping", "delamination"],
             "Road Surface Types": ["asphalt", "gravel", "sand", "mud", "cobblestone", "brick_paving", "concrete_pavers", "dirt_road", "macadam", "grassy_path", "wood_planks", "metal_grating", "paved_path", "unpaved_path"],
             "Obstacles & Hazards": ["water", "bump", "cushion", "rumble_strips", "table", "manhole", "drain", "grate", "leaves", "branches", "ice", "snow", "glass", "metal_plate", "rail_tracks", "tree_root", "cone", "bollard", "barrier", "fallen_tree", "debris", "plastic_bag", "trash_can", "spill", "patch"],
-            "Infrastructure & Signs": ["lines", "marking", "crosswalk", "tactile_paving", "curb", "shadow", "light", "sign", "stop", "station"],
+            "Infrastructure & Signs": ["lines", "marking", "crosswalk", "tactile_paving", "curb", "shadow", "light", "sign", "stop", "station", "lane", "bicycle_lane"],
             "Vehicles (Cars/Trucks)": ["car", "truck", "van", "suv", "jeep", "crossover", "sedan", "coupe", "convertible", "hatchback", "wagon", "sweeper", "plow", "vehicle"],
-            "Other Road Users": ["bicycle", "pedestrian", "dog", "cat", "squirrel", "motorcycle", "bus", "scooter"],
-            "Uncategorized": [] // Fallback
+            "Other Road Users": ["bicycle", "pedestrian", "dog", "cat", "squirrel", "motorcycle", "bus", "scooter"]
         };
 
         const categorizedClasses = {};
@@ -2466,14 +2465,13 @@ function setupClipClasses() {
             const clsName = cls.split(' - ')[1] || cls;
             let matched = false;
             for (const [catName, keywords] of Object.entries(categories)) {
-                if (catName === "Uncategorized") continue;
                 if (keywords.some(kw => clsName.toLowerCase().includes(kw))) {
                     categorizedClasses[catName].push(cls);
                     matched = true;
                     break;
                 }
             }
-            if (!matched) categorizedClasses["Uncategorized"].push(cls);
+            if (!matched) categorizedClasses["Infrastructure & Signs"].push(cls);
         });
 
         // Build the accordion UI for each category

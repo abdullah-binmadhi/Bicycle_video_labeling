@@ -4469,6 +4469,12 @@
       --tw-shadow-color: color-mix(in oklab, color-mix(in oklab, var(--color-indigo-900) 30%, transparent) var(--tw-shadow-alpha), transparent);
     }
   }
+  .shadow-purple-900\/30 {
+    --tw-shadow-color: color-mix(in srgb, oklch(38.1% 0.176 304.987) 30%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      --tw-shadow-color: color-mix(in oklab, color-mix(in oklab, var(--color-purple-900) 30%, transparent) var(--tw-shadow-alpha), transparent);
+    }
+  }
   .shadow-rose-900\/30 {
     --tw-shadow-color: color-mix(in srgb, oklch(41% 0.159 10.272) 30%, transparent);
     @supports (color: color-mix(in lab, red, red)) {

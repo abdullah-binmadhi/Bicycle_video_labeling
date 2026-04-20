@@ -19,8 +19,6 @@ if (__dirname.includes('Contents/Resources/app')) {
 const scripts = {
   'extract': path.join(rootDir, 'data_pipeline/frame_extractor.py'),
   'roboflow': path.join(rootDir, 'data_pipeline/roboflow_manager.py'),
-  'clip': path.join(rootDir, 'data_pipeline/yolo_clip_auto.py'),
-  'dino': path.join(rootDir, 'data_pipeline/grounding_dino_auto.py'),
   'ensemble': path.join(rootDir, 'data_pipeline/ensemble_auto_labeler.py'),
   'sync': path.join(rootDir, 'data_pipeline/synchronizer.py'),
   'train': path.join(rootDir, 'train_unified.py'),
@@ -347,7 +345,7 @@ function _runScript(scriptKey) {
 
   // Parse custom args if it's the extract step
   let args = ['-u', targetScript];
-  if (scriptKey === 'clip' || scriptKey === 'dino' || scriptKey === 'ensemble') {
+  if (scriptKey === 'ensemble') {
      const dirPath = document.getElementById('annoDirPath') ? document.getElementById('annoDirPath').value : "";
      if(!dirPath) {
          logToConsole("[WARN] Please select an Image Extracted Folder first.\n", true);
@@ -382,7 +380,7 @@ function _runScript(scriptKey) {
          args.push('--classes', ...selectedClasses);
      }
      
-     if (scriptKey === 'clip' || scriptKey === 'ensemble') {
+     if (scriptKey === 'ensemble') {
          const modelSelectEl = document.getElementById('clipModelSelect');
          if (modelSelectEl && modelSelectEl.value) {
              args.push('--model', modelSelectEl.value);
@@ -391,12 +389,6 @@ function _runScript(scriptKey) {
          if (confSliderEl && confSliderEl.value) {
              args.push('--conf', (parseFloat(confSliderEl.value) / 100).toFixed(2));
          }
-     } else if (scriptKey === 'dino') {
-         args.push('--conf', '0.25'); 
-         args.push('--text_conf', '0.25');
-     }
-     if (scriptKey === 'ensemble') {
-         args.push('--text_conf', '0.25');
      }
   }
   if (scriptKey === 'extract') {
@@ -525,8 +517,7 @@ function _runScript(scriptKey) {
   
   // Inject common macOS paths so packaged Electron apps can find python3
   const customEnv = Object.assign({}, process.env, {
-    PATH: (process.env.PATH || '') + ':/Library/Frameworks/Python.framework/Versions/3.14/bin:/opt/homebrew/bin:/usr/local/bin',
-    YOLO_CONFIG_DIR: rootDir // Force UI-driven scripts to cache YOLO assets in workspace root
+    PATH: (process.env.PATH || '') + ':/Library/Frameworks/Python.framework/Versions/3.14/bin:/opt/homebrew/bin:/usr/local/bin'
   });
   
   activeProcess = spawn(pythonPath, args, { cwd: cwdPath, env: customEnv });

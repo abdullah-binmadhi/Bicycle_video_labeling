@@ -439,6 +439,25 @@
                   </div>
                   <p class="text-xs text-slate-500 mt-2">Required if the original filename is missing UNIX time metadata. Accepts raw seconds or formatted dates.</p>
                 </div>
+
+                <!-- Smart Extraction Options -->
+                <div class="flex flex-col">
+                  <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2 flex justify-between">
+                    <span>Frame Differencing (Skip Similar)</span>
+                    <span id="extractSsimLabel" class="text-blue-400 font-mono">0% (Off)</span>
+                  </label>
+                  <input type="range" id="extractSsimSlider" min="0" max="25" value="0" class="range range-xs range-info" oninput="document.getElementById('extractSsimLabel').innerText = this.value == 0 ? '0% (Off)' : this.value + '% Diff'">
+                  <p class="text-xs text-slate-500 mt-2">Drops redundant frames. 0% = Keep all. 5% = Drop if 95% identical.</p>
+                </div>
+
+                <div class="flex flex-col">
+                  <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2">Sensor-Driven (IMU Velocity Filter)</label>
+                  <div class="join w-full">
+                    <button class="btn btn-md join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600 text-xs px-2" onclick="chooseAdhocImuExtract()">Load GPS CSV</button>
+                    <input type="text" placeholder="Select GNSS/IMU csv to drop 0km/h frames..." class="input input-md join-item w-full bg-black border-[#333] focus:border-blue-400 text-white font-mono text-sm" id="extractImuPath">
+                  </div>
+                  <p class="text-xs text-slate-500 mt-2">Drastically reduces idle frames at red lights using GNSS telemetry.</p>
+                </div>
             </div>
 
               <div class="card-actions flex justify-between items-center mt-8 border-t border-[#222] pt-6">
@@ -958,6 +977,9 @@
                   </div>
                   <select id="clipMaxFrames" class="select select-sm bg-black border-[#333] focus:border-indigo-400 text-white rounded-none">
                     <option value="0">All Frames</option>
+                    <option value="100">100 Frames</option>
+                    <option value="250">250 Frames</option>
+                    <option value="500">500 Frames</option>
                     <option value="1000">1,000 Frames</option>
                     <option value="2000">2,000 Frames</option>
                     <option value="5000">5,000 Frames</option>

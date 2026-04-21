@@ -313,6 +313,14 @@ window.chooseAdhocImu = async () => {
     }
 };
 
+window.chooseAdhocImuExtract = async () => {
+    const { ipcRenderer } = require('electron');
+    const file = await ipcRenderer.invoke('dialog:openCSV');
+    if (file) {
+      document.getElementById('extractImuPath').value = file;
+    }
+};
+
 window.chooseAdhocLabel = async () => {
     const { ipcRenderer } = require('electron');
     const file = await ipcRenderer.invoke('dialog:openCSV');
@@ -421,6 +429,16 @@ function _runScript(scriptKey) {
 
     if (startTimeOverride.trim() !== '') {
       args.push('--start_time', startTimeOverride.trim());
+    }
+
+    const ssimSliderEl = document.getElementById('extractSsimSlider');
+    if (ssimSliderEl && parseInt(ssimSliderEl.value) > 0) {
+      args.push('--diff_threshold', (parseInt(ssimSliderEl.value) / 100).toFixed(2));
+    }
+
+    const imuPathEl = document.getElementById('extractImuPath');
+    if (imuPathEl && imuPathEl.value.trim() !== '') {
+      args.push('--imu_csv', imuPathEl.value.trim());
     }
   }
   

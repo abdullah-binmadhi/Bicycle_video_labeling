@@ -1892,6 +1892,72 @@ window.chooseInfVideo = async function() {
 // 1. Manual Annotation Saving Handler
 let currentManualBox = null;
 
+function resolveManualAnnotationDir(videoPath) {
+  if (typeof manualCaptureFolder !== 'undefined' && manualCaptureFolder) {
+      return manualCaptureFolder;
+  }
+
+  if (videoPath) {
+      const videoDir = path.dirname(videoPath);
+      const candidateDirs = [
+          path.join(videoDir, 'csv and checkpoints', 'Annotated frames'),
+          path.join(videoDir, 'Annotated frames')
+      ];
+
+      for (const dir of candidateDirs) {
+          if (fs.existsSync(dir)) {
+              return dir;
+          }
+      }
+  }
+
+  return path.join(__dirname, '../../');
+}
+
+function getManualFrameList(outputDir) {
+    if (!outputDir || !fs.existsSync(outputDir)) return [];
+
+    try {
+            const files = fs.readdirSync(outputDir)
+                    .filter(name => /\.(jpg|jpeg|png)$/i.test(name))
+                    .map(name => path.join(outputDir, name));
+
+            if (files.length === 0) return [];
+
+            // Prefer timestamp-like filenames when present (e.g., 1718592687.000.jpg)
+            files.sort((a, b) => {
+                    const aBase = path.basename(a, path.extname(a));
+                    const bBase = path.basename(b, path.extname(b));
+                    const aNum = Number.parseFloat(aBase);
+                    const bNum = Number.parseFloat(bBase);
+
+                    if (Number.isFinite(aNum) && Number.isFinite(bNum)) {
+                            return aNum - bNum;
+                    }
+
+                    return a.localeCompare(b);
+            });
+
+            return files;
+    } catch (e) {
+            console.warn('[Manual Annotation] Could not build frame list:', e);
+            return [];
+    }
+}
+
+function resolveManualImageId(videoPath, currentTime, videoDuration, outputDir) {
+    const frames = getManualFrameList(outputDir);
+    if (frames.length > 0) {
+            const safeDuration = videoDuration && videoDuration > 0 ? videoDuration : 0;
+            const progress = safeDuration > 0 ? Math.max(0, Math.min(1, currentTime / safeDuration)) : 0;
+            const idx = Math.max(0, Math.min(frames.length - 1, Math.floor(progress * (frames.length - 1))));
+            return frames[idx];
+    }
+
+    // Legacy fallback if no frame images are available.
+    return videoPath + '_frame_' + currentTime.toFixed(3);
+}
+
 window.saveManualAnnotation = function() {
   const promptInput = document.getElementById('interactive-clip-prompt');
   const videoPlayer = document.getElementById('video-player');
@@ -1945,14 +2011,10 @@ window.saveManualAnnotation = function() {
   
   let label = promptInput.value;
   const currentTime = videoPlayer.currentTime;
+    const videoDuration = videoPlayer.duration;
   
-  const fs = require('fs');
-  const path = require('path');
-  
-  // Use the selected Output Folder if one is set, else default to project root
-  const outputDir = (typeof manualCaptureFolder !== 'undefined' && manualCaptureFolder) 
-      ? manualCaptureFolder 
-      : path.join(__dirname, '../../');
+    // Prefer session Annotated frames folder, then fallback to project root.
+    const outputDir = resolveManualAnnotationDir(videoPath);
   
   // Format for ML pipeline: image_id, label_code, class_name, xmin, ymin, xmax, ymax, score
   const xmax = realX + realW;
@@ -1960,19 +2022,22 @@ window.saveManualAnnotation = function() {
 
   // Use IIFE to allow await inside a non-async function
   (async () => {
-    const success = await require('electron').ipcRenderer.invoke('save-master-annotation', {
-        image_id: videoPath + '_frame_' + currentTime.toFixed(3),
+    const resolvedImageId = resolveManualImageId(videoPath, currentTime, videoDuration, outputDir);
+
+    const result = await require('electron').ipcRenderer.invoke('save-master-annotation', {
+        image_id: resolvedImageId,
         class_name: label,
         score: 1.0,
         bbox: [realX, realY, xmax, ymax],
         masterDir: outputDir
     });
 
-    if (success) {
-        logToConsole(`[Manual Annotation] Saved via IPC: [${realX}, ${realY}, ${xmax}, ${ymax}] as '${label}'`);
-        showToast(`Annotation '${label}' saved successfully to master_annotations.csv.`, 'success');
+    if (result && result.ok) {
+        logToConsole(`[Manual Annotation] Saved via IPC: [${realX}, ${realY}, ${xmax}, ${ymax}] as '${label}' for ${resolvedImageId} -> ${result.csvPath}`);
+        showToast(`Annotation '${label}' saved to ${result.csvPath}`, 'success');
     } else {
-        showToast('Error saving to master annotations via Backend.', 'error');
+        const errMsg = result && result.error ? result.error : 'Unknown backend error';
+        showToast(`Error saving to master annotations: ${errMsg}`, 'error');
     }
   })();
 
@@ -2290,20 +2355,21 @@ function setupDatasetGallery() {
             });
         }
 
-        const ok = await ipcRenderer.invoke('sync-image-annotations', {
+        const result = await ipcRenderer.invoke('sync-image-annotations', {
             image_id: imagePath,
             boxes: payloadBoxes,
             masterDir: imageDir
         });
 
-        if (ok) {
-            const savedCount = payloadBoxes.length;
+        if (result && result.ok) {
+            const savedCount = Number.isInteger(result.savedCount) ? result.savedCount : payloadBoxes.length;
             logToConsole(`[Dataset Gallery] Synced ${savedCount} annotation(s) for: ${imagePath}`);
             btnDatasetSave.innerHTML = `SAVED ${savedCount} BOX${savedCount === 1 ? '' : 'ES'}!`;
             setTimeout(() => btnDatasetSave.innerHTML = "[SAVE] Overwrite Frame", 2000);
-            showToast(`Synchronized ${savedCount} annotation(s) to master_annotations.csv`, 'success');
+            showToast(`Synchronized ${savedCount} annotation(s) to ${result.csvPath}`, 'success');
         } else {
-            showToast('Failed to save annotations. Check console.', 'error');
+            const errMsg = result && result.error ? result.error : 'Unknown backend error';
+            showToast(`Failed to save annotations: ${errMsg}`, 'error');
         }
     });
 

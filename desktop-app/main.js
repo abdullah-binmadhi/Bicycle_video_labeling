@@ -341,10 +341,17 @@ ipcMain.handle('sync-image-annotations', async (event, payload) => {
     fs.writeFileSync(tmpCsvPath, filteredLines.join('\n') + '\n', 'utf8');
     fs.renameSync(tmpCsvPath, csvPath);
 
-    return true;
+    return {
+      ok: true,
+      csvPath,
+      savedCount: Array.isArray(payload.boxes) ? payload.boxes.length : 0
+    };
   } catch (e) {
     console.error("Sync Annotation Error:", e);
-    return false;
+    return {
+      ok: false,
+      error: e && e.message ? e.message : String(e)
+    };
   }
 });
 
@@ -373,9 +380,15 @@ ipcMain.handle('save-master-annotation', async (event, payload) => {
     const row = `${payload.image_id},${label_code},${rawLabel},${xmin},${ymin},${xmax},${ymax},${payload.score}\n`;
     
     fs.appendFileSync(csvPath, row, 'utf8');
-    return true;
+    return {
+      ok: true,
+      csvPath
+    };
   } catch (e) {
     console.error("Master Annotation Error:", e);
-    return false;
+    return {
+      ok: false,
+      error: e && e.message ? e.message : String(e)
+    };
   }
 });

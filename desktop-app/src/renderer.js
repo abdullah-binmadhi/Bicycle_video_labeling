@@ -2796,7 +2796,40 @@ document.addEventListener('DOMContentLoaded', () => {
             const { ipcRenderer } = require('electron');
             const success = await ipcRenderer.invoke('save-annotated-image', savePath, dataUrl);
             if (success) {
-                showToast("Frame captured successfully to " + savePath, "success");
+                // If a manual box + label exist, also persist this capture to master_annotations.csv.
+                let csvSaveStatus = 'Frame captured successfully';
+                const promptInput = document.getElementById('interactive-clip-prompt');
+                if (currentManualBox && promptInput && promptInput.value.trim()) {
+                    const { startX, startY, width, height } = currentManualBox;
+                    const label = promptInput.value.trim();
+
+                    const realX = Math.round((startX - offsetX) * (rawVidW / renderW));
+                    const realY = Math.round((startY - offsetY) * (rawVidH / renderH));
+                    const realW = Math.round(width * (rawVidW / renderW));
+                    const realH = Math.round(height * (rawVidH / renderH));
+
+                    const xmin = realX;
+                    const ymin = realY;
+                    const xmax = realX + realW;
+                    const ymax = realY + realH;
+
+                    const csvResult = await ipcRenderer.invoke('save-master-annotation', {
+                        image_id: savePath,
+                        class_name: label,
+                        score: 1.0,
+                        bbox: [xmin, ymin, xmax, ymax],
+                        masterDir: manualCaptureFolder
+                    });
+
+                    if (csvResult && csvResult.ok) {
+                        csvSaveStatus = `Frame + CSV saved to ${csvResult.csvPath}`;
+                    } else {
+                        const errMsg = csvResult && csvResult.error ? csvResult.error : 'unknown backend error';
+                        csvSaveStatus = `Frame saved, CSV failed: ${errMsg}`;
+                    }
+                }
+
+                showToast(csvSaveStatus + ' -> ' + savePath, "success");
             } else {
                 showToast("Failed to save frame", "error");
             }

@@ -356,10 +356,10 @@ function _runScript(scriptKey) {
      
      const customOutPath = document.getElementById('clipCustomOutPath') ? document.getElementById('clipCustomOutPath').value.trim() : "";
      if (customOutPath) {
-         args.push('--output_csv', path.join(customOutPath, 'Label.0.csv'));
+         args.push('--output_csv', path.join(customOutPath, 'master_annotations.csv'));
      } else {
-         // Default back to native Label.0.csv inside that session
-         args.push('--output_csv', path.join(dirPath, '../Label/Label.0.csv'));
+         // Default back to master_annotations.csv inside the selected frames directory
+         args.push('--output_csv', path.join(dirPath, 'master_annotations.csv'));
      }
 
      const maxFramesEl = document.getElementById('clipMaxFrames');

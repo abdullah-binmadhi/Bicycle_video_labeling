@@ -64,15 +64,14 @@ class ZeroShotAnnotator:
             self.prompts.append(clean_c)
 
     def run(self, input_dir, csv_path, max_frames=0, save_frames=True):
+        import shutil
         csv_dir = os.path.dirname(csv_path)
         if csv_dir:
             os.makedirs(csv_dir, exist_ok=True)
         
         annotated_dir = None
         if save_frames:
-            # Fallback if csv_dir is empty
-            base_dir = os.path.dirname(csv_dir) if csv_dir else '.'
-            annotated_dir = os.path.join(base_dir, 'Annotated_Images')
+            annotated_dir = os.path.join(csv_dir, 'Visual_Debugging')
             os.makedirs(annotated_dir, exist_ok=True)
         
         valid_ext = ('.jpg', '.png', '.jpeg')
@@ -91,12 +90,16 @@ class ZeroShotAnnotator:
         
         with open(csv_path, 'w', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow(["frame", "label", "confidence", "x1", "y1", "x2", "y2"])
+            writer.writerow(['image_id', 'label_code', 'class_name', 'xmin', 'ymin', 'xmax', 'ymax', 'score'])
             
             for idx, img_name in enumerate(images):
                 img_path = os.path.join(input_dir, img_name)
                 clean_match = re.search(r'(\d{10,13}(?:\.\d+)?)', img_name)
                 clean_name = f"{clean_match.group(1)}.jpg" if clean_match else img_name
+                
+                dest_img_path = os.path.join(csv_dir, clean_name)
+                if os.path.abspath(img_path) != os.path.abspath(dest_img_path):
+                    shutil.copy2(img_path, dest_img_path)
                 
                 img_to_draw = cv2.imread(img_path) if save_frames else None
                 img_pil = Image.open(img_path).convert('RGB')
@@ -149,11 +152,23 @@ class ZeroShotAnnotator:
                         final_predictions.append(bs_pred)
                         
                     for pred in final_predictions:
-                        writer.writerow([clean_name, pred["label"], f"{pred['conf']:.3f}"] + pred["box"])
+                        label_raw = pred["label"]
+                        label_code = "0"
+                        if "-" in label_raw:
+                            parts = label_raw.split("-", 1)
+                            label_code = parts[0].strip()
+                            class_name = parts[1].strip()
+                        else:
+                            class_name = label_raw
+                            
+                        # 'image_id' must be the absolute path of the clean image in the output directory
+                        abs_dest_img_path = os.path.abspath(dest_img_path)
+                        x1, y1, x2, y2 = pred["box"]
+                        
+                        writer.writerow([abs_dest_img_path, label_code, class_name, x1, y1, x2, y2, f"{pred['conf']:.3f}"])
                         found_objects += 1
                         
                         if img_to_draw is not None:
-                            x1, y1, x2, y2 = pred["box"]
                             cv2.rectangle(img_to_draw, (x1, y1), (x2, y2), (255, 100, 100), 2)
                             text_label = f"{pred['label']} ({pred['conf']:.2f})"
                             cv2.putText(img_to_draw, text_label, (x1, max(y1 - 10, 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 100, 100), 2)

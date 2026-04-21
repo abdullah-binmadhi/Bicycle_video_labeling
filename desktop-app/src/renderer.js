@@ -2241,14 +2241,12 @@ function setupDatasetGallery() {
 
     btnDatasetSave.addEventListener('click', async () => {
         if (currentDatasetImages.length === 0) return;
-        if (currentBoxes.length === 0) {
-            showToast('No boxes to save. Draw at least one bounding box.', 'error');
-            return;
-        }
+        // Don't show toast if 0 boxes, just allow saving 0 boxes (which means clearing the image)
 
         const imagePath = currentDatasetImages[currentDatasetIndex];
         const imageDir = require('path').dirname(imagePath);
-        let savedCount = 0;
+
+        const payloadBoxes = [];
 
         for (const box of currentBoxes) {
             // Convert canvas display coordinates to xmin,ymin,xmax,ymax
@@ -2263,21 +2261,25 @@ function setupDatasetGallery() {
             const xmax = Math.round((box.x + box.w) * scaleX);
             const ymax = Math.round((box.y + box.h) * scaleY);
 
-            const ok = await ipcRenderer.invoke('save-master-annotation', {
-                image_id: imagePath,
+            payloadBoxes.push({
                 class_name: box.label || 'unknown',
                 score: 1.0,
-                bbox: [xmin, ymin, xmax, ymax],
-                masterDir: imageDir
+                bbox: [xmin, ymin, xmax, ymax]
             });
-            if (ok) savedCount++;
         }
 
-        if (savedCount > 0) {
-            logToConsole(`[Dataset Gallery] Saved ${savedCount} annotation(s) for: ${imagePath}`);
-            btnDatasetSave.innerHTML = `SAVED ${savedCount} BOX${savedCount > 1 ? 'ES' : ''}!`;
+        const ok = await ipcRenderer.invoke('sync-image-annotations', {
+            image_id: imagePath,
+            boxes: payloadBoxes,
+            masterDir: imageDir
+        });
+
+        if (ok) {
+            const savedCount = payloadBoxes.length;
+            logToConsole(`[Dataset Gallery] Synced ${savedCount} annotation(s) for: ${imagePath}`);
+            btnDatasetSave.innerHTML = `SAVED ${savedCount} BOX${savedCount === 1 ? '' : 'ES'}!`;
             setTimeout(() => btnDatasetSave.innerHTML = "[SAVE] Overwrite Frame", 2000);
-            showToast(`${savedCount} annotation(s) written to master_annotations.csv`, 'success');
+            showToast(`Synchronized ${savedCount} annotation(s) to master_annotations.csv`, 'success');
         } else {
             showToast('Failed to save annotations. Check console.', 'error');
         }

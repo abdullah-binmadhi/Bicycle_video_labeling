@@ -294,6 +294,60 @@ ipcMain.handle('overwrite-master-annotations', async (event, payload) => {
   }
 });
 
+ipcMain.handle('sync-image-annotations', async (event, payload) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+
+    const outputDir = payload.masterDir || path.join(__dirname, '../../');
+    const csvPath = path.join(outputDir, 'master_annotations.csv');
+    const tmpCsvPath = path.join(outputDir, 'master_annotations.csv.tmp');
+
+    const schemaHeader = "image_id,label_code,class_name,xmin,ymin,xmax,ymax,score\n";
+
+    let existingLines = [];
+    if (fs.existsSync(csvPath)) {
+      const content = fs.readFileSync(csvPath, 'utf8');
+      existingLines = content.split('\n').filter(line => line.trim().length > 0);
+    } else {
+      existingLines.push(schemaHeader.trim());
+    }
+
+    // Filter out existing lines for the current image
+    const imageId = payload.image_id;
+    const filteredLines = existingLines.filter((line, index) => {
+      if (index === 0 && line.startsWith("image_id")) return true; // keep header
+      const parts = line.split(',');
+      if (parts.length > 0 && parts[0] === imageId) {
+        return false; // drop existing lines for this image
+      }
+      return true;
+    });
+
+    // Add new lines from payload
+    if (payload.boxes && Array.isArray(payload.boxes)) {
+      for (const box of payload.boxes) {
+        let rawLabel = (box.class_name || "unknown").toLowerCase().trim();
+        rawLabel = rawLabel.replace(/^\d+\s*-\s*/, '');
+        let label_code = ALLOWED_LABELS[rawLabel] || "0";
+        
+        const [xmin, ymin, xmax, ymax] = box.bbox;
+        const row = `${imageId},${label_code},${rawLabel},${xmin},${ymin},${xmax},${ymax},${box.score}`;
+        filteredLines.push(row);
+      }
+    }
+
+    // Write to tmp file, then rename
+    fs.writeFileSync(tmpCsvPath, filteredLines.join('\n') + '\n', 'utf8');
+    fs.renameSync(tmpCsvPath, csvPath);
+
+    return true;
+  } catch (e) {
+    console.error("Sync Annotation Error:", e);
+    return false;
+  }
+});
+
 ipcMain.handle('save-master-annotation', async (event, payload) => {
   try {
     const fs = require('fs');

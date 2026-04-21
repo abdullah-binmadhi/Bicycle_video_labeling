@@ -2194,15 +2194,17 @@ function setupDatasetGallery() {
 
         const imgW = datasetPreviewImg.naturalWidth  || datasetPreviewImg.clientWidth;
         const imgH = datasetPreviewImg.naturalHeight || datasetPreviewImg.clientHeight;
-        const scaleX = datasetAnnotationCanvas.width  / imgW;
-        const scaleY = datasetAnnotationCanvas.height / imgH;
+        
+        const scale = Math.min(datasetAnnotationCanvas.width / imgW, datasetAnnotationCanvas.height / imgH);
+        const offsetX = (datasetAnnotationCanvas.width - (imgW * scale)) / 2;
+        const offsetY = (datasetAnnotationCanvas.height - (imgH * scale)) / 2;
 
         currentBoxes.forEach(box => {
             if (box._persisted) {
-                box.x = box._imgX * scaleX;
-                box.y = box._imgY * scaleY;
-                box.w = box._imgW * scaleX;
-                box.h = box._imgH * scaleY;
+                box.x = (box._imgX * scale) + offsetX;
+                box.y = (box._imgY * scale) + offsetY;
+                box.w = box._imgW * scale;
+                box.h = box._imgH * scale;
             }
         });
 
@@ -2253,13 +2255,15 @@ function setupDatasetGallery() {
             // Canvas dimensions match the display image - scale to image pixel space
             const imgW = datasetPreviewImg.naturalWidth || datasetPreviewImg.clientWidth;
             const imgH = datasetPreviewImg.naturalHeight || datasetPreviewImg.clientHeight;
-            const scaleX = imgW / datasetAnnotationCanvas.width;
-            const scaleY = imgH / datasetAnnotationCanvas.height;
+            
+            const scale = Math.min(datasetAnnotationCanvas.width / imgW, datasetAnnotationCanvas.height / imgH);
+            const offsetX = (datasetAnnotationCanvas.width - (imgW * scale)) / 2;
+            const offsetY = (datasetAnnotationCanvas.height - (imgH * scale)) / 2;
 
-            const xmin = Math.round(box.x * scaleX);
-            const ymin = Math.round(box.y * scaleY);
-            const xmax = Math.round((box.x + box.w) * scaleX);
-            const ymax = Math.round((box.y + box.h) * scaleY);
+            const xmin = Math.round((box.x - offsetX) / scale);
+            const ymin = Math.round((box.y - offsetY) / scale);
+            const xmax = Math.round((box.x + box.w - offsetX) / scale);
+            const ymax = Math.round((box.y + box.h - offsetY) / scale);
 
             payloadBoxes.push({
                 class_name: box.label || 'unknown',
@@ -2345,6 +2349,23 @@ function setupDatasetGallery() {
             }
         });
     }
+
+    // Global keyboard listener for backspace/delete
+    window.addEventListener('keydown', (e) => {
+        const datasetGalleryView = document.getElementById('dataset-gallery-view');
+        // Only trigger if gallery is visible and we have a selected box
+        if (datasetGalleryView && !datasetGalleryView.classList.contains('hidden')) {
+            if ((e.key === 'Delete' || e.key === 'Backspace') && selectedBoxIndex !== -1) {
+                // Prevent browser back navigation on backspace
+                if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+                    e.preventDefault();
+                    currentBoxes.splice(selectedBoxIndex, 1);
+                    selectedBoxIndex = -1;
+                    renderDatasetCanvas();
+                }
+            }
+        }
+    });
 
     datasetAnnotationCanvas.addEventListener('mousedown', (e) => {
         const rect = datasetAnnotationCanvas.getBoundingClientRect();

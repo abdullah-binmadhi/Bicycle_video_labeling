@@ -201,12 +201,21 @@ def main():
     # Feature columns matching the Bicycle CycleSafe data
     feature_columns = ['Acc-X', 'Acc-Y', 'Acc-Z', 'Gyr-X', 'Gyr-Y', 'Gyr-Z']
     
+    # Autodetect label column
+    import pandas as pd
+    try:
+        temp_df = pd.read_csv(csv_path, nrows=0)
+        possible_labels = ['Label', 'class_name', 'label', 'surface', 'label_code']
+        found_col = next((col for col in possible_labels if col in temp_df.columns), 'Label')
+    except Exception:
+        found_col = 'Label'
+
     try:
         full_dataset = MultimodalRoadDataset(
             csv_path=csv_path,
             config=cfg,
             feature_cols=feature_columns,
-            label_col='class_name' # Updated to match OWLv2 output class col
+            label_col=found_col # Updated to auto-detect class col
         )
     except FileNotFoundError:
         logging.error(f"Cannot start training! '{csv_path}' missing. Run data_pipeline/synchronizer.py first.")

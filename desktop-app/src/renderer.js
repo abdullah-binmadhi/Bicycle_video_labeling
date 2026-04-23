@@ -21,6 +21,7 @@ const scripts = {
   'roboflow': path.join(rootDir, 'data_pipeline/roboflow_manager.py'),
   'ensemble': path.join(rootDir, 'data_pipeline/ensemble_auto_labeler.py'),
   'sync': path.join(rootDir, 'data_pipeline/synchronizer.py'),
+  'merge_labels': path.join(rootDir, 'data_pipeline/merge_annotations.py'),
   'train': path.join(rootDir, 'train_unified.py'),
   'inference': path.join(rootDir, 'run_inference.py')
 };
@@ -297,6 +298,35 @@ window.chooseSyncOut = async () => {
   }
 };
 
+window.chooseMergeAligned = async () => {
+  const { ipcRenderer } = require('electron');
+  const file = await ipcRenderer.invoke('dialog:openCSV');
+  if (file) {
+    document.getElementById('mergeAlignedPath').value = file;
+    // Auto-fill output if empty
+    const outInput = document.getElementById('mergeOutputPath');
+    if (!outInput.value) {
+      outInput.value = file.replace('.csv', '_labeled.csv');
+    }
+  }
+};
+
+window.chooseMergeAnno = async () => {
+  const { ipcRenderer } = require('electron');
+  const file = await ipcRenderer.invoke('dialog:openCSV');
+  if (file) {
+    document.getElementById('mergeAnnoPath').value = file;
+  }
+};
+
+window.chooseMergeOutput = async () => {
+  const { ipcRenderer } = require('electron');
+  const file = await ipcRenderer.invoke('dialog:saveCSV');
+  if (file) {
+    document.getElementById('mergeOutputPath').value = file;
+  }
+};
+
 window.chooseTrainOut = async () => {
   const { ipcRenderer } = require('electron');
   const dir = await ipcRenderer.invoke('dialog:openDirectory');
@@ -442,6 +472,20 @@ function _runScript(scriptKey) {
     }
   }
   
+  if (scriptKey === 'merge_labels') {
+      const aligned = document.getElementById('mergeAlignedPath').value.trim();
+      const anno = document.getElementById('mergeAnnoPath').value.trim();
+      const out = document.getElementById('mergeOutputPath').value.trim();
+      
+      if (!aligned || !anno || !out) {
+          logToConsole("[WARN] Label fusion requires Aligned CSV, Annotations CSV, and Output path.\\n", true);
+          return;
+      }
+      args.push('--aligned', aligned);
+      args.push('--annotations', anno);
+      args.push('--output', out);
+  }
+
   if (scriptKey === 'sync') {
       // 1. Data Source
       const sourceType = document.querySelector('input[name="sync-source-type"]:checked').value;

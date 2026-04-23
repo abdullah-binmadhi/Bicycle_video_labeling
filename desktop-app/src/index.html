@@ -1277,6 +1277,46 @@
               </div>
           </div>
 
+          <!-- Feature: Merge Custom Annotations & Telemetry -->
+          <div class="border border-[#222] bg-[#0c0c0c] p-6 shadow-xl w-full mt-4">
+              <div class="flex justify-between items-center mb-4">
+                  <h3 class="text-lg font-medium text-white flex items-center gap-2">
+                    <svg class="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                    Label Fusion (Annotations + Telemetry)
+                  </h3>
+                  <span class="text-[10px] text-slate-400">Snap visual labels onto exact IMU vibrations</span>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="flex flex-col gap-1">
+                  <label class="text-[9px] uppercase tracking-widest text-slate-500">1. Aligned Telemetry CSV</label>
+                  <div class="join w-full">
+                    <button class="btn btn-xs h-8 join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600 px-3 w-24" onclick="chooseMergeAligned()">Select</button>
+                    <input type="text" placeholder="aligned_dataset.csv" class="input input-xs h-8 join-item w-full bg-black border-[#333] text-white font-mono text-[10px]" id="mergeAlignedPath">
+                  </div>
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-[9px] uppercase tracking-widest text-slate-500">2. Annotations CSV</label>
+                  <div class="join w-full">
+                    <button class="btn btn-xs h-8 join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600 px-3 w-24" onclick="chooseMergeAnno()">Select</button>
+                    <input type="text" placeholder="master_annotations.csv" class="input input-xs h-8 join-item w-full bg-black border-[#333] text-white font-mono text-[10px]" id="mergeAnnoPath">
+                  </div>
+                </div>
+              </div>
+              <div class="flex flex-col gap-1 mt-4">
+                  <label class="text-[9px] uppercase tracking-widest text-slate-500">3. Output Merged CSV</label>
+                  <div class="join w-full">
+                    <button class="btn btn-xs h-8 join-item bg-slate-700 border-[#333] text-white hover:bg-slate-600 px-3 w-24" onclick="chooseMergeOutput()">Select</button>
+                    <input type="text" placeholder="aligned_dataset_labeled.csv" class="input input-xs h-8 join-item w-full bg-black border-[#333] text-white font-mono text-[10px]" id="mergeOutputPath">
+                  </div>
+              </div>
+              <div class="mt-4 flex justify-end">
+                <button class="btn border-0 bg-purple-600 hover:bg-purple-500 text-white px-8 rounded-none font-bold tracking-wider" onclick="runScript('merge_labels')" id="btn-merge-labels">
+                  FUSE LABELS
+                  <span class="loading loading-spinner hidden w-4 h-4 border-white ml-2" id="spinner-merge-labels"></span>
+                </button>
+              </div>
+          </div>
+
           <!-- Post-Sync Analytics Dashboard (Hidden initially) -->
           <div id="sync-analytics-board" class="hidden grid grid-cols-3 gap-4 border border-emerald-500/20 bg-emerald-950/20 p-5 w-full items-center animate-fade-in shadow-xl">
              <div class="flex flex-col items-center justify-center text-center">

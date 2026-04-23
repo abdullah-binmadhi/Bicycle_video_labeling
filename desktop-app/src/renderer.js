@@ -1496,7 +1496,7 @@ function normalizeLabel(rawLabel) {
         return REVERSE_LABELS[labelLower];
     }
     
-    return 'Unclassified';
+    return labelLower; // Accept any custom label if not in ALLOWED_LABELS
 }
 
 window.scrapeGeospatialFolder = async function() {

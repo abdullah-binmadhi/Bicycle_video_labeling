@@ -1719,6 +1719,9 @@ window.loadGeospatialCSV = async function() {
         const bounds = [];
         window.currentGeoData = [];
         
+        // Track classes that exist in file but have no valid GPS coordinates
+        const noGpsClasses = {};
+
         for (let i = 1; i < lines.length; i++) {
             if (!lines[i].trim()) continue;
             let row = parseCSVLine(lines[i]);
@@ -1729,7 +1732,13 @@ window.loadGeospatialCSV = async function() {
             let rawSurface = classIdx !== -1 && row[classIdx] ? row[classIdx] : '';
             let surface = normalizeLabel(rawSurface);
             
-            if (isNaN(lat) || isNaN(lon) || lat === 0 || lon === 0) continue;
+            if (isNaN(lat) || isNaN(lon) || lat === 0 || lon === 0) {
+                // Still track the class even if it has no GPS, so it appears in legend
+                if (surface && surface !== 'Unclassified') {
+                    noGpsClasses[surface] = (noGpsClasses[surface] || 0) + 1;
+                }
+                continue;
+            }
             
             bounds.push([lat, lon]);
             
@@ -1742,9 +1751,17 @@ window.loadGeospatialCSV = async function() {
             window.registerSurface(surface);
         }
         
+        // Register classes that exist in the CSV but had no valid GPS rows
+        // They appear in the legend with count 0 and a dimmed color
+        const noGpsNames = Object.keys(noGpsClasses);
+        if (noGpsNames.length > 0) {
+            noGpsNames.forEach(cls => window.registerSurface(cls));
+            showToast(`⚠️ ${noGpsNames.join(', ')} found in CSV but have no GPS coordinates — shown in legend only.`, 'info');
+        }
+        
         if (bounds.length > 0) {
             analyticsMap.fitBounds(bounds, { padding: [20, 20] });
-            document.getElementById('geo-stats-text').innerText = `Loaded ${bounds.length} waypoints via +Codes`;
+            document.getElementById('geo-stats-text').innerText = `Loaded ${bounds.length} waypoints · ${Object.keys(window.classState).length} classes detected`;
             window.renderLegend();
             window.updateMapState();
         }
@@ -2979,10 +2996,10 @@ window.chooseResumeModel = async function() {
 window.registerSurface = function(surfaceName) {
     if (!window.classState) window.classState = {};
     if (!window.classState[surfaceName]) {
-        const colors = ['#f43f5e', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#a855f7', '#ec4899', '#06b6d4'];
+        const colors = ['#f43f5e', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#14b8a6'];
         const numKeys = Object.keys(window.classState).length;
         window.classState[surfaceName] = {
-            active: false,
+            active: true,  // Start active so all classes appear on map immediately
             color: colors[numKeys % colors.length]
         };
     }

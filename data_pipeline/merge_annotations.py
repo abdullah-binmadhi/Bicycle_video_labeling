@@ -126,35 +126,48 @@ def merge_datasets(aligned_csv_path, manual_csv_path, output_csv_path):
         print(f"  {cls}: {cnt} frames")
 
     # ── Step 5: Merge annotations onto IMU rows ───────────────────────────────
-    # Drop any pre-existing class_name column in aligned_df to avoid
-    # pandas adding _x / _y suffix confusion.
+    # Two-pass approach:
+    # Pass 1 (tight tolerance): find which IMU rows are directly under an annotation
+    #         timestamp (within 1 IMU frame = 20ms). These become 'anchor' rows.
+    # Pass 2 (no tolerance): full backward merge for the labeled dataset used in training.
+
     aligned_df = aligned_df.drop(columns=['class_name', 'confidence'], errors='ignore')
     aligned_df = aligned_df.sort_values('NTP').reset_index(drop=True)
 
-    print("\nMerging: snapping each annotation to nearest preceding IMU row...")
+    # ── Pass 1: Identify anchor rows (1 per annotated frame) ─────────────────
+    # 20ms = 1 IMU frame at 50Hz. Any IMU row within this window of an annotation
+    # NTP is the true anchor for that frame. Using a temporary '_anchor_label' col
+    # so it stays NaN for all non-anchor rows after this merge.
+    IMU_FRAME_MS = 20  # milliseconds — 1 frame at 50 Hz
+    merged_anchor = pd.merge_asof(
+        aligned_df,
+        manual_deduped[['NTP', label_col]].rename(columns={label_col: '_anchor_label'}),
+        on='NTP',
+        direction='backward',
+        tolerance=IMU_FRAME_MS,
+    )
+    # '_anchor_label' is non-NaN only on the specific IMU rows within 20ms of an annotation
+    aligned_df['annotation_source'] = merged_anchor['_anchor_label'].apply(
+        lambda x: 'anchor' if pd.notna(x) else 'fill'
+    )
+
+    anchor_count = (aligned_df['annotation_source'] == 'anchor').sum()
+    print(f"Anchor rows identified: {anchor_count} (expected ≈ {len(manual_deduped)})")
+
+    # ── Pass 2: Full backward merge for training labels ───────────────────────
+    print("\nMerging: applying full labels with forward-fill (no tolerance)...")
     merged_df = pd.merge_asof(
         aligned_df,
         manual_deduped[['NTP', label_col]],
         on='NTP',
         direction='backward',
-        tolerance=None,  # No fixed tolerance — use forward-fill in next step
+        tolerance=None,
     )
 
-    # ── Step 6: Mark exact anchor rows before forward-fill ───────────────────
-    # Rows where NTP exactly matched an annotation frame get 'anchor'.
-    # All other labeled rows are 'fill' (forward-propagated label).
-    # This column powers the ANCHORS and CLUSTERS map modes in the UI.
-    anchor_ntps = set(manual_deduped['NTP'].values)
-    merged_df['annotation_source'] = merged_df.apply(
-        lambda r: 'anchor' if r['NTP'] in anchor_ntps and pd.notna(r[label_col]) else 'fill',
-        axis=1
-    )
-
-    # ── Step 7: Forward-fill labels between annotated frames ─────────────────
-    # After merge_asof (backward), IMU rows between two annotation timestamps
-    # inherit the label of the most recent annotation. Rows BEFORE the first
-    # annotation have NaN. We cap forward-fill at 10 seconds (500 rows at 50Hz)
-    # to avoid a label leaking across a very long unlabeled gap.
+    # ── Step 6: Forward-fill labels between annotated frames ─────────────────
+    # After the full backward merge every row already has a label from the
+    # most recent annotation. We cap at 500 rows (10s at 50Hz) to prevent
+    # stale labels leaking across very long unlabeled segments.
     MAX_FILL_ROWS = 500  # 10 seconds at 50 Hz
 
     merged_df['class_name'] = (
@@ -163,11 +176,11 @@ def merge_datasets(aligned_csv_path, manual_csv_path, output_csv_path):
         .fillna('Unclassified')
     )
 
-    # Rows that were filled (not anchors) and had NaN before fill get 'fill' source
-    # Rows that remain Unclassified after fill get 'none' (pre-first-annotation gap)
+    # Carry forward the annotation_source from pass 1
+    merged_df['annotation_source'] = aligned_df['annotation_source'].values
     merged_df.loc[merged_df['class_name'] == 'Unclassified', 'annotation_source'] = 'none'
 
-    # Clean up the intermediate label column if it differs from class_name
+    # Clean up intermediate label column
     if label_col != 'class_name':
         merged_df.drop(columns=[label_col], inplace=True, errors='ignore')
 

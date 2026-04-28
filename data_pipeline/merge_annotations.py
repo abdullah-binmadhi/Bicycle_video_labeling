@@ -140,7 +140,17 @@ def merge_datasets(aligned_csv_path, manual_csv_path, output_csv_path):
         tolerance=None,  # No fixed tolerance — use forward-fill in next step
     )
 
-    # ── Step 6: Forward-fill labels between annotated frames ─────────────────
+    # ── Step 6: Mark exact anchor rows before forward-fill ───────────────────
+    # Rows where NTP exactly matched an annotation frame get 'anchor'.
+    # All other labeled rows are 'fill' (forward-propagated label).
+    # This column powers the ANCHORS and CLUSTERS map modes in the UI.
+    anchor_ntps = set(manual_deduped['NTP'].values)
+    merged_df['annotation_source'] = merged_df.apply(
+        lambda r: 'anchor' if r['NTP'] in anchor_ntps and pd.notna(r[label_col]) else 'fill',
+        axis=1
+    )
+
+    # ── Step 7: Forward-fill labels between annotated frames ─────────────────
     # After merge_asof (backward), IMU rows between two annotation timestamps
     # inherit the label of the most recent annotation. Rows BEFORE the first
     # annotation have NaN. We cap forward-fill at 10 seconds (500 rows at 50Hz)
@@ -153,15 +163,22 @@ def merge_datasets(aligned_csv_path, manual_csv_path, output_csv_path):
         .fillna('Unclassified')
     )
 
+    # Rows that were filled (not anchors) and had NaN before fill get 'fill' source
+    # Rows that remain Unclassified after fill get 'none' (pre-first-annotation gap)
+    merged_df.loc[merged_df['class_name'] == 'Unclassified', 'annotation_source'] = 'none'
+
     # Clean up the intermediate label column if it differs from class_name
     if label_col != 'class_name':
         merged_df.drop(columns=[label_col], inplace=True, errors='ignore')
 
-    # ── Step 7: Save ─────────────────────────────────────────────────────────
+    # ── Step 8: Save ─────────────────────────────────────────────────────────
     merged_df.to_csv(output_csv_path, index=False)
 
     print(f"\nSaved merged dataset → {output_csv_path}")
     print(f"Total rows: {len(merged_df)}")
+    anchor_count = (merged_df['annotation_source'] == 'anchor').sum()
+    fill_count = (merged_df['annotation_source'] == 'fill').sum()
+    print(f"annotation_source: {anchor_count} anchor rows · {fill_count} fill rows")
     print("\nFinal class_name distribution:")
     print(merged_df['class_name'].value_counts().to_string())
 

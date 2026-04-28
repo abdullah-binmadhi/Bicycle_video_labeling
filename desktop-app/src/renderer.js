@@ -1500,6 +1500,29 @@ window.switchView = function(viewId) {
 
 window.currentGeoData = [];
 
+// Visualization mode for the geospatial map
+// 'all'      → every IMU row (164K dense dots)
+// 'anchors'  → only the exact annotated frame positions (~488 dots)
+// 'clusters' → one pin per contiguous hazard event with a count badge
+window.geoViewMode = 'all';
+
+window.setGeoViewMode = function(mode) {
+    window.geoViewMode = mode;
+    // Update button active states
+    ['all', 'anchors', 'clusters'].forEach(m => {
+        const btn = document.getElementById(`geo-mode-${m}`);
+        if (!btn) return;
+        if (m === mode) {
+            btn.classList.add('border-cyan-400', 'text-cyan-300', 'bg-cyan-900/30');
+            btn.classList.remove('border-[#333]', 'text-slate-500');
+        } else {
+            btn.classList.remove('border-cyan-400', 'text-cyan-300', 'bg-cyan-900/30');
+            btn.classList.add('border-[#333]', 'text-slate-500');
+        }
+    });
+    window.updateMapState();
+};
+
 const ALLOWED_LABELS = {
     "bicycle": "1",
     "person": "2",
@@ -1702,6 +1725,7 @@ window.loadGeospatialCSV = async function() {
         let latIdx = headers.findIndex(h => h.includes('lat'));
         let lonIdx = headers.findIndex(h => h.includes('lon') || h.includes('lng'));
         let classIdx = headers.findIndex(h => h.includes('class') || h.includes('surface') || h.includes('type') || h.includes('label') || h.includes('pred') || h.includes('vocab'));
+        let sourceIdx = headers.findIndex(h => h === 'annotation_source');
         
         if (latIdx === -1 || lonIdx === -1) {
             showToast('GPS coordinates missing! Please upload aligned_dataset.csv, not purely labels.', 'error');
@@ -1747,7 +1771,8 @@ window.loadGeospatialCSV = async function() {
                 plusCode = typeof olcInstance !== 'undefined' ? olcInstance.encode(lat, lon) : 'N/A';
             } catch(e) {}
             
-            window.currentGeoData.push({lat, lon, surface, plusCode});
+            let rawSource = sourceIdx !== -1 && row[sourceIdx] ? row[sourceIdx].trim() : 'fill';
+            window.currentGeoData.push({lat, lon, surface, plusCode, source: rawSource});
             window.registerSurface(surface);
         }
         
@@ -3113,43 +3138,52 @@ window.updateMapState = function() {
     if (!geoLayerGroup || !analyticsMap) return;
     analyticsMap.removeLayer(geoLayerGroup);
     geoLayerGroup = L.featureGroup().addTo(analyticsMap);
-    
+
     const toggleEl = document.getElementById('map-render-toggle');
     const isLineMode = toggleEl ? toggleEl.checked : false;
     const labelEl = document.getElementById('map-render-label');
     if (labelEl) labelEl.innerText = isLineMode ? 'Mode: Line' : 'Mode: Dots';
-    
+
     const geo = window.currentGeoData || [];
-    
+    const mode = window.geoViewMode || 'all';
+
+    // Always draw the faint route polyline as a base layer
+    const pathCoords = geo.map(pt => [pt.lat, pt.lon]);
+    if (pathCoords.length > 0) {
+        L.polyline(pathCoords, {
+            color: '#333',
+            weight: 2,
+            opacity: 0.6,
+            smoothFactor: 1
+        }).addTo(geoLayerGroup);
+    }
+
     if (isLineMode) {
+        // ── LINE MODE (existing behaviour, surface-coloured polylines) ────────
         let currentSegment = [];
         let currentSurface = null;
-        
+
         for (let i = 0; i < geo.length; i++) {
             const pt = geo[i];
             const state = window.classState[pt.surface];
-            
+
             if (!state || !state.active) {
                 if (currentSegment.length > 1) {
                     L.polyline(currentSegment.map(p => [p.lat, p.lon]), {
                         color: window.classState[currentSurface].color,
-                        weight: 4,
-                        opacity: 0.8,
-                        smoothFactor: 1
+                        weight: 4, opacity: 0.8, smoothFactor: 1
                     }).bindPopup(`<b>${currentSurface}</b>`).addTo(geoLayerGroup);
                 }
                 currentSegment = [];
                 currentSurface = null;
                 continue;
             }
-            
+
             if (currentSurface !== pt.surface) {
                 if (currentSegment.length > 1) {
                     L.polyline(currentSegment.map(p => [p.lat, p.lon]), {
                         color: window.classState[currentSurface].color,
-                        weight: 4,
-                        opacity: 0.8,
-                        smoothFactor: 1
+                        weight: 4, opacity: 0.8, smoothFactor: 1
                     }).bindPopup(`<b>${currentSurface}</b>`).addTo(geoLayerGroup);
                 }
                 currentSegment = [pt];
@@ -3158,42 +3192,125 @@ window.updateMapState = function() {
                 currentSegment.push(pt);
             }
         }
-        
         if (currentSegment.length > 1 && currentSurface) {
             L.polyline(currentSegment.map(p => [p.lat, p.lon]), {
                 color: window.classState[currentSurface].color,
-                weight: 4,
-                opacity: 0.8,
-                smoothFactor: 1
+                weight: 4, opacity: 0.8, smoothFactor: 1
             }).bindPopup(`<b>${currentSurface}</b>`).addTo(geoLayerGroup);
         }
-        
-    } else {
-        const pathCoords = geo.map(pt => [pt.lat, pt.lon]);
-        if (pathCoords.length > 0) {
-            L.polyline(pathCoords, {
-                color: '#666666',
-                weight: 2,
-                opacity: 0.5,
-                smoothFactor: 1
-            }).addTo(geoLayerGroup);
-        }
-        
-        const activeData = geo.filter(pt => window.classState[pt.surface] && window.classState[pt.surface].active);
+
+    } else if (mode === 'all') {
+        // ── ALL MODE: every IMU row as a small dot ────────────────────────────
+        const activeData = geo.filter(pt =>
+            window.classState[pt.surface] && window.classState[pt.surface].active
+        );
         for (const pt of activeData) {
             const state = window.classState[pt.surface];
-            if (!state) continue;
             L.circleMarker([pt.lat, pt.lon], {
-                radius: 4,
+                radius: 3,
                 fillColor: state.color,
                 color: '#000',
-                weight: 1,
+                weight: 0.5,
                 opacity: 1,
-                fillOpacity: 0.8
-            }).bindPopup(`<b>${pt.surface}</b><br>Code: ${pt.plusCode || 'N/A'}`).addTo(geoLayerGroup);
+                fillOpacity: 0.7
+            }).bindPopup(`<b>${pt.surface}</b><br><span style="font-size:10px;opacity:0.6">${pt.source === 'anchor' ? '📍 Annotated frame' : '↩ Forward-filled'}</span>`)
+              .addTo(geoLayerGroup);
         }
+
+    } else if (mode === 'anchors') {
+        // ── ANCHORS MODE: only the exact annotated frame positions ────────────
+        const anchorData = geo.filter(pt =>
+            pt.source === 'anchor' &&
+            window.classState[pt.surface] &&
+            window.classState[pt.surface].active
+        );
+        for (const pt of anchorData) {
+            const state = window.classState[pt.surface];
+            L.circleMarker([pt.lat, pt.lon], {
+                radius: 7,
+                fillColor: state.color,
+                color: '#fff',
+                weight: 1.5,
+                opacity: 1,
+                fillOpacity: 0.95
+            }).bindPopup(`<b>${pt.surface}</b><br><span style="font-size:10px;opacity:0.6">📍 Exact annotation</span>`)
+              .addTo(geoLayerGroup);
+        }
+        if (anchorData.length === 0) {
+            showToast('No anchor rows found. Re-run Label Fusion to generate the annotation_source column.', 'info');
+        }
+
+    } else if (mode === 'clusters') {
+        // ── CLUSTERS MODE: one pin per contiguous hazard event ────────────────
+        // Walk the full geo array; whenever the surface changes, emit one
+        // cluster pin at the centroid of the just-completed run.
+        const HAZARD_CLASSES = new Set([
+            'pothole_cluster', 'potholes', 'rail_tracks', 'crack',
+            'uneven_surface', 'metal_grating', 'cobblestone', 'brick_paving',
+            'rough_asphalt', 'manhole', 'drain', 'water_puddle'
+        ]);
+
+        let runSurface = null;
+        let runLats = [], runLons = [], runCount = 0;
+
+        const emitCluster = () => {
+            if (!runSurface || runCount === 0) return;
+            const state = window.classState[runSurface];
+            if (!state || !state.active) { return; }
+
+            const centLat = runLats.reduce((a, b) => a + b, 0) / runLats.length;
+            const centLon = runLons.reduce((a, b) => a + b, 0) / runLons.length;
+            const radius = Math.min(6 + Math.sqrt(runCount) * 0.8, 18);
+
+            // Outer glow ring
+            L.circleMarker([centLat, centLon], {
+                radius: radius + 4,
+                fillColor: state.color,
+                color: state.color,
+                weight: 0,
+                fillOpacity: 0.15
+            }).addTo(geoLayerGroup);
+
+            // Main pin
+            L.circleMarker([centLat, centLon], {
+                radius: radius,
+                fillColor: state.color,
+                color: '#fff',
+                weight: 1.5,
+                opacity: 1,
+                fillOpacity: 0.9
+            }).bindPopup(
+                `<b>${runSurface}</b><br>` +
+                `<span style="font-size:10px;opacity:0.7">${runCount} IMU rows · ~${(runCount / 50).toFixed(1)}s event</span>`
+            ).addTo(geoLayerGroup);
+        };
+
+        for (const pt of geo) {
+            const state = window.classState[pt.surface];
+            const isActive = state && state.active;
+            const isHazard = HAZARD_CLASSES.has(pt.surface);
+
+            if (isHazard && isActive) {
+                if (pt.surface !== runSurface) {
+                    emitCluster();
+                    runSurface = pt.surface;
+                    runLats = [pt.lat];
+                    runLons = [pt.lon];
+                    runCount = 1;
+                } else {
+                    runLats.push(pt.lat);
+                    runLons.push(pt.lon);
+                    runCount++;
+                }
+            } else {
+                emitCluster();
+                runSurface = null;
+                runLats = []; runLons = []; runCount = 0;
+            }
+        }
+        emitCluster(); // flush last run
     }
-    
+
     if (window.updateDistanceChart) window.updateDistanceChart();
 };
 

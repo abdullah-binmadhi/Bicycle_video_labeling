@@ -303,11 +303,15 @@ window.chooseMergeAligned = async () => {
   const file = await ipcRenderer.invoke('dialog:openCSV');
   if (file) {
     document.getElementById('mergeAlignedPath').value = file;
-    // Auto-fill output if empty
+
+    // Fix A: Always derive the output as 'aligned_dataset_labeled.csv'
+    // in the same directory as the aligned CSV, regardless of device or
+    // whatever was previously in the output field.
+    const dir = require('path').dirname(file);
+    const fixedOutput = require('path').join(dir, 'aligned_dataset_labeled.csv');
     const outInput = document.getElementById('mergeOutputPath');
-    if (!outInput.value) {
-      outInput.value = file.replace('.csv', '_labeled.csv');
-    }
+    outInput.value = fixedOutput;
+    outInput.title = fixedOutput; // tooltip shows full path
   }
 };
 
@@ -602,6 +606,47 @@ function _runScript(scriptKey) {
     logToConsole(`\\n> Process exited with code ${code}\\n`);
     setProcessStatus(false, scriptKey);
     activeProcess = null;
+
+    // Fix B: After a successful Label Fusion, inject a "Load into Map" button
+    // directly into the console so the user can jump to the map without any
+    // manual upload step.
+    if (scriptKey === 'merge_labels' && code === 0) {
+      const outPath = document.getElementById('mergeOutputPath')?.value?.trim();
+      if (outPath && require('fs').existsSync(outPath)) {
+        const consoleOutput = document.getElementById('console-output');
+        if (consoleOutput) {
+          const btn = document.createElement('button');
+          btn.innerHTML = '📍 Load Labeled CSV into Geospatial Map →';
+          btn.style.cssText = [
+            'display:inline-block', 'margin:8px 0', 'padding:6px 14px',
+            'background:rgba(6,182,212,0.15)', 'border:1px solid rgba(6,182,212,0.5)',
+            'color:#67e8f9', 'font-family:monospace', 'font-size:11px',
+            'letter-spacing:0.05em', 'cursor:pointer', 'border-radius:2px',
+            'text-transform:uppercase'
+          ].join(';');
+          btn.onclick = () => {
+            // Pre-load the file path and trigger the map load directly
+            const { ipcRenderer } = require('electron');
+            const fs = require('fs');
+            try {
+              const data = fs.readFileSync(outPath, 'utf-8');
+              // Switch to analytics tab first
+              if (window.switchView) window.switchView('analytics');
+              // Trigger the CSV load using the already-known path
+              setTimeout(() => {
+                // Simulate what loadGeospatialCSV does but with the known path
+                window._loadGeospatialFromPath(outPath);
+              }, 400);
+            } catch(e) {
+              showToast('Could not auto-load file: ' + e.message, 'error');
+            }
+            btn.remove();
+          };
+          consoleOutput.appendChild(btn);
+          consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+      }
+    }
   });
 }
 
@@ -1292,9 +1337,15 @@ window.startAIOverlay = function() {
                     const p = line.split(',').map(v => v.trim());
                     if(p.length >= 7) {
                         const frameStr = p[idxFrame] || '';
-                        const match = frameStr.match(/frame_([\d.]+)\.jpg/);
+                        // Match either frame_123.45.jpg or just 123.45.jpg
+                        const match = frameStr.match(/([\d.]+)\.jpg/);
                         let rawTime = 0;
-                        if (match) rawTime = parseFloat(match[1]);
+                        if (match) {
+                            // If the match starts with a timestamp
+                            let val = match[1];
+                            if (val.startsWith('frame_')) val = val.replace('frame_', '');
+                            rawTime = parseFloat(val);
+                        }
                         
                         if (rawTime > 0) minRawTime = Math.min(minRawTime, rawTime);
 
@@ -1322,6 +1373,8 @@ window.startAIOverlay = function() {
             // Align timestamps relative to the earliest frame being T=0
             if (minRawTime !== Number.MAX_VALUE) {
                 frameAnnotations.forEach(a => a.timestamp = Math.max(0, a.rawTime - minRawTime));
+                // VERY IMPORTANT: Sort annotations by timestamp so the binary search works!
+                frameAnnotations.sort((a, b) => a.timestamp - b.timestamp);
             }
         } catch(err) {
             console.error("Error loading Label CSV", err);
@@ -1380,16 +1433,33 @@ window.startAIOverlay = function() {
                    const scaleX = canvas.width / rawVidW;
                    const scaleY = canvas.height / rawVidH;
                    
-                   // Map video playback position proportionally to the annotations array.
-                   // Frame filenames have an 8-hour UTC offset vs IMU NTP, so we avoid
-                   // direct timestamp subtraction and instead use proportional indexing.
-                   const vidProgress   = Math.max(0, Math.min(1, currentTime / videoDuration));
-                   const annoIdx       = Math.floor(vidProgress * (frameAnnotations.length - 1));
-                   // Show a small window of nearby annotations (±3 frames at 30fps ≈ 0.1s window)
-                   const windowSize    = Math.max(1, Math.floor(frameAnnotations.length * (0.1 / videoDuration)));
-                   const start         = Math.max(0, annoIdx - windowSize);
-                   const end           = Math.min(frameAnnotations.length - 1, annoIdx + windowSize);
-                   const currentAnnos  = frameAnnotations.slice(start, end + 1);
+                   // ── Sync fix: direct timestamp match, not proportional index ──
+                   // Proportional indexing (old code) assumed annotations are evenly
+                   // spread across the video — they are NOT (488 sparse frames out of
+                   // a full ride). This caused boxes to appear at completely wrong times.
+                   //
+                   // Correct approach: each annotation has a.timestamp (seconds from
+                   // first annotation, derived from the frame filename). We show all
+                   // annotations within ±0.5s of the current playback position.
+                   // Binary-search to the nearest entry for O(log n) performance.
+                   const DISPLAY_WINDOW = 0.5; // seconds — show box this long per frame
+
+                   // Binary search: find first annotation with timestamp >= currentTime - window
+                   let lo = 0, hi = frameAnnotations.length - 1, startIdx = frameAnnotations.length;
+                   const searchTarget = currentTime - DISPLAY_WINDOW;
+                   while (lo <= hi) {
+                       const mid = (lo + hi) >> 1;
+                       if (frameAnnotations[mid].timestamp >= searchTarget) {
+                           startIdx = mid; hi = mid - 1;
+                       } else { lo = mid + 1; }
+                   }
+
+                   // Collect all annotations within the ±window
+                   const currentAnnos = [];
+                   for (let k = startIdx; k < frameAnnotations.length; k++) {
+                       if (frameAnnotations[k].timestamp > currentTime + DISPLAY_WINDOW) break;
+                       currentAnnos.push(frameAnnotations[k]);
+                   }
                    
                    currentAnnos.forEach(a => {
                        const drawX = a.x * scaleX;
@@ -1793,6 +1863,82 @@ window.loadGeospatialCSV = async function() {
         
     } catch (err) {
         showToast('Error reading GPS CSV: ' + err.message, 'error');
+    }
+};
+
+// Dialog-free variant used by the Fix-B "Load into Map" button.
+// Accepts a known file path directly, skipping the file picker dialog.
+window._loadGeospatialFromPath = function(filePath) {
+    try {
+        const data = require('fs').readFileSync(filePath, 'utf-8');
+        const lines = data.trim().split('\n');
+        if (lines.length < 2) { showToast('Labeled CSV appears empty.', 'error'); return; }
+
+        const parseCSVLine = (line) => {
+            const cols = []; let inside = false; let current = '';
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') { inside = !inside; }
+                else if (char === ',' && !inside) { cols.push(current.trim().replace(/^"|"$/g, '')); current = ''; }
+                else { current += char; }
+            }
+            cols.push(current.trim().replace(/^"|"$/g, ''));
+            return cols;
+        };
+
+        let headers   = parseCSVLine(lines[0]).map(h => h.toLowerCase());
+        let latIdx    = headers.findIndex(h => h.includes('lat'));
+        let lonIdx    = headers.findIndex(h => h.includes('lon') || h.includes('lng'));
+        let classIdx  = headers.findIndex(h => h.includes('class') || h.includes('surface') || h.includes('label'));
+        let sourceIdx = headers.findIndex(h => h === 'annotation_source');
+
+        if (latIdx === -1 || lonIdx === -1) {
+            showToast('GPS coordinates missing in labeled CSV.', 'error');
+            return;
+        }
+
+        if (!analyticsMap) initAnalytics();
+        if (geoLayerGroup) analyticsMap.removeLayer(geoLayerGroup);
+        geoLayerGroup = L.featureGroup().addTo(analyticsMap);
+
+        const bounds = [];
+        window.currentGeoData = [];
+        window.classState = {};
+        const noGpsClasses = {};
+
+        for (let i = 1; i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            let row = parseCSVLine(lines[i]);
+            if (row.length < 3) continue;
+            let lat = parseFloat(row[latIdx]);
+            let lon = parseFloat(row[lonIdx]);
+            let rawSurface = classIdx !== -1 && row[classIdx] ? row[classIdx] : '';
+            let surface = normalizeLabel(rawSurface);
+
+            if (isNaN(lat) || isNaN(lon) || lat === 0 || lon === 0) {
+                if (surface && surface !== 'Unclassified') noGpsClasses[surface] = (noGpsClasses[surface] || 0) + 1;
+                continue;
+            }
+            bounds.push([lat, lon]);
+            let plusCode = 'N/A';
+            try { plusCode = olcInstance.encode(lat, lon); } catch(e) {}
+            let rawSource = sourceIdx !== -1 && row[sourceIdx] ? row[sourceIdx].trim() : 'fill';
+            window.currentGeoData.push({ lat, lon, surface, plusCode, source: rawSource });
+            window.registerSurface(surface);
+        }
+
+        Object.keys(noGpsClasses).forEach(cls => window.registerSurface(cls));
+
+        if (bounds.length > 0) {
+            analyticsMap.fitBounds(bounds, { padding: [20, 20] });
+            const statsEl = document.getElementById('geo-stats-text');
+            if (statsEl) statsEl.innerText = `Loaded ${bounds.length} waypoints \xb7 ${Object.keys(window.classState).length} classes detected`;
+            window.renderLegend();
+            window.updateMapState();
+            showToast('\u2705 Labeled CSV loaded \u2014 ' + bounds.length.toLocaleString() + ' GPS points', 'success');
+        }
+    } catch (err) {
+        showToast('Auto-load failed: ' + err.message, 'error');
     }
 };
 

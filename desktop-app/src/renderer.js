@@ -3356,9 +3356,10 @@ window.updateMapState = function() {
     const pathCoords = geo.map(pt => [pt.lat, pt.lon]);
     if (pathCoords.length > 0) {
         L.polyline(pathCoords, {
-            color: '#333',
-            weight: 2,
-            opacity: 0.6,
+            color: '#60a5fa', // Light blue to stand out on the dark map
+            weight: 3,
+            opacity: 0.3,
+            dashArray: '5, 5', // Dash pattern for a tech aesthetic
             smoothFactor: 1
         }).addTo(geoLayerGroup);
     }
@@ -3418,12 +3419,12 @@ window.updateMapState = function() {
         for (const pt of activeData) {
             const state = window.classState[pt.surface];
             L.circleMarker([pt.lat, pt.lon], {
-                radius: 3,
+                radius: 4,
                 fillColor: state.color,
-                color: '#000',
-                weight: 0.5,
-                opacity: 1,
-                fillOpacity: 0.7
+                color: '#111',
+                weight: 1,
+                opacity: 0.8,
+                fillOpacity: 0.95
             }).bindPopup(`<b>${pt.surface}</b><br><span style="font-size:10px;opacity:0.6">${pt.source === 'anchor' ? '📍 Annotated frame' : '↩ Forward-filled'}</span><br><span style="font-size:11px;color:#67e8f9;font-family:monospace;margin-top:4px;display:inline-block;">📍 ${olcInstance.encode(pt.lat, pt.lon, 11)}</span>`)
               .addTo(geoLayerGroup);
         }

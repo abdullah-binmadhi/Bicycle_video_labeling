@@ -15,13 +15,16 @@ def parse_args():
 SURFACE_PRIORITY = [
     'pothole_cluster', 'potholes', 'rail_tracks', 'crack', 'uneven_surface',
     'metal_grating', 'water_puddle', 'drain',
+    'bicycle_lane', 'manhole', 'crosswalk', 'road_marking',
     'cobblestone', 'brick_paving', 'rough_asphalt', 'smooth_asphalt', 'asphalt',
-    'manhole', 'crosswalk', 'road_marking',
-    'bicycle_lane',
     'pedestrian', 'bicycle', 'car', 'e-scooter',
     'bus_stop', 'stop_sign', 'yield_sign', 'speed_limit_sign',
 ]
 _PRIORITY_MAP = {cls: i for i, cls in enumerate(SURFACE_PRIORITY)}
+
+HAZARDS_SET = {'pothole_cluster', 'potholes', 'rail_tracks', 'crack', 'uneven_surface', 'metal_grating', 'water_puddle', 'drain', 'manhole'}
+INFRA_SET = {'bicycle_lane', 'crosswalk', 'road_marking'}
+BASE_SET = {'cobblestone', 'brick_paving', 'rough_asphalt', 'smooth_asphalt', 'asphalt'}
 
 
 def _pick_best_label(labels):
@@ -38,14 +41,23 @@ def _deduplicate_annotations(manual_df, label_col):
     Without this step, duplicate NTPs silently corrupt the merge output.
     """
     def _pick(group):
-        return _pick_best_label(group[label_col].dropna().tolist() or ['Unclassified'])
+        labels = [str(l).strip() for l in group[label_col].dropna().tolist()]
+        if not labels:
+            labels = ['Unclassified']
+        best_label = min(labels, key=lambda c: _PRIORITY_MAP.get(c, 999))
+        
+        hazards = [l for l in set(labels) if l in HAZARDS_SET]
+        infras = [l for l in set(labels) if l in INFRA_SET]
+        bases = [l for l in set(labels) if l in BASE_SET]
+        
+        return pd.Series({
+            label_col: best_label,
+            'hazard': '|'.join(hazards),
+            'infrastructure': '|'.join(infras),
+            'base_surface': '|'.join(bases)
+        })
 
-    deduped = (
-        manual_df.groupby('NTP', sort=True)
-        .apply(_pick)
-        .reset_index()
-    )
-    deduped.columns = ['NTP', label_col]
+    deduped = manual_df.groupby('NTP', sort=True).apply(_pick).reset_index()
     return deduped.sort_values('NTP').reset_index(drop=True)
 
 
@@ -156,13 +168,14 @@ def merge_datasets(aligned_csv_path, manual_csv_path, output_csv_path):
 
     # ── Pass 2: Full backward merge for training labels ───────────────────────
     print("\nMerging: applying full labels with forward-fill (no tolerance)...")
+    cols_to_merge = ['NTP', label_col, 'hazard', 'infrastructure', 'base_surface']
     merged_df = pd.merge_asof(
         aligned_df,
-        manual_deduped[['NTP', label_col]],
+        manual_deduped[cols_to_merge],
         on='NTP',
-        direction='backward',
-        tolerance=None,
+        direction='backward'
     )
+    merged_df.rename(columns={label_col: 'class_name'}, inplace=True)
 
     # ── Step 6: Forward-fill labels between annotated frames ─────────────────
     # After the full backward merge every row already has a label from the

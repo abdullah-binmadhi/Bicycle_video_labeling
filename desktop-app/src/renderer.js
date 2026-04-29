@@ -1881,9 +1881,9 @@ window.loadGeospatialCSV = async function() {
             let rawSurface = classIdx !== -1 && row[classIdx] ? row[classIdx] : '';
             let surface = normalizeLabel(rawSurface);
             
-            let hazardIdx = headers.findIndex(h => h === 'hazard');
-            let infraIdx = headers.findIndex(h => h === 'infrastructure');
-            let baseIdx = headers.findIndex(h => h === 'base_surface');
+            let hazardIdx = headers.findIndex(h => h.trim() === 'hazard');
+            let infraIdx = headers.findIndex(h => h.trim() === 'infrastructure');
+            let baseIdx = headers.findIndex(h => h.trim() === 'base_surface');
             
             let hazards = hazardIdx !== -1 && row[hazardIdx] ? row[hazardIdx].trim() : '';
             let infras = infraIdx !== -1 && row[infraIdx] ? row[infraIdx].trim() : '';
@@ -1955,9 +1955,9 @@ window._loadGeospatialFromPath = function(filePath) {
         let classIdx  = headers.findIndex(h => h.includes('class') || h.includes('surface') || h.includes('label'));
         let sourceIdx = headers.findIndex(h => h === 'annotation_source');
         
-        let hazardIdx = headers.findIndex(h => h === 'hazard');
-        let infraIdx  = headers.findIndex(h => h === 'infrastructure');
-        let baseIdx   = headers.findIndex(h => h === 'base_surface');
+        let hazardIdx = headers.findIndex(h => h.trim() === 'hazard');
+        let infraIdx  = headers.findIndex(h => h.trim() === 'infrastructure');
+        let baseIdx   = headers.findIndex(h => h.trim() === 'base_surface');
 
         if (latIdx === -1 || lonIdx === -1) {
             showToast('GPS coordinates missing in labeled CSV.', 'error');
@@ -3356,7 +3356,7 @@ window.updateDistanceChart = function() {
 };
 
 function formatPopupList(str) {
-    if (!str || str.trim() === '') return '<span style="color:#444">—</span>';
+    if (!str || str.trim() === '') return '<span style="color:#aaa">—</span>';
     return str.split('|').map(s => {
         return s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
     }).join('<br>');
@@ -3370,28 +3370,28 @@ function createCrossSectionPopup(pt) {
     if (pt.hazards !== undefined || pt.infras !== undefined || pt.bases !== undefined) {
         return `
             <div style="min-width: 200px; padding: 2px; font-family: sans-serif; background: transparent;">
-                <div style="font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 4px; display: flex; justify-content: space-between;">
+                <div style="font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; border-bottom: 1px solid #ccc; padding-bottom: 4px; display: flex; justify-content: space-between;">
                     <span>Road Cross-Section</span>
-                    <span style="color: ${window.classState[pt.surface]?.color || '#fff'}">●</span>
+                    <span style="color: ${window.classState[pt.surface]?.color || '#000'}">●</span>
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                     <div style="text-align: left; width: 33%; padding-right: 4px;">
-                        <div style="font-size: 9px; color: #ef4444; margin-bottom: 4px;">HAZARD</div>
-                        <div style="font-size: 11px; font-weight: bold; color: #fff; line-height: 1.3;">${formatPopupList(pt.hazards)}</div>
+                        <div style="font-size: 9px; color: #dc2626; margin-bottom: 4px;">HAZARD</div>
+                        <div style="font-size: 11px; font-weight: bold; color: #111; line-height: 1.3;">${formatPopupList(pt.hazards)}</div>
                     </div>
-                    <div style="text-align: center; width: 33%; border-left: 1px solid #333; border-right: 1px solid #333; padding: 0 4px;">
-                        <div style="font-size: 9px; color: #a8a29e; margin-bottom: 4px;">BASE</div>
-                        <div style="font-size: 11px; font-weight: bold; color: #fff; line-height: 1.3;">${formatPopupList(pt.bases) || pt.surface}</div>
+                    <div style="text-align: center; width: 33%; border-left: 1px solid #eee; border-right: 1px solid #eee; padding: 0 4px;">
+                        <div style="font-size: 9px; color: #78716c; margin-bottom: 4px;">BASE</div>
+                        <div style="font-size: 11px; font-weight: bold; color: #111; line-height: 1.3;">${pt.bases && pt.bases.trim() !== '' ? formatPopupList(pt.bases) : formatPopupList(pt.surface)}</div>
                     </div>
                     <div style="text-align: right; width: 33%; padding-left: 4px;">
-                        <div style="font-size: 9px; color: #3b82f6; margin-bottom: 4px;">INFRA</div>
-                        <div style="font-size: 11px; font-weight: bold; color: #fff; line-height: 1.3;">${formatPopupList(pt.infras)}</div>
+                        <div style="font-size: 9px; color: #2563eb; margin-bottom: 4px;">INFRA</div>
+                        <div style="font-size: 11px; font-weight: bold; color: #111; line-height: 1.3;">${formatPopupList(pt.infras)}</div>
                     </div>
                 </div>
-                <div style="font-size: 10px; color: #888; margin-bottom: 6px; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 2px; text-align: center;">
+                <div style="font-size: 10px; color: #666; margin-bottom: 6px; background: #f4f4f5; padding: 4px; border-radius: 2px; text-align: center;">
                     ${sourceText}
                 </div>
-                <div style="font-size: 11px; color: #67e8f9; font-family: monospace; text-align: center;">
+                <div style="font-size: 11px; color: #0284c7; font-family: monospace; text-align: center;">
                     📍 ${codeText}
                 </div>
             </div>

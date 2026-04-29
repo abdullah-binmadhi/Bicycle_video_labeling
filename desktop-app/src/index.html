@@ -97,10 +97,7 @@
           <svg class="h-4 w-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           Overview & Docs
         </a></li>
-        <li><a id="nav-sota" class="hover:bg-[#1a1a1a] hover:text-white transition-colors rounded-none text-emerald-100" onclick="switchView('sota')">
-          <svg class="h-4 w-4 text-[#e0e0e0] opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-          SOTA Comparison
-        </a></li>
+
         <li class="menu-title mt-4 text-slate-500 uppercase tracking-widest text-[10px]"><span>Pipeline Operations</span></li>
         <li><a id="nav-extract" class="hover:bg-[#1a1a1a] hover:text-white transition-colors rounded-none" onclick="switchView('extract')">
           <svg class="h-4 w-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
@@ -204,38 +201,38 @@
               <ul class="steps steps-vertical w-full text-[#888888]">
                 <li class="step step-neutral">
                   <div class="text-left w-full pl-6 py-3">
-                    <h4 class="font-medium text-lg text-white">1. Frame Extraction</h4>
-                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Python extracts precise RGB frames strictly tied to hardware UNIX timestamps to align high-speed video frames with slower physics data.</p>
+                    <h4 class="font-medium text-lg text-white">1. Extract Frames</h4>
+                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Extract exact, timestamped image frames from the raw video footage.</p>
                   </div>
                 </li>
                 <li class="step step-neutral">
                   <div class="text-left w-full pl-6 py-3">
-                    <h4 class="font-medium text-lg text-white">2. OWLv2 Zero-Shot Annotation</h4>
-                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">100% automated offline pipeline. OWLv2 generates highly accurate bounding boxes from a natural language custom vocabulary without relying on pre-trained YOLO/DINO models.</p>
+                    <h4 class="font-medium text-lg text-white">2. AI Auto-Labeling</h4>
+                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Automatically detect and draw bounding boxes around road surfaces and hazards using AI.</p>
                   </div>
                 </li>
                 <li class="step step-neutral">
                   <div class="text-left w-full pl-6 py-3">
-                    <h4 class="font-medium text-lg text-white">3. Manual Feature Refinement</h4>
-                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Review the auto-generated dataset and manually draw bounding boxes through the interactive Canvas UI for edge-cases or complex conditions.</p>
+                    <h4 class="font-medium text-lg text-white">3. Manual Adjustments</h4>
+                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Review the AI's work and manually fix or add labels for difficult edge cases using the canvas.</p>
                   </div>
                 </li>
                 <li class="step step-neutral">
                   <div class="text-left w-full pl-6 py-3">
-                    <h4 class="font-medium text-lg text-white">4. High-Frequency Synchronization</h4>
-                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">The backend matches disparate time-domains (video vs IMU physics) using Pandas <code>merge_asof</code>, applies DSP filters, and drops anomalous gap data.</p>
+                    <h4 class="font-medium text-lg text-white">4. Data Synchronization</h4>
+                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Merge the visual labels with the bicycle's physical vibration sensor data based on timestamps.</p>
                   </div>
                 </li>
                 <li class="step step-neutral">
                   <div class="text-left w-full pl-6 py-3">
-                    <h4 class="font-medium text-lg text-white">5. Core PyTorch Network Training</h4>
-                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Trains the LateFusionNetwork on processed datasets natively inside the application. Live JSON stdout telemetry feeds the real-time Dashboard Chart.js graphs.</p>
+                    <h4 class="font-medium text-lg text-white">5. Model Training</h4>
+                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Train the machine learning model on the combined dataset to recognize road surfaces.</p>
                   </div>
                 </li>
                 <li class="step">
                   <div class="text-left w-full pl-6 py-3">
-                    <h4 class="font-medium text-lg text-white">6. Real-Time Inference</h4>
-                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Simulate predictions seamlessly utilizing PyTorch evaluation modes over unseen synchronized sensor feeds to validate road classifications visually.</p>
+                    <h4 class="font-medium text-lg text-white">6. Live Testing</h4>
+                    <p class="text-sm text-[#888888] mt-1 max-w-3xl">Run the trained model and view live, real-time predictions directly on the dashboard map.</p>
                   </div>
                 </li>
               </ul>
@@ -245,134 +242,66 @@
             <div class="mt-8">
                 <h2 class="text-2xl font-medium border-b border-[#333] pb-3 mb-6 text-white tracking-widest uppercase text-sm">Next-Generation Capabilities</h2>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-
-                    <!-- Feature: Two Stage Auto -->
-                    <div class="border border-[#222] bg-[#0c0c0c] p-6 rounded-none hover:border-indigo-500/30 transition-all duration-300 group">
-                        <div class="w-10 h-10 rounded-none bg-indigo-500/20 text-indigo-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                        </div>
-                        <h3 class="text-lg font-medium text-white mb-2">Smart Video Tagging</h3>
-                        <p class="text-sm text-[#888888] leading-relaxed">
-                            Automatically finds objects in your video (like cars and pedestrians) and identifies the road surface you're riding on (like smooth asphalt or gravel) without manual effort.
-                        </p>
-                    </div>
-
-                    <!-- Feature: Input Parameters -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">                    <!-- Feature: Label Fusion -->
                     <div class="border border-[#222] bg-[#0c0c0c] p-6 rounded-none hover:border-purple-500/30 transition-all duration-300 group">
                         <div class="w-10 h-10 rounded-none bg-purple-500/10 text-purple-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform border border-purple-500/20">
-                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
                         </div>
-                        <h3 class="text-lg font-medium text-white mb-2">Visual Context</h3>
+                        <h3 class="text-lg font-medium text-white mb-2">Label Fusion</h3>
                         <p class="text-sm text-[#888888] leading-relaxed">
-                            Connects what the camera sees (like approaching potholes) with what the bike feels, helping the AI understand the complete environment naturally.
+                            Automatically snap visual annotations onto exact IMU vibrations. Seamlessly fuse your camera-based ground truth with high-frequency telemetry data to build a unified training dataset.
                         </p>
                     </div>
 
                     <!-- Feature: Temporal Logic -->
+                    <div class="border border-[#222] bg-[#0c0c0c] p-6 rounded-none hover:border-cyan-500/30 transition-all duration-300 group">
+                        <div class="w-10 h-10 rounded-none bg-cyan-500/10 text-cyan-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform border border-cyan-500/20">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-white mb-2">Temporal Logic & Sync</h3>
+                        <p class="text-sm text-[#888888] leading-relaxed">
+                            Precisely align asynchronous sensors using a customizable merge tolerance. Intelligently manage time gaps using Forward-Fill or Linear Interpolation strategies to ensure data continuity.
+                        </p>
+                    </div>
+
+                    <!-- Feature: Quarter-Car DSP -->
+                    <div class="border border-[#222] bg-[#0c0c0c] p-6 rounded-none hover:border-amber-500/30 transition-all duration-300 group">
+                        <div class="w-10 h-10 rounded-none bg-amber-500/10 text-amber-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform border border-amber-500/20">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path></svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-white mb-2">Quarter-Car DSP</h3>
+                        <p class="text-sm text-[#888888] leading-relaxed">
+                            Apply advanced Digital Signal Processing to cut road resonance from the bicycle's frame bounce. Mathematically isolate the true, high-frequency road surface texture from generic movement.
+                        </p>
+                    </div>
+
+                    <!-- Feature: Visual Context -->
+                    <div class="border border-[#222] bg-[#0c0c0c] p-6 rounded-none hover:border-indigo-500/30 transition-all duration-300 group">
+                        <div class="w-10 h-10 rounded-none bg-indigo-500/10 text-indigo-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform border border-indigo-500/20">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-white mb-2">Visual Latent Vectors</h3>
+                        <p class="text-sm text-[#888888] leading-relaxed">
+                            Enhance the machine learning model's predictive power by feeding it camera-based latent parameters. Let the AI visually anticipate upcoming terrain before the wheels ever touch it.
+                        </p>
+                    </div>
+
+                    <!-- Feature: 6-DoF Vibration Sequences -->
                     <div class="border border-[#222] bg-[#0c0c0c] p-6 rounded-none hover:border-teal-500/30 transition-all duration-300 group">
                         <div class="w-10 h-10 rounded-none bg-teal-500/10 text-teal-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform border border-teal-500/20">
-                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                        </div>
-                        <h3 class="text-lg font-medium text-white mb-2">Vibration Analysis</h3>
-                        <p class="text-sm text-[#888888] leading-relaxed">
-                            Listens to the bike's bumps and shakes using sensors. Includes built-in filters to cut out background noise and focus only on true road impacts.
-                        </p>
-                    </div>
-
-                    <!-- Feature: Live Matrix / Charting -->
-                    <div class="border border-[#222] bg-[#0c0c0c] p-6 rounded-none hover:border-rose-500/30 transition-all duration-300 group">
-                        <div class="w-10 h-10 rounded-none bg-rose-500/10 text-rose-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform border border-rose-500/20">
-                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
-                        </div>
-                        <h3 class="text-lg font-medium text-white mb-2">Live Progress Tracking</h3>
-                        <p class="text-sm text-[#888888] leading-relaxed">
-                            Watch your AI get smarter in real-time. As the system learns, it draws beautiful, interactive charts to show you its progress and accuracy.
-                        </p>
-                    </div>
-
-                    <!-- Feature: WebGL Digital Twin -->
-                    <div class="border border-[#222] bg-[#0c0c0c] p-6 rounded-none hover:border-purple-500/30 transition-all duration-300 group">
-                        <div class="w-10 h-10 rounded-none bg-purple-500/20 text-[#e0e0e0] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
-                        </div>
-                        <h3 class="text-lg font-medium text-white mb-2">3D Bike Simulation</h3>
-                        <p class="text-sm text-[#888888] leading-relaxed">
-                            See exactly what your bike felt with an interactive 3D model. Watch it tilt, turn, and bounce based on your actual recorded ride data.
-                        </p>
-                    </div>
-
-                    <!-- Feature: Diagnostics -->
-                    <div class="border border-[#222] bg-[#0c0c0c] p-6 rounded-none hover:border-emerald-500/30 transition-all duration-300 group">
-                        <div class="w-10 h-10 rounded-none bg-emerald-500/20 text-[#e0e0e0] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002-2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                         </div>
-                        <h3 class="text-lg font-medium text-white mb-2">Clear Error Checking</h3>
+                        <h3 class="text-lg font-medium text-white mb-2">6-DoF Vibration Sequences</h3>
                         <p class="text-sm text-[#888888] leading-relaxed">
-                            Easily spot where the AI got confused or where data went missing. Visual tools help you quickly find and fix issues in your dataset.
-                          </p>
-                      </div>
-
-                      <!-- Feature: Fast-Track Training Checkpoints -->
-                      <div class="border border-[#222] bg-[#0c0c0c] p-6 rounded-none border border-[#222] hover:border-amber-500/30 transition-all duration-300 group">
-                          <div class="w-10 h-10 rounded-none bg-amber-500/10 text-amber-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                          </div>
-                          <h3 class="text-lg font-medium text-white mb-2">Save & Resume Training</h3>
-                          <p class="text-sm text-[#888888] leading-relaxed">
-                              Never lose your progress. Save a trained model and pick right back up where you left off, or use a pre-trained model to get a head start.
-                          </p>
-                      </div>
-
-                </div>
-            </div>
-        </div>
-
-        <!-- View: SOTA Comparison -->
-          <div id="view-sota" class="flex flex-col gap-8 w-full max-w-6xl mx-auto pb-16 hidden-view">
-            <div class="mb-4 relative rounded-none p-8 overflow-hidden bg-black border border-emerald-500/20 ">
-              <div class="absolute right-0 top-0 w-1/3 h-full bg-gradient-to-l from-emerald-500/10 to-transparent"></div>
-              <div class="relative z-10 flex items-start gap-6">
-                <div class="w-16 h-16 rounded-none bg-emerald-500/20 text-[#e0e0e0] flex items-center justify-center shrink-0 border border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
-                    <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
-                </div>
-                <div>
-                  <h1 class="text-3xl lg:text-4xl font-normal tracking-tight text-white tracking-tight mb-2">State-of-the-Art (SOTA) Analysis</h1>
-                  <p class="text-[#888888] max-w-4xl leading-relaxed text-sm">
-                    A clear comparison showing how the <strong class="text-[#e0e0e0]">CycleSafe Framework</strong> improves upon standard methods for classifying road surfaces and detecting hazards.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div class="space-y-6">
-                <!-- SOTA 1 -->
-                <div class="border border-[#222] bg-[#0c0c0c] p-8 p-8 rounded-none border border-[#222] flex flex-col md:flex-row gap-6 hover:border-emerald-500/20 transition-all duration-300 group">
-                    <div class="w-12 h-12 rounded-none bg-rose-500/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform border border-rose-500/20">
-                        <svg class="w-6 h-6 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path></svg>
-                    </div>
-                    <div>
-                        <h3 class="text-xl font-medium text-white mb-2">1. Overcoming the Limitations of Vision-Only Systems</h3>
-                        <p class="text-[#888888] text-sm leading-relaxed mb-4">
-                            <span class="badge badge-sm bg-rose-500/20 text-rose-400 border-none mr-2 font-medium tracking-widest text-[10px]">THE SOTA FLAW</span>
-                            Standard road classification models rely entirely on limited categorical vocabulary. These systems fail in poor conditions—such as low light, muddy lenses, or glaring sun. Processing video in real-time also drains battery life significantly.
+                            Capture the full physical response of the bicycle across 6 Degrees of Freedom. Analyze multi-axis acceleration and gyroscope sequences over time to identify distinct road signatures.
                         </p>
-                        <div class="bg-emerald-500/5 rounded-none p-4 border border-emerald-500/10 ">
-                            <p class="text-emerald-200/90 text-sm leading-relaxed flex items-start gap-2">
-                                <svg class="w-5 h-5 text-[#e0e0e0] shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                <span><strong class="text-[#e0e0e0] font-medium">CycleSafe Solution:</strong> CycleSafe flips this approach. Heavy video processing is handled offline to build the training data. The actual real-time system relies exclusively on lightweight IMU vibration data, ensuring perfect performance even in complete darkness while saving battery power.</span>
-                            </p>
-                        </div>
                     </div>
+
                 </div>
-
-                
-
-                
-
-                <!-- END SOTA Comparison -->
             </div>
         </div>
+
+
 
         <!-- View: Frame Extraction -->
         <div id="view-extract" class="hidden-view flex flex-col gap-6 w-full max-w-4xl mx-auto pb-10">

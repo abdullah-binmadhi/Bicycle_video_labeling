@@ -1289,7 +1289,6 @@ window.startAIOverlay = function() {
     }
     
     // Load Predictions
-    const label = document.getElementById('inf-pred-text');
     let predictions = [];
     try {
         const predPath = require('path').join(__dirname, '../../predictions.json');
@@ -1381,37 +1380,33 @@ window.startAIOverlay = function() {
         }
     }
 
-    if (window.aiInterval) clearInterval(window.aiInterval);
-    window.aiInterval = setInterval(() => {
-        if(!vidPlayer.paused) {
+    if (window.aiInterval) { clearInterval(window.aiInterval); window.aiInterval = null; }
+    if (window.aiFrameCallbackId) {
+        if (vidPlayer.cancelVideoFrameCallback) {
+            vidPlayer.cancelVideoFrameCallback(window.aiFrameCallbackId);
+        } else {
+            cancelAnimationFrame(window.aiFrameCallbackId);
+        }
+        window.aiFrameCallbackId = null;
+    }
+
+    const renderLoop = (now, metadata) => {
+        if (!vidPlayer.paused) {
            const currentTime = vidPlayer.currentTime; // seconds into the video
            const videoDuration = vidPlayer.duration || 66; // fallback 66s based on recording
            
            // ── Prediction lookup ─────────────────────────────────────────────
-           // predictions.json spans the entire IMU recording (0–3299s).
-           // Map video playback position proportionally to the predictions array.
            if (predictions.length > 0) {
                let currentPred;
                if (videoDuration && videoDuration > 1) {
-                   // Proportional mapping: video progress → predictions index
                    const progress = Math.max(0, Math.min(1, currentTime / videoDuration));
                    const idx = Math.floor(progress * (predictions.length - 1));
                    currentPred = predictions[idx];
                } else {
-                   // Fallback: direct timestamp search (works if video and IMU are synchronized)
                    currentPred = predictions.find(p => p.timestamp <= currentTime && (p.timestamp + 1) > currentTime);
                }
                if(currentPred) {
                    window.updateLiveDashboard(currentPred, currentTime);
-                   label.innerText = currentPred.surface.toUpperCase();
-                   if(currentPred.surface.includes('Asphalt'))
-                       label.className = 'text-2xl font-black tracking-widest text-emerald-400 switch-anim';
-                   else if(currentPred.surface.includes('Gravel') || currentPred.surface.includes('Cobblestone'))
-                       label.className = 'text-2xl font-black tracking-widest text-yellow-400 switch-anim';
-                   else if(currentPred.surface.includes('Bicycle') || currentPred.surface.includes('Rail'))
-                       label.className = 'text-2xl font-black tracking-widest text-cyan-400 switch-anim';
-                   else
-                       label.className = 'text-2xl font-black tracking-widest text-rose-400 switch-anim';
                }
            }
            
@@ -1433,20 +1428,19 @@ window.startAIOverlay = function() {
                    const scaleX = canvas.width / rawVidW;
                    const scaleY = canvas.height / rawVidH;
                    
-                   // ── Sync fix: direct timestamp match, not proportional index ──
-                   // Proportional indexing (old code) assumed annotations are evenly
-                   // spread across the video — they are NOT (488 sparse frames out of
-                   // a full ride). This caused boxes to appear at completely wrong times.
-                   //
-                   // Correct approach: each annotation has a.timestamp (seconds from
-                   // first annotation, derived from the frame filename). We show all
-                   // annotations within ±0.5s of the current playback position.
-                   // Binary-search to the nearest entry for O(log n) performance.
-                   const DISPLAY_WINDOW = 0.5; // seconds — show box this long per frame
+                   // ── Sync fix: Option C (Runtime Distance Tracking + Interpolation) ──
+                   const MAX_TRACK_WINDOW = 0.6; // Max seconds between frames to interpolate
+                   
+                   const getCenterDist = (a, b) => {
+                       const cx1 = a.x + a.w/2, cy1 = a.y + a.h/2;
+                       const cx2 = b.x + b.w/2, cy2 = b.y + b.h/2;
+                       return Math.sqrt((cx1-cx2)**2 + (cy1-cy2)**2);
+                   };
+                   const lerp = (start, end, amt) => (1 - amt) * start + amt * end;
 
                    // Binary search: find first annotation with timestamp >= currentTime - window
                    let lo = 0, hi = frameAnnotations.length - 1, startIdx = frameAnnotations.length;
-                   const searchTarget = currentTime - DISPLAY_WINDOW;
+                   const searchTarget = currentTime - MAX_TRACK_WINDOW;
                    while (lo <= hi) {
                        const mid = (lo + hi) >> 1;
                        if (frameAnnotations[mid].timestamp >= searchTarget) {
@@ -1454,25 +1448,81 @@ window.startAIOverlay = function() {
                        } else { lo = mid + 1; }
                    }
 
-                   // Collect all annotations within the ±window
-                   const currentAnnos = [];
+                   // Collect all candidates in the tracking window
+                   const pastAnnos = [], futureAnnos = [];
                    for (let k = startIdx; k < frameAnnotations.length; k++) {
-                       if (frameAnnotations[k].timestamp > currentTime + DISPLAY_WINDOW) break;
-                       currentAnnos.push(frameAnnotations[k]);
+                       const a = frameAnnotations[k];
+                       if (a.timestamp > currentTime + MAX_TRACK_WINDOW) break;
+                       if (a.timestamp <= currentTime) pastAnnos.push(a);
+                       else futureAnnos.push(a);
                    }
-                   
-                   currentAnnos.forEach(a => {
-                       const drawX = a.x * scaleX;
-                       const drawY = a.y * scaleY;
-                       const drawW = a.w * scaleX;
-                       const drawH = a.h * scaleY;
-                       if (drawW < 5 || drawH < 5) return; // skip degenerate boxes
+
+                   const drawnAnnos = new Set(); // Prevent drawing same future target twice
+
+                   pastAnnos.forEach(past => {
+                       // Find best matching future annotation for the exact same class
+                       let bestFuture = null, bestDist = Infinity;
+                       // Allow connecting boxes that moved up to ~2.5x their own size
+                       const maxAllowedDist = Math.max(past.w, past.h) * 2.5;
+                       
+                       for (const fut of futureAnnos) {
+                           if (fut.label !== past.label || drawnAnnos.has(fut)) continue;
+                           const dist = getCenterDist(past, fut);
+                           if (dist < maxAllowedDist && dist < bestDist) {
+                               bestDist = dist;
+                               bestFuture = fut;
+                           }
+                       }
+
+                       let renderBox = { ...past };
+                       if (bestFuture) {
+                           drawnAnnos.add(bestFuture);
+                           // 🚀 Interpolate seamlessly!
+                           const timeGap = bestFuture.timestamp - past.timestamp;
+                           const progress = (currentTime - past.timestamp) / timeGap;
+                           renderBox.x = lerp(past.x, bestFuture.x, progress);
+                           renderBox.y = lerp(past.y, bestFuture.y, progress);
+                           renderBox.w = lerp(past.w, bestFuture.w, progress);
+                           renderBox.h = lerp(past.h, bestFuture.h, progress);
+                       } else {
+                           // No future match (end of object's life). Only draw if very recent (<0.1s)
+                           // so we don't hold static boxes frozen on screen.
+                           if (currentTime - past.timestamp > 0.1) return;
+                       }
+
+                       // Draw the interpolated (or recent) box
+                       const drawX = renderBox.x * scaleX, drawY = renderBox.y * scaleY;
+                       const drawW = renderBox.w * scaleX, drawH = renderBox.h * scaleY;
+                       if (drawW < 5 || drawH < 5) return;
                        
                        ctx.strokeStyle = '#a855f7';
                        ctx.lineWidth = 2;
                        ctx.strokeRect(drawX, drawY, drawW, drawH);
                        
-                       const cleanLabel = a.label.trim();
+                       const cleanLabel = renderBox.label.trim();
+                       const textW = ctx.measureText(cleanLabel).width + 16;
+                       ctx.fillStyle = 'rgba(168,85,247,0.85)';
+                       ctx.fillRect(drawX, Math.max(0, drawY - 22), textW, 22);
+                       ctx.fillStyle = '#FFFFFF';
+                       ctx.font = 'bold 11px monospace';
+                       ctx.fillText(cleanLabel, drawX + 8, Math.max(14, drawY - 6));
+                   });
+
+                   // Draw any newly appearing objects that are extremely close (<0.1s away) 
+                   // but weren't matched to a past object yet
+                   futureAnnos.forEach(fut => {
+                       if (drawnAnnos.has(fut)) return;
+                       if (fut.timestamp - currentTime > 0.1) return; 
+                       
+                       const drawX = fut.x * scaleX, drawY = fut.y * scaleY;
+                       const drawW = fut.w * scaleX, drawH = fut.h * scaleY;
+                       if (drawW < 5 || drawH < 5) return;
+                       
+                       ctx.strokeStyle = '#a855f7';
+                       ctx.lineWidth = 2;
+                       ctx.strokeRect(drawX, drawY, drawW, drawH);
+                       
+                       const cleanLabel = fut.label.trim();
                        const textW = ctx.measureText(cleanLabel).width + 16;
                        ctx.fillStyle = 'rgba(168,85,247,0.85)';
                        ctx.fillRect(drawX, Math.max(0, drawY - 22), textW, 22);
@@ -1483,7 +1533,21 @@ window.startAIOverlay = function() {
                }
            }
         }
-    }, 50); // 20fps tick rate
+        
+        // Loop again using the best available hardware sync method
+        if (vidPlayer.requestVideoFrameCallback) {
+            window.aiFrameCallbackId = vidPlayer.requestVideoFrameCallback(renderLoop);
+        } else {
+            window.aiFrameCallbackId = requestAnimationFrame(renderLoop);
+        }
+    };
+
+    // Kick off the hardware-synced render loop
+    if (vidPlayer.requestVideoFrameCallback) {
+        window.aiFrameCallbackId = vidPlayer.requestVideoFrameCallback(renderLoop);
+    } else {
+        window.aiFrameCallbackId = requestAnimationFrame(renderLoop);
+    }
 };
 
 // Intercept setProcessStatus to tie in Toasts on command ends

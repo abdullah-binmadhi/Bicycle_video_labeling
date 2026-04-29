@@ -1438,91 +1438,82 @@ window.startAIOverlay = function() {
                    };
                    const lerp = (start, end, amt) => (1 - amt) * start + amt * end;
 
-                   // Binary search: find first annotation with timestamp >= currentTime - window
-                   let lo = 0, hi = frameAnnotations.length - 1, startIdx = frameAnnotations.length;
-                   const searchTarget = currentTime - MAX_TRACK_WINDOW;
-                   while (lo <= hi) {
-                       const mid = (lo + hi) >> 1;
-                       if (frameAnnotations[mid].timestamp >= searchTarget) {
-                           startIdx = mid; hi = mid - 1;
-                       } else { lo = mid + 1; }
+                   // 1. Find the exact discrete timestamps immediately before and after currentTime
+                   let prevTime = -1;
+                   let nextTime = Infinity;
+                   for (let i = 0; i < frameAnnotations.length; i++) {
+                       const t = frameAnnotations[i].timestamp;
+                       if (t <= currentTime && t > prevTime) prevTime = t;
+                   }
+                   for (let i = 0; i < frameAnnotations.length; i++) {
+                       const t = frameAnnotations[i].timestamp;
+                       if (t > currentTime) { nextTime = t; break; } // Sorted array, so first match is smallest nextTime
                    }
 
-                   // Collect all candidates in the tracking window
-                   const pastAnnos = [], futureAnnos = [];
-                   for (let k = startIdx; k < frameAnnotations.length; k++) {
-                       const a = frameAnnotations[k];
-                       if (a.timestamp > currentTime + MAX_TRACK_WINDOW) break;
-                       if (a.timestamp <= currentTime) pastAnnos.push(a);
-                       else futureAnnos.push(a);
-                   }
+                   // 2. Gather annotations exactly at those two timestamps
+                   const prevAnnos = frameAnnotations.filter(a => a.timestamp === prevTime);
+                   const nextAnnos = frameAnnotations.filter(a => a.timestamp === nextTime);
 
-                   const drawnAnnos = new Set(); // Prevent drawing same future target twice
+                   const renderBoxes = [];
+                   const drawnNextAnnos = new Set(); // Prevent drawing same future target twice
 
-                   pastAnnos.forEach(past => {
+                   prevAnnos.forEach(past => {
                        // Find best matching future annotation for the exact same class
                        let bestFuture = null, bestDist = Infinity;
-                       // Allow connecting boxes that moved up to ~2.5x their own size
-                       const maxAllowedDist = Math.max(past.w, past.h) * 2.5;
+                       // Allow connecting boxes that moved across the screen gracefully
+                       // We use up to 30% of the raw video width as a max tracking radius
+                       const maxAllowedDist = rawVidW * 0.3; 
                        
-                       for (const fut of futureAnnos) {
-                           if (fut.label !== past.label || drawnAnnos.has(fut)) continue;
-                           const dist = getCenterDist(past, fut);
-                           if (dist < maxAllowedDist && dist < bestDist) {
-                               bestDist = dist;
-                               bestFuture = fut;
+                       if (nextTime - prevTime <= MAX_TRACK_WINDOW) {
+                           for (const nxt of nextAnnos) {
+                               if (nxt.label !== past.label || drawnNextAnnos.has(nxt)) continue;
+                               const dist = getCenterDist(past, nxt);
+                               if (dist < maxAllowedDist && dist < bestDist) {
+                                   bestDist = dist;
+                                   bestFuture = nxt;
+                               }
                            }
                        }
 
-                       let renderBox = { ...past };
                        if (bestFuture) {
-                           drawnAnnos.add(bestFuture);
+                           drawnNextAnnos.add(bestFuture);
                            // 🚀 Interpolate seamlessly!
-                           const timeGap = bestFuture.timestamp - past.timestamp;
-                           const progress = (currentTime - past.timestamp) / timeGap;
-                           renderBox.x = lerp(past.x, bestFuture.x, progress);
-                           renderBox.y = lerp(past.y, bestFuture.y, progress);
-                           renderBox.w = lerp(past.w, bestFuture.w, progress);
-                           renderBox.h = lerp(past.h, bestFuture.h, progress);
+                           const progress = (currentTime - prevTime) / (nextTime - prevTime);
+                           renderBoxes.push({
+                               label: past.label,
+                               x: lerp(past.x, bestFuture.x, progress),
+                               y: lerp(past.y, bestFuture.y, progress),
+                               w: lerp(past.w, bestFuture.w, progress),
+                               h: lerp(past.h, bestFuture.h, progress)
+                           });
                        } else {
-                           // No future match (end of object's life). Only draw if very recent (<0.1s)
-                           // so we don't hold static boxes frozen on screen.
-                           if (currentTime - past.timestamp > 0.1) return;
+                           // No match in the future. Just draw it static, but hold it
+                           // for a generous 0.3s so it doesn't flicker instantly on final frames
+                           if (currentTime - prevTime <= 0.3) {
+                               renderBoxes.push({ ...past });
+                           }
                        }
-
-                       // Draw the interpolated (or recent) box
-                       const drawX = renderBox.x * scaleX, drawY = renderBox.y * scaleY;
-                       const drawW = renderBox.w * scaleX, drawH = renderBox.h * scaleY;
-                       if (drawW < 5 || drawH < 5) return;
-                       
-                       ctx.strokeStyle = '#a855f7';
-                       ctx.lineWidth = 2;
-                       ctx.strokeRect(drawX, drawY, drawW, drawH);
-                       
-                       const cleanLabel = renderBox.label.trim();
-                       const textW = ctx.measureText(cleanLabel).width + 16;
-                       ctx.fillStyle = 'rgba(168,85,247,0.85)';
-                       ctx.fillRect(drawX, Math.max(0, drawY - 22), textW, 22);
-                       ctx.fillStyle = '#FFFFFF';
-                       ctx.font = 'bold 11px monospace';
-                       ctx.fillText(cleanLabel, drawX + 8, Math.max(14, drawY - 6));
                    });
 
-                   // Draw any newly appearing objects that are extremely close (<0.1s away) 
-                   // but weren't matched to a past object yet
-                   futureAnnos.forEach(fut => {
-                       if (drawnAnnos.has(fut)) return;
-                       if (fut.timestamp - currentTime > 0.1) return; 
-                       
-                       const drawX = fut.x * scaleX, drawY = fut.y * scaleY;
-                       const drawW = fut.w * scaleX, drawH = fut.h * scaleY;
+                   // 4. Also draw any upcoming annotations that didn't match (new objects appearing)
+                   // IF they are extremely close in time (e.g., < 0.1s away)
+                   nextAnnos.forEach(nxt => {
+                       if (!drawnNextAnnos.has(nxt) && (nxt.timestamp - currentTime) <= 0.1) {
+                           renderBoxes.push({ ...nxt });
+                       }
+                   });
+
+                   // 5. Render all computed boxes
+                   renderBoxes.forEach(box => {
+                       const drawX = box.x * scaleX, drawY = box.y * scaleY;
+                       const drawW = box.w * scaleX, drawH = box.h * scaleY;
                        if (drawW < 5 || drawH < 5) return;
                        
                        ctx.strokeStyle = '#a855f7';
-                       ctx.lineWidth = 2;
+                       ctx.lineWidth = 3; // Slightly thicker for easier reading
                        ctx.strokeRect(drawX, drawY, drawW, drawH);
                        
-                       const cleanLabel = fut.label.trim();
+                       const cleanLabel = box.label.trim();
                        const textW = ctx.measureText(cleanLabel).width + 16;
                        ctx.fillStyle = 'rgba(168,85,247,0.85)';
                        ctx.fillRect(drawX, Math.max(0, drawY - 22), textW, 22);

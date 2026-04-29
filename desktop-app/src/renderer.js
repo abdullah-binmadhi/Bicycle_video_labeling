@@ -1429,7 +1429,7 @@ window.startAIOverlay = function() {
                    const scaleY = canvas.height / rawVidH;
                    
                    // ── Sync fix: Option C (Runtime Distance Tracking + Interpolation) ──
-                   const MAX_TRACK_WINDOW = 0.6; // Max seconds between frames to interpolate
+                   const MAX_TRACK_WINDOW = 2.0; // Max seconds between frames to interpolate
                    
                    const getCenterDist = (a, b) => {
                        const cx1 = a.x + a.w/2, cy1 = a.y + a.h/2;
@@ -1461,8 +1461,8 @@ window.startAIOverlay = function() {
                        // Find best matching future annotation for the exact same class
                        let bestFuture = null, bestDist = Infinity;
                        // Allow connecting boxes that moved across the screen gracefully
-                       // We use up to 30% of the raw video width as a max tracking radius
-                       const maxAllowedDist = rawVidW * 0.3; 
+                       // We use up to 60% of the raw video width as a max tracking radius
+                       const maxAllowedDist = rawVidW * 0.6; 
                        
                        if (nextTime - prevTime <= MAX_TRACK_WINDOW) {
                            for (const nxt of nextAnnos) {
@@ -1488,8 +1488,8 @@ window.startAIOverlay = function() {
                            });
                        } else {
                            // No match in the future. Just draw it static, but hold it
-                           // for a generous 0.3s so it doesn't flicker instantly on final frames
-                           if (currentTime - prevTime <= 0.3) {
+                           // for a generous 1.5s so it doesn't flicker instantly on final frames
+                           if (currentTime - prevTime <= 1.5) {
                                renderBoxes.push({ ...past });
                            }
                        }
@@ -3222,7 +3222,11 @@ window.chooseResumeModel = async function() {
 window.registerSurface = function(surfaceName) {
     if (!window.classState) window.classState = {};
     if (!window.classState[surfaceName]) {
-        const colors = ['#f43f5e', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#14b8a6'];
+        const colors = [
+            '#f43f5e', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#14b8a6',
+            '#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#0ea5e9', '#6366f1', '#a855f7',
+            '#d946ef', '#f43f5e', '#64748b', '#78716c', '#0284c7', '#059669', '#dc2626', '#ca8a04'
+        ];
         const numKeys = Object.keys(window.classState).length;
         window.classState[surfaceName] = {
             active: true,  // Start active so all classes appear on map immediately
@@ -3405,6 +3409,12 @@ window.updateMapState = function() {
         const activeData = geo.filter(pt =>
             window.classState[pt.surface] && window.classState[pt.surface].active
         );
+        const bgSet = new Set(['smooth_asphalt', 'asphalt', 'rough_asphalt', 'cobblestone', 'brick_paving']);
+        activeData.sort((a, b) => {
+            const aIsBg = bgSet.has(a.surface) ? 0 : 1;
+            const bIsBg = bgSet.has(b.surface) ? 0 : 1;
+            return aIsBg - bIsBg;
+        });
         for (const pt of activeData) {
             const state = window.classState[pt.surface];
             L.circleMarker([pt.lat, pt.lon], {
@@ -3414,7 +3424,7 @@ window.updateMapState = function() {
                 weight: 0.5,
                 opacity: 1,
                 fillOpacity: 0.7
-            }).bindPopup(`<b>${pt.surface}</b><br><span style="font-size:10px;opacity:0.6">${pt.source === 'anchor' ? '📍 Annotated frame' : '↩ Forward-filled'}</span>`)
+            }).bindPopup(`<b>${pt.surface}</b><br><span style="font-size:10px;opacity:0.6">${pt.source === 'anchor' ? '📍 Annotated frame' : '↩ Forward-filled'}</span><br><span style="font-size:11px;color:#67e8f9;font-family:monospace;margin-top:4px;display:inline-block;">📍 ${olcInstance.encode(pt.lat, pt.lon, 11)}</span>`)
               .addTo(geoLayerGroup);
         }
 
@@ -3425,6 +3435,12 @@ window.updateMapState = function() {
             window.classState[pt.surface] &&
             window.classState[pt.surface].active
         );
+        const bgSet = new Set(['smooth_asphalt', 'asphalt', 'rough_asphalt', 'cobblestone', 'brick_paving']);
+        anchorData.sort((a, b) => {
+            const aIsBg = bgSet.has(a.surface) ? 0 : 1;
+            const bIsBg = bgSet.has(b.surface) ? 0 : 1;
+            return aIsBg - bIsBg;
+        });
         for (const pt of anchorData) {
             const state = window.classState[pt.surface];
             L.circleMarker([pt.lat, pt.lon], {
@@ -3434,7 +3450,7 @@ window.updateMapState = function() {
                 weight: 1.5,
                 opacity: 1,
                 fillOpacity: 0.95
-            }).bindPopup(`<b>${pt.surface}</b><br><span style="font-size:10px;opacity:0.6">📍 Exact annotation</span>`)
+            }).bindPopup(`<b>${pt.surface}</b><br><span style="font-size:10px;opacity:0.6">📍 Exact annotation</span><br><span style="font-size:11px;color:#67e8f9;font-family:monospace;margin-top:4px;display:inline-block;">📍 ${olcInstance.encode(pt.lat, pt.lon, 11)}</span>`)
               .addTo(geoLayerGroup);
         }
         if (anchorData.length === 0) {
@@ -3482,7 +3498,8 @@ window.updateMapState = function() {
                 fillOpacity: 0.9
             }).bindPopup(
                 `<b>${runSurface}</b><br>` +
-                `<span style="font-size:10px;opacity:0.7">${runCount} IMU rows · ~${(runCount / 50).toFixed(1)}s event</span>`
+                `<span style="font-size:10px;opacity:0.7">${runCount} IMU rows · ~${(runCount / 50).toFixed(1)}s event</span><br>` +
+                `<span style="font-size:11px;color:#67e8f9;font-family:monospace;margin-top:4px;display:inline-block;">📍 ${olcInstance.encode(centLat, centLon, 11)}</span>`
             ).addTo(geoLayerGroup);
         };
 

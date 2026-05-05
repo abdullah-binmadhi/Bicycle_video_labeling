@@ -1,0 +1,9 @@
+torch
+torchvision
+ultralytics
+transformers
+opencv-python
+Pillow
+pandas
+numpy
+scikit-learn

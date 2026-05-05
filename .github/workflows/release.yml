@@ -1,0 +1,89 @@
+name: Build Release Artifacts
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch: {}
+
+jobs:
+  build-macos:
+    name: macOS build
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: desktop-app/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('desktop-app/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install and build UI
+        working-directory: desktop-app
+        run: |
+          npm ci
+          npm run build:css
+          npm run build
+
+      - name: Zip .app
+        working-directory: desktop-app
+        run: |
+          if [ -d "CycleSafe Studio.app" ]; then
+            zip -r CycleSafe_Studio_macos.zip "CycleSafe Studio.app"
+          else
+            echo "CycleSafe Studio.app not found"
+            exit 1
+          fi
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CycleSafe_Studio_macos
+          path: desktop-app/CycleSafe_Studio_macos.zip
+
+  build-windows:
+    name: Windows build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install and build UI
+        working-directory: desktop-app
+        run: |
+          npm ci
+          npm run build:css
+          REM Generating Windows build (electron-packager)
+          npx electron-packager . "CycleSafe Studio" --platform=win32 --arch=x64 --out=./build --overwrite
+
+      - name: Zip Windows artifact
+        working-directory: desktop-app
+        shell: bash
+        run: |
+          if [ -d "build" ]; then
+            cd build
+            zip -r CycleSafe_Studio_windows.zip . || true
+            mv CycleSafe_Studio_windows.zip ../ || true
+            cd ..
+          else
+            echo "Windows build folder not found"
+            exit 1
+          fi
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CycleSafe_Studio_windows
+          path: desktop-app/CycleSafe_Studio_windows.zip

@@ -1645,6 +1645,8 @@ window.setGeoViewMode = function(mode) {
             btn.classList.add('border-[#333]', 'text-slate-500');
         }
     });
+    // Sync the split-button label to reflect the active mode
+    if (window.syncExportLabel) window.syncExportLabel(mode);
     window.updateMapState();
 };
 
@@ -2013,27 +2015,191 @@ window._loadGeospatialFromPath = function(filePath) {
     }
 };
 
-window.exportGeospatialCSV = async function() {
+// ─────────────────────────────────────────────────────────────────────────────
+// GEOSPATIAL EXPORT — Split-Button System
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Pure data-extraction utility. Returns an array of row objects for the CSV,
+ * filtered by the currently active classState and the requested mode.
+ *
+ * @param {'all'|'anchors'|'clusters'} mode
+ * @returns {{ lat, lon, surface, plusCode, source?, eventSize? }[]}
+ */
+window.generateFilteredData = function(mode) {
+    const geo = window.currentGeoData || [];
+    const cs  = window.classState || {};
+
+    // Helper: is a surface class currently checked in the legend?
+    const isActive = (surface) => cs[surface] && cs[surface].active;
+
+    if (mode === 'anchors') {
+        // Only exact annotated frame rows
+        return geo
+            .filter(pt => pt.source === 'anchor' && isActive(pt.surface))
+            .map(pt => ({ lat: pt.lat, lon: pt.lon, surface: pt.surface, plusCode: pt.plusCode || 'N/A', source: 'anchor' }));
+    }
+
+    if (mode === 'clusters') {
+        // One centroid row per contiguous hazard-class run (mirrors updateMapState clusters logic)
+        const HAZARD_CLASSES = new Set([
+            'pothole_cluster', 'potholes', 'rail_tracks', 'crack',
+            'uneven_surface', 'metal_grating', 'cobblestone', 'brick_paving',
+            'rough_asphalt', 'manhole', 'drain', 'water_puddle'
+        ]);
+
+        const centroids = [];
+        let runSurface = null;
+        let runLats = [], runLons = [], runCount = 0;
+
+        const emitCluster = () => {
+            if (!runSurface || runCount === 0) return;
+            if (!isActive(runSurface)) return;
+            const centLat = runLats.reduce((a, b) => a + b, 0) / runLats.length;
+            const centLon = runLons.reduce((a, b) => a + b, 0) / runLons.length;
+            const plusCode = (typeof olcInstance !== 'undefined')
+                ? olcInstance.encode(centLat, centLon, 11)
+                : 'N/A';
+            centroids.push({ lat: centLat, lon: centLon, surface: runSurface, plusCode, source: 'cluster', eventSize: runCount });
+        };
+
+        for (const pt of geo) {
+            const isHazard = HAZARD_CLASSES.has(pt.surface);
+            const active   = isActive(pt.surface);
+
+            if (isHazard && active) {
+                if (pt.surface !== runSurface) {
+                    emitCluster();
+                    runSurface = pt.surface;
+                    runLats    = [pt.lat];
+                    runLons    = [pt.lon];
+                    runCount   = 1;
+                } else {
+                    runLats.push(pt.lat);
+                    runLons.push(pt.lon);
+                    runCount++;
+                }
+            } else {
+                emitCluster();
+                runSurface = null;
+                runLats = []; runLons = []; runCount = 0;
+            }
+        }
+        emitCluster(); // flush last run
+
+        return centroids;
+    }
+
+    // Default: 'all' — every IMU row that passes the class filter
+    return geo
+        .filter(pt => isActive(pt.surface))
+        .map(pt => ({ lat: pt.lat, lon: pt.lon, surface: pt.surface, plusCode: pt.plusCode || 'N/A', source: pt.source || 'unknown' }));
+};
+
+/**
+ * Builds a CSV string from an array of row objects.
+ * Cluster rows include an extra EventSize column.
+ *
+ * @param {{ lat, lon, surface, plusCode, source, eventSize? }[]} rows
+ * @param {boolean} isClusters - add EventSize column
+ * @returns {string}
+ */
+function buildCSVString(rows, isClusters) {
+    const header = isClusters
+        ? 'Latitude,Longitude,Surface,PlusCode,Source,EventSize\n'
+        : 'Latitude,Longitude,Surface,PlusCode,Source\n';
+    const lines = rows.map(r => {
+        const base = `${r.lat},${r.lon},${r.surface},${r.plusCode},${r.source}`;
+        return isClusters ? `${base},${r.eventSize ?? ''}` : base;
+    });
+    return header + lines.join('\n');
+}
+
+/**
+ * Main export entry point.
+ * Called from both the main split-button (no argument = WYSIWYG) and the
+ * dropdown override items (explicit mode string passed).
+ *
+ * @param {'all'|'anchors'|'clusters'|undefined} modeOverride
+ */
+window.exportGeospatialCSV = async function(modeOverride) {
     const { ipcRenderer } = require('electron');
+
     if (!window.currentGeoData || window.currentGeoData.length === 0) {
-        showToast('No geospatial data to export!', 'error');
+        showToast('No geospatial data loaded — nothing to export.', 'error');
         return;
     }
-    
+
+    // Determine effective mode: use the override if given, else the current map mode
+    const effectiveMode = modeOverride || window.geoViewMode || 'all';
+
+    // Extract filtered rows
+    const rows = window.generateFilteredData(effectiveMode);
+
+    if (rows.length === 0) {
+        showToast(`No data points match the current filter for "${effectiveMode}" mode.`, 'error');
+        return;
+    }
+
+    // Build CSV content
+    const csvContent = buildCSVString(rows, effectiveMode === 'clusters');
+
     try {
-        let csvContent = 'Latitude,Longitude,Surface,PlusCode\n';
-        for (const pt of window.currentGeoData) {
-            csvContent += `${pt.lat},${pt.lon},${pt.surface},${pt.plusCode}\n`;
-        }
-        
         const savePath = await ipcRenderer.invoke('dialog:saveCSV');
-        if (!savePath) return; // User canceled
-        
+        if (!savePath) return; // User cancelled dialog
+
         require('fs').writeFileSync(savePath, csvContent, 'utf-8');
-        showToast('CSV Exported Successfully!', 'success');
+
+        const modeLabels = { all: 'All Raw Points', anchors: 'Anchors Only', clusters: 'Event Clusters' };
+        showToast(`✅ Exported ${rows.length} rows (${modeLabels[effectiveMode]})`, 'success');
     } catch (err) {
         showToast('Error saving CSV: ' + err.message, 'error');
     }
+};
+
+// ─── Split-Button menu helpers ────────────────────────────────────────────────
+
+/** Opens or closes the export dropdown, rotating the chevron icon. */
+window.toggleExportMenu = function(event) {
+    event.stopPropagation();
+    const dropdown = document.getElementById('export-dropdown');
+    const chevron  = document.getElementById('export-chevron');
+    if (!dropdown) return;
+    const isOpen = !dropdown.classList.contains('hidden');
+    if (isOpen) {
+        dropdown.classList.add('hidden');
+        if (chevron) chevron.style.transform = '';
+    } else {
+        dropdown.classList.remove('hidden');
+        if (chevron) chevron.style.transform = 'rotate(180deg)';
+    }
+};
+
+/** Closes the dropdown (called from menu item onclick). */
+window.closeExportMenu = function() {
+    const dropdown = document.getElementById('export-dropdown');
+    const chevron  = document.getElementById('export-chevron');
+    if (dropdown) dropdown.classList.add('hidden');
+    if (chevron)  chevron.style.transform = '';
+};
+
+// Close dropdown on any outside click
+document.addEventListener('click', function(e) {
+    const wrapper = document.getElementById('export-split-wrapper');
+    if (wrapper && !wrapper.contains(e.target)) {
+        window.closeExportMenu();
+    }
+});
+
+/**
+ * Keeps the main split-button label in sync with the current map view mode.
+ * Called by setGeoViewMode whenever the user toggles All / Anchors / Clusters.
+ */
+window.syncExportLabel = function(mode) {
+    const label = document.getElementById('export-mode-label');
+    if (!label) return;
+    const labelMap = { all: 'Export View', anchors: 'Export Anchors', clusters: 'Export Clusters' };
+    label.textContent = labelMap[mode] || 'Export View';
 };
 
 // --- Scrubber & FFT Mock ---

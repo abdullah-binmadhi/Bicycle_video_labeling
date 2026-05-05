@@ -1536,15 +1536,82 @@
   <div class="border border-[#222] bg-[#0c0c0c] p-6 w-full">
     <div class="flex justify-between items-center mb-4 border-b border-[#333] pb-2">
         <h3 class="text-cyan-400 font-medium tracking-widest text-xs uppercase">Geospatial Distribution (GPS Classification Mapping)</h3>
-        <div class="flex items-center gap-4">
-            <button onclick="window.exportGeospatialCSV()" class="btn btn-xs rounded-none border border-emerald-500/30 bg-emerald-900/20 text-emerald-400 hover:bg-emerald-900/40 font-mono tracking-widest uppercase transition-colors">
-                <i class="fa-solid fa-download mr-2"></i>Export CSV
-            </button>
-            <button onclick="window.scrapeGeospatialFolder()" class="btn btn-xs rounded-none border border-purple-500/30 bg-purple-900/20 text-purple-400 hover:bg-purple-900/40 font-mono tracking-widest uppercase transition-colors">
-                <i class="fa-solid fa-folder-open mr-2"></i>Scrape GPS Folder
+        <div class="flex items-center gap-3 flex-wrap">
+
+            <!-- ══ SPLIT EXPORT BUTTON ══ -->
+            <div class="relative" id="export-split-wrapper">
+                <div class="flex" role="group">
+                    <!-- Main action: export using current map mode + active filters (WYSIWYG) -->
+                    <button
+                        id="btn-export-main"
+                        onclick="window.exportGeospatialCSV()"
+                        title="Export using current map view mode and active class filters"
+                        class="btn btn-xs rounded-none border border-emerald-500/30 bg-emerald-900/20 text-emerald-400 hover:bg-emerald-900/40 font-mono tracking-widest uppercase transition-colors pr-2" style="border-radius:0; border-right-width:0;">
+                        <i class="fa-solid fa-download mr-1.5"></i>
+                        <span id="export-mode-label">Export View</span>
+                    </button>
+                    <!-- Arrow to open override dropdown -->
+                    <button
+                        id="btn-export-arrow"
+                        onclick="window.toggleExportMenu(event)"
+                        title="Choose a specific export mode"
+                        class="btn btn-xs border border-emerald-500/30 bg-emerald-900/20 text-emerald-400 hover:bg-emerald-500/30 font-mono px-2 transition-colors" style="border-radius:0;">
+                        <svg id="export-chevron" xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                </div>
+                <!-- Dropdown (hidden by default, positioned below right-aligned) -->
+                <div
+                    id="export-dropdown"
+                    class="hidden absolute right-0 top-full mt-1 w-56 bg-[#0a0a0a] border border-[#333] shadow-[0_8px_32px_rgba(0,0,0,0.7)] z-[200] overflow-hidden"
+                    role="menu">
+                    <div class="px-3 py-2 border-b border-[#222]">
+                        <p class="text-[9px] uppercase tracking-widest text-slate-500 font-bold">Export Mode Override</p>
+                        <p class="text-[9px] text-slate-600 mt-0.5 leading-tight">Active class filters always apply</p>
+                    </div>
+                    <!-- Anchors Only -->
+                    <button
+                        onclick="window.exportGeospatialCSV('anchors'); window.closeExportMenu()"
+                        class="w-full flex items-start gap-2.5 px-3 py-2.5 text-left hover:bg-emerald-900/20 transition-colors border-b border-[#1a1a1a]"
+                        role="menuitem">
+                        <span class="text-emerald-400 mt-0.5 text-sm leading-none">📍</span>
+                        <div>
+                            <p class="text-[10px] font-mono font-bold text-emerald-300 uppercase tracking-widest">Anchors Only</p>
+                            <p class="text-[9px] text-slate-500 mt-0.5 leading-tight">Exact annotated frames — highest accuracy</p>
+                        </div>
+                    </button>
+                    <!-- All Raw Points -->
+                    <button
+                        onclick="window.exportGeospatialCSV('all'); window.closeExportMenu()"
+                        class="w-full flex items-start gap-2.5 px-3 py-2.5 text-left hover:bg-blue-900/20 transition-colors border-b border-[#1a1a1a]"
+                        role="menuitem">
+                        <span class="text-blue-400 mt-0.5 text-sm leading-none">⬤</span>
+                        <div>
+                            <p class="text-[10px] font-mono font-bold text-blue-300 uppercase tracking-widest">All Raw Points</p>
+                            <p class="text-[9px] text-slate-500 mt-0.5 leading-tight">Every IMU row incl. forward-filled data</p>
+                        </div>
+                    </button>
+                    <!-- Event Clusters -->
+                    <button
+                        onclick="window.exportGeospatialCSV('clusters'); window.closeExportMenu()"
+                        class="w-full flex items-start gap-2.5 px-3 py-2.5 text-left hover:bg-amber-900/20 transition-colors"
+                        role="menuitem">
+                        <span class="text-amber-400 mt-0.5 text-sm leading-none">◎</span>
+                        <div>
+                            <p class="text-[10px] font-mono font-bold text-amber-300 uppercase tracking-widest">Event Clusters</p>
+                            <p class="text-[9px] text-slate-500 mt-0.5 leading-tight">One centroid pin per contiguous event</p>
+                        </div>
+                    </button>
+                </div>
+            </div>
+            <!-- ══ END SPLIT EXPORT BUTTON ══ -->
+
+            <button onclick="window.scrapeGeospatialFolder()" class="btn btn-xs rounded-none border border-[#333] bg-[#111] text-slate-400 hover:bg-[#1a1a1a] hover:text-white font-mono tracking-widest uppercase transition-colors">
+                <i class="fa-solid fa-folder-open mr-1.5"></i>Scrape GPS Folder
             </button>
             <button onclick="window.loadGeospatialCSV()" class="btn btn-xs rounded-none border border-cyan-500/30 bg-cyan-900/20 text-cyan-400 hover:bg-cyan-900/40 font-mono tracking-widest uppercase transition-colors">
-                <i class="fa-solid fa-upload mr-2"></i>Upload GPS CSV
+                <i class="fa-solid fa-upload mr-1.5"></i>Upload GPS CSV
             </button>
             <p class="text-xs text-slate-500 font-mono" id="geo-stats-text">Google Plus Codes mapping enabled</p>
         </div>

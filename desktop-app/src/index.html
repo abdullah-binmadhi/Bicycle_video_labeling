@@ -883,6 +883,38 @@
               </div>
             </div>
 
+            <!-- Server OWLv2 Configuration -->
+            <div class="bg-[#0c0c0c] border border-[#333] p-4 rounded-none mb-6">
+              <div class="flex items-center gap-3 mb-4">
+                <input type="checkbox" id="useServerOWL" class="checkbox checkbox-sm checkbox-primary" onchange="document.getElementById('serverConfigSection').classList.toggle('hidden', !this.checked)">
+                <label for="useServerOWL" class="text-xs uppercase tracking-widest font-bold text-cyan-400 cursor-pointer">Use Remote Server OWLv2</label>
+              </div>
+              
+              <div id="serverConfigSection" class="hidden space-y-3 pl-6 border-l border-[#555]">
+                <div class="flex flex-col">
+                  <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2">Server Endpoint URL</label>
+                  <input type="text" id="serverEndpoint" placeholder="https://your-api.com/owlv2" class="input input-sm w-full bg-black border-[#333] focus:border-cyan-400 text-white rounded-none" value="" onchange="window.saveServerCredentials()">
+                  <p class="text-[9px] text-[#666] mt-1">e.g., https://api.example.com/inference/owlv2</p>
+                </div>
+                
+                <div class="flex flex-col">
+                  <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2">API Key</label>
+                  <input type="password" id="serverApiKey" placeholder="PkfFQ9p75DZ3iz" class="input input-sm w-full bg-black border-[#333] focus:border-cyan-400 text-white rounded-none" value="" onchange="window.saveServerCredentials()">
+                  <p class="text-[9px] text-[#666] mt-1">Your API key for authentication</p>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                  <input type="checkbox" id="rememberServerCreds" class="checkbox checkbox-xs checkbox-primary" onchange="window.saveServerCredentials()">
+                  <label for="rememberServerCreds" class="text-[10px] uppercase tracking-widest text-[#888888] cursor-pointer">Remember Credentials</label>
+                </div>
+                
+                <div class="bg-black border border-[#444] p-2 rounded-none mt-2">
+                  <p class="text-[9px] text-[#888] leading-tight">✓ Request will include frame data and target classes as JSON</p>
+                  <p class="text-[9px] text-[#888] leading-tight">✓ Expects response: {"detections": [{"bbox": [...], "class": "...", "conf": ...}]}</p>
+                </div>
+              </div>
+            </div>
+
             <!-- Two-Stage Toggle removed for Ensemble Mode -->
 
             <!-- Execution Buttons & Controls -->
@@ -1616,13 +1648,13 @@
             <p class="text-xs text-slate-500 font-mono" id="geo-stats-text">Google Plus Codes mapping enabled</p>
         </div>
     </div>
-    <div class="flex flex-col md:flex-row gap-4 w-full h-[400px]">
+    <div class="flex flex-col md:flex-row gap-4 w-full h-[600px]">
         <div class="flex-1 relative bg-[#111] z-0 overflow-hidden border border-[#333]" id="analytics-map">
             <!-- Leaflet Map Container -->
         </div>
 
         <!-- External Interactive Map Legend -->
-        <div class="w-full md:w-64 bg-[#0c0c0c] border border-[#333] p-4 overflow-y-auto hidden flex-col shadow-inner" id="map-legend-container">
+        <div class="w-full md:w-80 bg-[#0c0c0c] border border-[#333] p-4 overflow-y-auto hidden flex-col shadow-inner" id="map-legend-container">
             <div class="flex justify-between items-center mb-3 border-b border-[#333] pb-2">
                 <h3 class="text-xs uppercase tracking-widest font-bold text-emerald-400">Filters</h3>
                 <div class="flex gap-2">

@@ -3019,8 +3019,8 @@
   .h-\[250px\] {
     height: 250px;
   }
-  .h-\[400px\] {
-    height: 400px;
+  .h-\[600px\] {
+    height: 600px;
   }
   .h-full {
     height: 100%;
@@ -5435,9 +5435,9 @@
       grid-column: span 2 / span 2;
     }
   }
-  .md\:w-64 {
+  .md\:w-80 {
     @media (width >= 48rem) {
-      width: calc(var(--spacing) * 64);
+      width: calc(var(--spacing) * 80);
     }
   }
   .md\:grid-cols-2 {

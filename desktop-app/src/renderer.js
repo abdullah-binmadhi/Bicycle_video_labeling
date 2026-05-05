@@ -388,6 +388,24 @@ function _runScript(scriptKey) {
   // Parse custom args if it's the extract step
   let args = ['-u', targetScript];
   if (scriptKey === 'ensemble') {
+     const useServer = document.getElementById('useServerOWL') ? document.getElementById('useServerOWL').checked : false;
+     
+     if (useServer) {
+         // Server-based OWLv2 inference
+         const endpoint = document.getElementById('serverEndpoint') ? document.getElementById('serverEndpoint').value.trim() : '';
+         const apiKey = document.getElementById('serverApiKey') ? document.getElementById('serverApiKey').value.trim() : '';
+         
+         if (!endpoint || !apiKey) {
+             logToConsole("[WARN] Please provide both Server Endpoint and API Key.\n", true);
+             return;
+         }
+         
+         // Pass server mode flag
+         args.push('--use_server');
+         args.push('--server_endpoint', endpoint);
+         args.push('--server_api_key', apiKey);
+     }
+     
      const dirPath = document.getElementById('annoDirPath') ? document.getElementById('annoDirPath').value : "";
      if(!dirPath) {
          logToConsole("[WARN] Please select an Image Extracted Folder first.\n", true);
@@ -3617,6 +3635,40 @@ window.setPrecisionFilter = function(len) {
         window.updateMapState();
     }
 };
+
+// ─ Server OWLv2 Credentials Management ────────────────────────────────────
+window.saveServerCredentials = function() {
+    const endpoint = document.getElementById('serverEndpoint').value.trim();
+    const apiKey = document.getElementById('serverApiKey').value.trim();
+    const remember = document.getElementById('rememberServerCreds').checked;
+    
+    if (remember && endpoint && apiKey) {
+        localStorage.setItem('owlv2_server_endpoint', endpoint);
+        localStorage.setItem('owlv2_server_api_key', apiKey);
+        logToConsole('[INFO] Server credentials saved locally.\n');
+    } else if (!remember) {
+        localStorage.removeItem('owlv2_server_endpoint');
+        localStorage.removeItem('owlv2_server_api_key');
+    }
+};
+
+window.loadServerCredentials = function() {
+    const savedEndpoint = localStorage.getItem('owlv2_server_endpoint');
+    const savedApiKey = localStorage.getItem('owlv2_server_api_key');
+    
+    if (savedEndpoint && savedApiKey) {
+        const endpointEl = document.getElementById('serverEndpoint');
+        const apiKeyEl = document.getElementById('serverApiKey');
+        const rememberEl = document.getElementById('rememberServerCreds');
+        
+        if (endpointEl) endpointEl.value = savedEndpoint;
+        if (apiKeyEl) apiKeyEl.value = savedApiKey;
+        if (rememberEl) rememberEl.checked = true;
+    }
+};
+
+// Auto-load saved credentials on page load
+document.addEventListener('DOMContentLoaded', window.loadServerCredentials);
 
 window.updateMapState = function() {
     if (!geoLayerGroup || !analyticsMap) return;

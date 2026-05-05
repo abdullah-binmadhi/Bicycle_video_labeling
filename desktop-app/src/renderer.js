@@ -2037,7 +2037,7 @@ window.generateFilteredData = function(mode) {
         // Only exact annotated frame rows
         return geo
             .filter(pt => pt.source === 'anchor' && isActive(pt.surface))
-            .map(pt => ({ lat: pt.lat, lon: pt.lon, surface: pt.surface, plusCode: pt.plusCode || 'N/A', source: 'anchor' }));
+            .map(pt => ({ lat: pt.lat, lon: pt.lon, surface: pt.surface, plusCode: pt.plusCode || 'N/A' }));
     }
 
     if (mode === 'clusters') {
@@ -2060,7 +2060,7 @@ window.generateFilteredData = function(mode) {
             const plusCode = (typeof olcInstance !== 'undefined')
                 ? olcInstance.encode(centLat, centLon, 11)
                 : 'N/A';
-            centroids.push({ lat: centLat, lon: centLon, surface: runSurface, plusCode, source: 'cluster', eventSize: runCount });
+            centroids.push({ lat: centLat, lon: centLon, surface: runSurface, plusCode, eventSize: runCount });
         };
 
         for (const pt of geo) {
@@ -2093,23 +2093,23 @@ window.generateFilteredData = function(mode) {
     // Default: 'all' — every IMU row that passes the class filter
     return geo
         .filter(pt => isActive(pt.surface))
-        .map(pt => ({ lat: pt.lat, lon: pt.lon, surface: pt.surface, plusCode: pt.plusCode || 'N/A', source: pt.source || 'unknown' }));
+        .map(pt => ({ lat: pt.lat, lon: pt.lon, surface: pt.surface, plusCode: pt.plusCode || 'N/A' }));
 };
 
 /**
  * Builds a CSV string from an array of row objects.
- * Cluster rows include an extra EventSize column.
+ * Cluster rows include an extra EventSize column (row count per event).
  *
- * @param {{ lat, lon, surface, plusCode, source, eventSize? }[]} rows
+ * @param {{ lat, lon, surface, plusCode, eventSize? }[]} rows
  * @param {boolean} isClusters - add EventSize column
  * @returns {string}
  */
 function buildCSVString(rows, isClusters) {
     const header = isClusters
-        ? 'Latitude,Longitude,Surface,PlusCode,Source,EventSize\n'
-        : 'Latitude,Longitude,Surface,PlusCode,Source\n';
+        ? 'Latitude,Longitude,Surface,PlusCode,EventSize\n'
+        : 'Latitude,Longitude,Surface,PlusCode\n';
     const lines = rows.map(r => {
-        const base = `${r.lat},${r.lon},${r.surface},${r.plusCode},${r.source}`;
+        const base = `${r.lat},${r.lon},${r.surface},${r.plusCode}`;
         return isClusters ? `${base},${r.eventSize ?? ''}` : base;
     });
     return header + lines.join('\n');

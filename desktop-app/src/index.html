@@ -1669,6 +1669,17 @@
                   </div>
                 </label>
             </div>
+            
+            <!-- Code Length Filter -->
+            <div class="mb-4 pb-3 border-b border-[#333]">
+                <h3 class="text-xs uppercase tracking-widest font-mono text-cyan-400 mb-2">Code Length</h3>
+                <div class="flex gap-2">
+                    <button id="prec-filter-all" onclick="window.setPrecisionFilter('all')" class="flex-1 btn btn-xs rounded-none font-mono uppercase border border-fuchsia-400 text-fuchsia-300 bg-fuchsia-900/30">All</button>
+                    <button id="prec-filter-10" onclick="window.setPrecisionFilter(10)" class="flex-1 btn btn-xs rounded-none font-mono uppercase border border-[#333] text-slate-500">10</button>
+                    <button id="prec-filter-8" onclick="window.setPrecisionFilter(8)" class="flex-1 btn btn-xs rounded-none font-mono uppercase border border-[#333] text-slate-500">8</button>
+                    <button id="prec-filter-6" onclick="window.setPrecisionFilter(6)" class="flex-1 btn btn-xs rounded-none font-mono uppercase border border-[#333] text-slate-500">6</button>
+                </div>
+            </div>
             <style>
               input:checked ~ .dot {
                 transform: translateX(100%);

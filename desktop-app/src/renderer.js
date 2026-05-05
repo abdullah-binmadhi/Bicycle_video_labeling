@@ -3568,6 +3568,29 @@ function createCrossSectionPopup(pt) {
 }
 
 
+window.precisionFilter = 'all';
+
+window.setPrecisionFilter = function(len) {
+    window.precisionFilter = len;
+    
+    // Update UI button states if they exist
+    ['all', 10, 8, 6].forEach(val => {
+        const btn = document.getElementById(`prec-filter-${val}`);
+        if (!btn) return;
+        if (val === len) {
+            btn.classList.add('border-fuchsia-400', 'text-fuchsia-300', 'bg-fuchsia-900/30');
+            btn.classList.remove('border-[#333]', 'text-slate-500');
+        } else {
+            btn.classList.remove('border-fuchsia-400', 'text-fuchsia-300', 'bg-fuchsia-900/30');
+            btn.classList.add('border-[#333]', 'text-slate-500');
+        }
+    });
+
+    if (typeof window.updateMapState === 'function') {
+        window.updateMapState();
+    }
+};
+
 window.updateMapState = function() {
     if (!geoLayerGroup || !analyticsMap) return;
     analyticsMap.removeLayer(geoLayerGroup);
@@ -3636,9 +3659,23 @@ window.updateMapState = function() {
 
     } else if (mode === 'all') {
         // ── ALL MODE: every IMU row as a small dot ────────────────────────────
-        const activeData = geo.filter(pt =>
+        let activeData = geo.filter(pt =>
             window.classState[pt.surface] && window.classState[pt.surface].active
         );
+        
+        if (window.precisionFilter && window.precisionFilter !== 'all') {
+            const grouped = {};
+            for (const pt of activeData) {
+                const code = pt.plusCode && pt.plusCode !== 'N/A' ? pt.plusCode : String(Math.random());
+                const truncLength = typeof window.precisionFilter === 'number' ? window.precisionFilter : 8;
+                const truncated = code.substring(0, truncLength);
+                if (!grouped[truncated]) {
+                    grouped[truncated] = { ...pt, plusCode: truncated };
+                }
+            }
+            activeData = Object.values(grouped);
+        }
+
         const bgSet = new Set(['smooth_asphalt', 'asphalt', 'rough_asphalt', 'cobblestone', 'brick_paving']);
         activeData.sort((a, b) => {
             const aIsBg = bgSet.has(a.surface) ? 0 : 1;
@@ -3660,11 +3697,25 @@ window.updateMapState = function() {
 
     } else if (mode === 'anchors') {
         // ── ANCHORS MODE: only the exact annotated frame positions ────────────
-        const anchorData = geo.filter(pt =>
+        let anchorData = geo.filter(pt =>
             pt.source === 'anchor' &&
             window.classState[pt.surface] &&
             window.classState[pt.surface].active
         );
+
+        if (window.precisionFilter && window.precisionFilter !== 'all') {
+            const grouped = {};
+            for (const pt of anchorData) {
+                const code = pt.plusCode && pt.plusCode !== 'N/A' ? pt.plusCode : String(Math.random());
+                const truncLength = typeof window.precisionFilter === 'number' ? window.precisionFilter : 8;
+                const truncated = code.substring(0, truncLength);
+                if (!grouped[truncated]) {
+                    grouped[truncated] = { ...pt, plusCode: truncated };
+                }
+            }
+            anchorData = Object.values(grouped);
+        }
+
         const bgSet = new Set(['smooth_asphalt', 'asphalt', 'rough_asphalt', 'cobblestone', 'brick_paving']);
         anchorData.sort((a, b) => {
             const aIsBg = bgSet.has(a.surface) ? 0 : 1;

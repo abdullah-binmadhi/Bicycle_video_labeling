@@ -13,6 +13,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Build vendored venv and collect app code
+        run: |
+          chmod +x ./scripts/build-venv.sh
+          ./scripts/build-venv.sh
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -26,28 +36,43 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
 
-      - name: Install and build UI
+      - name: Install Node and build UI assets
         working-directory: desktop-app
         run: |
           npm ci
           npm run build:css
-          npm run build
 
-      - name: Zip .app
+      - name: Package macOS (arm64)
         working-directory: desktop-app
         run: |
-          if [ -d "CycleSafe Studio.app" ]; then
-            zip -r CycleSafe_Studio_macos.zip "CycleSafe Studio.app"
+          npx electron-packager . "CycleSafe Studio" --platform=darwin --arch=arm64 --icon=assets/icon.icns --out=./build --overwrite
+          if [ -d "build/CycleSafe Studio-darwin-arm64/CycleSafe Studio.app" ]; then
+            mv "build/CycleSafe Studio-darwin-arm64/CycleSafe Studio.app" "CycleSafe Studio-darwin-arm64.app"
+            zip -r CycleSafe_Studio_macos_arm64.zip "CycleSafe Studio-darwin-arm64.app"
           else
-            echo "CycleSafe Studio.app not found"
+            echo "arm64 .app not found"
             exit 1
           fi
 
-      - name: Upload macOS artifact
+      - name: Package macOS (x64)
+        working-directory: desktop-app
+        run: |
+          npx electron-packager . "CycleSafe Studio" --platform=darwin --arch=x64 --icon=assets/icon.icns --out=./build --overwrite
+          if [ -d "build/CycleSafe Studio-darwin-x64/CycleSafe Studio.app" ]; then
+            mv "build/CycleSafe Studio-darwin-x64/CycleSafe Studio.app" "CycleSafe Studio-darwin-x64.app"
+            zip -r CycleSafe_Studio_macos_x64.zip "CycleSafe Studio-darwin-x64.app"
+          else
+            echo "x64 .app not found"
+            exit 1
+          fi
+
+      - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
         with:
           name: CycleSafe_Studio_macos
-          path: desktop-app/CycleSafe_Studio_macos.zip
+          path: |
+            desktop-app/CycleSafe_Studio_macos_arm64.zip
+            desktop-app/CycleSafe_Studio_macos_x64.zip
 
   build-windows:
     name: Windows build

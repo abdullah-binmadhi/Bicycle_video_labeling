@@ -1,5 +1,45 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
+const fs = require('fs')
+const child_process = require('child_process')
+
+function getBundledPython() {
+  // When running inside a packaged .app, process.resourcesPath points to Contents/Resources
+  const resourceRoot = process.resourcesPath || path.join(__dirname, '..')
+  const candidates = [
+    path.join(resourceRoot, 'resources', 'venv', 'bin', 'python3'),
+    path.join(resourceRoot, 'venv', 'bin', 'python3'),
+    path.join(resourceRoot, 'resources', 'venv', 'bin', 'python')
+  ]
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c
+  }
+  return null
+}
+
+function startBundledPythonIfPresent() {
+  const py = getBundledPython()
+  if (!py) {
+    console.log('No bundled python found.')
+    return
+  }
+  const scriptPath = path.join(process.resourcesPath || __dirname, 'resources', 'app_code', 'run_inference.py')
+  if (!fs.existsSync(scriptPath)) {
+    console.log('Bundled python found but script not present:', scriptPath)
+    return
+  }
+  try {
+    const proc = child_process.spawn(py, [scriptPath], {
+      detached: true,
+      stdio: 'ignore',
+      cwd: path.dirname(scriptPath)
+    })
+    proc.unref()
+    console.log('Launched bundled python:', py, scriptPath)
+  } catch (e) {
+    console.error('Failed to launch bundled python', e)
+  }
+}
 
 const createWindow = () => {
   const win = new BrowserWindow({
@@ -77,6 +117,7 @@ ipcMain.handle('dialog:openVideo', async () => {
 
 app.whenReady().then(() => {
   createWindow()
+  startBundledPythonIfPresent()
 })
 
 app.on('window-all-closed', () => {

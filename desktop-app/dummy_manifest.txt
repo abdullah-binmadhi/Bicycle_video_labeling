@@ -1,3 +1,0 @@
-Manifest for Grounding DINO Pipeline
-Dataset CSV: dummy_output.csv
-Image Dir: dummy_imgs

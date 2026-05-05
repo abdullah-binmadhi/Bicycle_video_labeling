@@ -1,2 +1,0 @@
-image_id,label_code,class_name,xmin,ymin,xmax,ymax,score
-test,unknown,unknown,0,0,1,1,0.9

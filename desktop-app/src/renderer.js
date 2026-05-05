@@ -2035,9 +2035,23 @@ window.generateFilteredData = function(mode) {
 
     if (mode === 'anchors') {
         // Only exact annotated frame rows
-        return geo
-            .filter(pt => pt.source === 'anchor' && isActive(pt.surface))
-            .map(pt => ({ lat: pt.lat, lon: pt.lon, surface: pt.surface, plusCode: pt.plusCode || 'N/A' }));
+        let anchorData = geo
+            .filter(pt => pt.source === 'anchor' && isActive(pt.surface));
+
+        if (window.precisionFilter && window.precisionFilter !== 'all') {
+            const grouped = {};
+            for (const pt of anchorData) {
+                const code = pt.plusCode && pt.plusCode !== 'N/A' ? pt.plusCode : String(Math.random());
+                const truncLength = typeof window.precisionFilter === 'number' ? window.precisionFilter : 8;
+                const truncated = code.substring(0, truncLength);
+                if (!grouped[truncated]) {
+                    grouped[truncated] = { ...pt, plusCode: truncated };
+                }
+            }
+            anchorData = Object.values(grouped);
+        }
+
+        return anchorData.map(pt => ({ lat: pt.lat, lon: pt.lon, surface: pt.surface, plusCode: pt.plusCode || 'N/A' }));
     }
 
     if (mode === 'clusters') {
@@ -2091,9 +2105,22 @@ window.generateFilteredData = function(mode) {
     }
 
     // Default: 'all' — every IMU row that passes the class filter
-    return geo
-        .filter(pt => isActive(pt.surface))
-        .map(pt => ({ lat: pt.lat, lon: pt.lon, surface: pt.surface, plusCode: pt.plusCode || 'N/A' }));
+    let allData = geo.filter(pt => isActive(pt.surface));
+
+    if (window.precisionFilter && window.precisionFilter !== 'all') {
+        const grouped = {};
+        for (const pt of allData) {
+            const code = pt.plusCode && pt.plusCode !== 'N/A' ? pt.plusCode : String(Math.random());
+            const truncLength = typeof window.precisionFilter === 'number' ? window.precisionFilter : 8;
+            const truncated = code.substring(0, truncLength);
+            if (!grouped[truncated]) {
+                grouped[truncated] = { ...pt, plusCode: truncated };
+            }
+        }
+        allData = Object.values(grouped);
+    }
+
+    return allData.map(pt => ({ lat: pt.lat, lon: pt.lon, surface: pt.surface, plusCode: pt.plusCode || 'N/A' }));
 };
 
 /**

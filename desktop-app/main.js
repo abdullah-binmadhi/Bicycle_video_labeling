@@ -243,8 +243,10 @@ const ALLOWED_LABELS = {
     "speed_cushion": "131",
     "speed_table": "132",
     "bicycle_lane": "133",
-    "bicycle_lane": "134",
-    "asphalt": "135"
+    "bicycle_boulevard": "134",
+    "sidewalk": "135",
+    "shared_road": "136",
+    "asphalt": "137"
 };
 
 

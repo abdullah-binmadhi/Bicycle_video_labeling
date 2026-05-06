@@ -664,7 +664,22 @@
         "looking down at bicycle lane on the street from a bike",
         "a dashboard camera view of bicycle lane on the road"
     ],
-    "134 - asphalt": [
+    "133 - bicycle_boulevard": [
+        "a first-person POV video from a bicycle riding near bicycle boulevard",
+        "looking down at bicycle boulevard on the street from a bike",
+        "a dashboard camera view of bicycle boulevard on the road"
+    ],
+    "134 - sidewalk": [
+        "a first-person POV video from a bicycle riding near sidewalk",
+        "looking down at sidewalk on the street from a bike",
+        "a dashboard camera view of sidewalk on the road"
+    ],
+    "135 - shared_road": [
+        "a first-person POV video from a bicycle riding near shared road",
+        "looking down at shared road on the street from a bike",
+        "a dashboard camera view of shared road on the road"
+    ],
+    "136 - asphalt": [
         "a first-person POV video from a bicycle riding near asphalt.",
         "looking down at asphalt on the street from a bike.",
         "a dashboard camera view of asphalt on the road."

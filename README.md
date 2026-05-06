@@ -27,7 +27,7 @@ git clone https://github.com/abdullah-binmadhi/Bicycle_video_labeling.git
 #### 2. Install Machine Learning Dependencies
 *(Skip this if you are not running the ML pipeline components)*
 ```bash
-pip install transformers torch torchvision opencv-python Pillow pandas roboflow
+pip install transformers torch torchvision opencv-python Pillow pandas
 ```
 
 #### 3. Install App Dependencies

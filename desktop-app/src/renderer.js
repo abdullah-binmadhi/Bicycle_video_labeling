@@ -18,7 +18,6 @@ if (__dirname.includes('Contents/Resources/app')) {
 
 const scripts = {
   'extract': path.join(window.rootDir, 'data_pipeline/frame_extractor.py'),
-  'roboflow': path.join(window.rootDir, 'data_pipeline/roboflow_manager.py'),
   'ensemble': path.join(window.rootDir, 'data_pipeline/ensemble_auto_labeler.py'),
   'sync': path.join(window.rootDir, 'data_pipeline/synchronizer.py'),
   'merge_labels': path.join(window.rootDir, 'data_pipeline/merge_annotations.py')

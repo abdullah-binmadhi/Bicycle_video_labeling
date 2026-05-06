@@ -865,7 +865,17 @@
             <!-- Model Selection & Thresholds -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6 mt-2">
               <div class="flex flex-col">
-                 <label class="text-xs uppercase tracking-widest font-medium text-[#888888] mb-2">Model Size</label>
+                 <div class="flex items-center gap-2 mb-2">
+                    <label class="text-xs uppercase tracking-widest font-medium text-[#888888]">Model Size</label>
+                    <div class="dropdown dropdown-hover dropdown-bottom">
+                       <div tabindex="0" class="flex items-center justify-center w-4 h-4 rounded-full border border-[#888888] text-[#888888] text-[10px] cursor-help hover:text-cyan-400 hover:border-cyan-400 transition-colors">?</div>
+                       <div tabindex="0" class="dropdown-content z-[999] p-3 shadow-xl bg-[#1a1a1a] border border-[#333] rounded-md w-72 text-xs text-gray-300 mt-2">
+                          <p class="font-bold text-white mb-2 pb-1 border-b border-[#333]">Local vs Server Inference</p>
+                          <p class="mb-3 leading-relaxed"><span class="text-indigo-400 font-semibold uppercase tracking-widest text-[10px]">Local (Default):</span><br>Downloads model weights and uses your computer's CPU/GPU. Heavy on memory but works fully offline and is more private.</p>
+                          <p class="leading-relaxed"><span class="text-cyan-400 font-semibold uppercase tracking-widest text-[10px]">Server-Based:</span><br>Sends image frames to an external API (set below) to run inference on cloud GPUs. Extremely fast on any machine, but requires an active internet connection.</p>
+                       </div>
+                    </div>
+                 </div>
                  <select id="clipModelSelect" class="select select-sm w-full bg-black border-[#333] focus:border-indigo-400 text-white rounded-none">
                     <option value="google/owlv2-base-patch16-ensemble">OWLv2 Base (Faster)</option>
                     <option value="google/owlv2-large-patch14-ensemble" selected="">OWLv2 Large (Most Accurate)</option>

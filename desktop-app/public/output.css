@@ -105,6 +105,7 @@
     --leading-tight: 1.25;
     --leading-relaxed: 1.625;
     --radius-sm: 0.25rem;
+    --radius-md: 0.375rem;
     --radius-lg: 0.5rem;
     --drop-shadow-md: 0 3px 3px rgb(0 0 0 / 0.12);
     --animate-spin: spin 1s linear infinite;
@@ -2029,6 +2030,16 @@
   .start {
     inset-inline-start: var(--spacing);
   }
+  .dropdown-bottom {
+    @layer daisyui.l1.l2 {
+      --anchor-v: bottom;
+      .dropdown-content {
+        top: 100%;
+        bottom: auto;
+        transform-origin: top;
+      }
+    }
+  }
   .dropdown-top {
     @layer daisyui.l1.l2 {
       --anchor-v: top;
@@ -2166,6 +2177,9 @@
   }
   .z-\[200\] {
     z-index: 200;
+  }
+  .z-\[999\] {
+    z-index: 999;
   }
   .col-span-1 {
     grid-column: span 1 / span 1;
@@ -2689,6 +2703,9 @@
   .w-64 {
     width: calc(var(--spacing) * 64);
   }
+  .w-72 {
+    width: calc(var(--spacing) * 72);
+  }
   .w-\[400px\] {
     width: 400px;
   }
@@ -2762,6 +2779,9 @@
   }
   .cursor-crosshair {
     cursor: crosshair;
+  }
+  .cursor-help {
+    cursor: help;
   }
   .cursor-not-allowed {
     cursor: not-allowed;
@@ -2899,6 +2919,9 @@
   .rounded-lg {
     border-radius: var(--radius-lg);
   }
+  .rounded-md {
+    border-radius: var(--radius-md);
+  }
   .rounded-none {
     border-radius: 0;
   }
@@ -2963,6 +2986,9 @@
   }
   .border-\[\#555\] {
     border-color: #555;
+  }
+  .border-\[\#888888\] {
+    border-color: #888888;
   }
   .border-\[\#F43F5E\] {
     border-color: #F43F5E;
@@ -3121,6 +3147,9 @@
   }
   .bg-\[\#0c0c0c\] {
     background-color: #0c0c0c;
+  }
+  .bg-\[\#1a1a1a\] {
+    background-color: #1a1a1a;
   }
   .bg-\[\#111\] {
     background-color: #111;
@@ -3515,6 +3544,9 @@
   }
   .pr-2 {
     padding-right: calc(var(--spacing) * 2);
+  }
+  .pb-1 {
+    padding-bottom: calc(var(--spacing) * 1);
   }
   .pb-2 {
     padding-bottom: calc(var(--spacing) * 2);
@@ -4129,6 +4161,13 @@
       }
     }
   }
+  .hover\:border-cyan-400 {
+    &:hover {
+      @media (hover: hover) {
+        border-color: var(--color-cyan-400);
+      }
+    }
+  }
   .hover\:border-cyan-500\/30 {
     &:hover {
       @media (hover: hover) {
@@ -4374,6 +4413,13 @@
     &:hover {
       @media (hover: hover) {
         color: var(--color-cyan-300);
+      }
+    }
+  }
+  .hover\:text-cyan-400 {
+    &:hover {
+      @media (hover: hover) {
+        color: var(--color-cyan-400);
       }
     }
   }

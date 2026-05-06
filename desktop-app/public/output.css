@@ -268,59 +268,6 @@
   }
 }
 @layer utilities {
-  .diff {
-    @layer daisyui.l1.l2.l3 {
-      position: relative;
-      display: grid;
-      width: 100%;
-      overflow: hidden;
-      webkit-user-select: none;
-      user-select: none;
-      grid-template-rows: 1fr 1.8rem 1fr;
-      direction: ltr;
-      container-type: inline-size;
-      grid-template-columns: auto 1fr;
-      &:focus-visible, &:has(.diff-item-1:focus-visible) {
-        outline-style: var(--tw-outline-style);
-        outline-width: 2px;
-        outline-offset: 1px;
-        outline-color: var(--color-base-content);
-      }
-      &:focus-visible {
-        outline-style: var(--tw-outline-style);
-        outline-width: 2px;
-        outline-offset: 1px;
-        outline-color: var(--color-base-content);
-        .diff-resizer {
-          min-width: 95cqi;
-          max-width: 95cqi;
-        }
-      }
-      &:has(.diff-item-1:focus-visible) {
-        outline-style: var(--tw-outline-style);
-        outline-width: 2px;
-        outline-offset: 1px;
-        .diff-resizer {
-          min-width: 5cqi;
-          max-width: 5cqi;
-        }
-      }
-      @supports (-webkit-overflow-scrolling: touch) and (overflow: -webkit-paged-x) {
-        &:focus {
-          .diff-resizer {
-            min-width: 5cqi;
-            max-width: 5cqi;
-          }
-        }
-        &:has(.diff-item-1:focus) {
-          .diff-resizer {
-            min-width: 95cqi;
-            max-width: 95cqi;
-          }
-        }
-      }
-    }
-  }
   .tooltip {
     @layer daisyui.l1.l2.l3 {
       position: relative;
@@ -1089,65 +1036,6 @@
   }
   .visible {
     visibility: visible;
-  }
-  .list {
-    @layer daisyui.l1.l2.l3 {
-      display: flex;
-      flex-direction: column;
-      font-size: 0.875rem;
-      .list-row {
-        --list-grid-cols: minmax(0, auto) 1fr;
-        position: relative;
-        display: grid;
-        grid-auto-flow: column;
-        gap: calc(0.25rem * 4);
-        border-radius: var(--radius-box);
-        padding: calc(0.25rem * 4);
-        word-break: break-word;
-        grid-template-columns: var(--list-grid-cols);
-      }
-      & > :not(:last-child) {
-        &.list-row, .list-row {
-          &:after {
-            content: "";
-            border-bottom: var(--border) solid;
-            inset-inline: var(--radius-box);
-            position: absolute;
-            bottom: calc(0.25rem * 0);
-            border-color: var(--color-base-content);
-            @supports (color: color-mix(in lab, red, red)) {
-              border-color: color-mix(in oklab, var(--color-base-content) 5%, transparent);
-            }
-          }
-        }
-      }
-    }
-    @layer daisyui.l1.l2 {
-      .list-row {
-        &:has(.list-col-grow:nth-child(1)) {
-          --list-grid-cols: 1fr;
-        }
-        &:has(.list-col-grow:nth-child(2)) {
-          --list-grid-cols: minmax(0, auto) 1fr;
-        }
-        &:has(.list-col-grow:nth-child(3)) {
-          --list-grid-cols: minmax(0, auto) minmax(0, auto) 1fr;
-        }
-        &:has(.list-col-grow:nth-child(4)) {
-          --list-grid-cols: minmax(0, auto) minmax(0, auto) minmax(0, auto) 1fr;
-        }
-        &:has(.list-col-grow:nth-child(5)) {
-          --list-grid-cols: minmax(0, auto) minmax(0, auto) minmax(0, auto) minmax(0, auto) 1fr;
-        }
-        &:has(.list-col-grow:nth-child(6)) {
-          --list-grid-cols: minmax(0, auto) minmax(0, auto) minmax(0, auto) minmax(0, auto)
-          minmax(0, auto) 1fr;
-        }
-        > * {
-          grid-row-start: 1;
-        }
-      }
-    }
   }
   .toast {
     @layer daisyui.l1.l2.l3 {
@@ -2141,9 +2029,6 @@
   .start {
     inset-inline-start: var(--spacing);
   }
-  .end {
-    inset-inline-end: var(--spacing);
-  }
   .dropdown-top {
     @layer daisyui.l1.l2 {
       --anchor-v: top;
@@ -2658,15 +2543,6 @@
       flex-wrap: wrap;
       align-items: flex-start;
       gap: calc(0.25rem * 2);
-    }
-  }
-  .mask {
-    @layer daisyui.l1.l2.l3 {
-      display: inline-block;
-      vertical-align: middle;
-      mask-size: contain;
-      mask-repeat: no-repeat;
-      mask-position: center;
     }
   }
   .block {

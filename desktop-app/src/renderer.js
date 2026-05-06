@@ -3473,7 +3473,7 @@ window.renderLegend = function() {
     
     for (const surface in window.classState) {
         const state = window.classState[surface];
-        let count = (window.currentGeoData || []).filter(d => d.surface === surface).length;
+        let count = (window.currentGeoData || []).filter(d => d.surface === surface && d.source !== 'fill').length;
         
         const el = document.createElement('div');
         el.className = 'flex items-center justify-between group p-1 hover:bg-[#222] rounded cursor-pointer transition-colors';

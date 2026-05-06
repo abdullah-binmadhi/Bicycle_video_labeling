@@ -1164,7 +1164,7 @@
             </div>
 
             <!-- Tolerance & Gap Handling -->
-            <div class="border border-[#222] bg-[#0c0c0c] p-6 flex flex-col items-start gap-4 shadow-xl">
+            <div class="border border-[#222] bg-[#0c0c0c] p-6 flex flex-col items-start gap-4 shadow-xl relative z-[1000] overflow-visible">
               <h3 class="text-lg font-medium text-white flex items-center gap-2">
                 <svg class="h-5 w-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 Temporal Logic
@@ -1179,9 +1179,20 @@
                   <p class="text-[9px] text-[#777] mt-1 leading-tight">Maximum allowed clock gap drop-off boundary.</p>
               </div>
 
-              <div class="w-full mt-2">
-                 <label class="text-[10px] uppercase tracking-widest font-medium text-slate-400 mb-2 block">Gap Imputation Strategy</label>
-                 <select class="select select-sm w-full bg-black border-[#333] focus:border-cyan-400 text-white text-xs" id="sync-gap-handling">
+               <div class="w-full mt-2">
+                  <div class="flex items-center gap-2 mb-2 relative z-50">
+                     <label class="text-[10px] uppercase tracking-widest font-medium text-slate-400">Gap Imputation Strategy</label>
+                     <div class="dropdown dropdown-hover dropdown-bottom dropdown-end">
+                        <div tabindex="0" class="flex items-center justify-center w-4 h-4 rounded-full border border-[#888888] text-[#888888] text-[10px] cursor-help hover:text-cyan-400 hover:border-cyan-400 transition-colors">?</div>
+                        <div tabindex="0" class="dropdown-content z-[10000] p-3 shadow-xl bg-[#1a1a1a] border border-[#333] rounded-md w-72 text-xs text-gray-300 mt-2">
+                           <p class="font-bold text-white mb-2 pb-1 border-b border-[#333]">Gap Imputation Options</p>
+                           <p class="mb-3 leading-relaxed"><span class="text-indigo-400 font-semibold uppercase tracking-widest text-[10px]">Forward-Fill:</span><br>Retains the most recent classification across the gap. Best for surface types that persist over time.</p>
+                           <p class="mb-3 leading-relaxed"><span class="text-indigo-400 font-semibold uppercase tracking-widest text-[10px]">Linear Interpolation:</span><br>Fades gradually between the labels before and after the gap. Good for transitions between distinct environments.</p>
+                           <p class="leading-relaxed"><span class="text-rose-400 font-semibold uppercase tracking-widest text-[10px]">Strict Drop:</span><br>Deletes rows where IMU and Video data do not match. Ensures highest accuracy but reduces dataset size significantly.</p>
+                        </div>
+                     </div>
+                  </div>
+                  <select class="select select-sm w-full bg-black border-[#333] focus:border-cyan-400 text-white text-xs" id="sync-gap-handling">
                     <option value="ffill" selected="">Forward-Fill (Hold previous ground truth)</option>
                     <option value="interpolate">Linear Interpolation (Mathematical fading)</option>
                     <option value="drop">Strict Drop (Remove unpaired rows)</option>

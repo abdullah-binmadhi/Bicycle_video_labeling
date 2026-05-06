@@ -26,7 +26,7 @@ git clone https://github.com/abdullah-binmadhi/Bicycle_video_labeling.git
 
 #### 2. Install Machine Learning Dependencies
 ```bash
-pip install transformers torch torchvision opencv-python Pillow pandas
+pip install transformers torch torchvision opencv-python Pillow pandas scipy tqdm requests pyyaml
 ```
 
 #### 3. Install App Dependencies

@@ -21,9 +21,7 @@ const scripts = {
   'roboflow': path.join(window.rootDir, 'data_pipeline/roboflow_manager.py'),
   'ensemble': path.join(window.rootDir, 'data_pipeline/ensemble_auto_labeler.py'),
   'sync': path.join(window.rootDir, 'data_pipeline/synchronizer.py'),
-  'merge_labels': path.join(window.rootDir, 'data_pipeline/merge_annotations.py'),
-  'train': path.join(window.rootDir, 'train_unified.py'),
-  'inference': path.join(window.rootDir, 'run_inference.py')
+  'merge_labels': path.join(window.rootDir, 'data_pipeline/merge_annotations.py')
 };
 
 let activeProcess = null;
@@ -168,67 +166,6 @@ function logToConsole(message, isError = false) {
     
     document.getElementById('extract-progress-text').innerText = progressStr;
   }
-
-  // Custom parsing for UI updates (e.g. Training stats updates)
-  if (message.match(/Epoch/i) || message.match(/Loss/i) || message.match(/\[\d+\/\d+\]/)) {
-    document.getElementById('training-stats').classList.remove('hidden');
-    
-    // Parse formats like "[1/50]", "Epoch [1/50]", "Epoch 1/50"
-    const epochMatch = message.match(/(?:Epoch\s*\[?)?(\d+)\s*\/\s*(\d+)/i);
-    // Parse formats like "Epoch 1 Summary"
-    const epochSummaryMatch = message.match(/Epoch (\d+) Summary/i);
-
-    const trainLossMatch = message.match(/Train Loss:\s*([0-9.]+)/i);
-    const valLossMatch = message.match(/(?:Val|Validation) Loss:\s*([0-9.]+)/i);
-    const valAccMatch = message.match(/(?:Val|Validation) Acc:\s*([0-9.]+)/i);
-
-    let currentEpochStr = null;
-
-    if (epochMatch) {
-      document.getElementById('stat-epoch').innerText = epochMatch[1];
-      const elTotal = document.getElementById('stat-epoch-total');
-      if (elTotal) elTotal.innerText = epochMatch[2];
-      
-      const current = parseInt(epochMatch[1]);
-      const total = parseInt(epochMatch[2]);
-      currentEpochStr = epochMatch[1];
-      const progressPercent = (current / total) * 100;
-      const progEl = document.getElementById('stat-progress');
-      if (progEl) progEl.value = progressPercent;
-    } else if (epochSummaryMatch) {
-      document.getElementById('stat-epoch').innerText = epochSummaryMatch[1];
-      currentEpochStr = epochSummaryMatch[1];
-    }
-    
-    if (valLossMatch) {
-        document.getElementById('stat-loss').innerText = valLossMatch[1];
-    }
-    
-    if (valAccMatch) {
-        document.getElementById('stat-accuracy').innerText = valAccMatch[1] + "%";
-    }
-    
-    // Update live Chart.js Graph
-    if ((trainLossMatch || valLossMatch) && window.lossChartInstance && currentEpochStr !== null) {
-        const cLabels = window.lossChartInstance.data.labels;
-        const cTrain = window.lossChartInstance.data.datasets[0].data;
-        const cVal = window.lossChartInstance.data.datasets[1].data;
-        
-        const epochIndex = cLabels.indexOf(currentEpochStr);
-        
-        if (epochIndex !== -1) {
-            // Update existing if already pushed this epoch
-            if (trainLossMatch) cTrain[epochIndex] = parseFloat(trainLossMatch[1]);
-            if (valLossMatch) cVal[epochIndex] = parseFloat(valLossMatch[1]);
-        } else {
-            // Append new epoch point
-            cLabels.push(currentEpochStr);
-            cTrain.push(trainLossMatch ? parseFloat(trainLossMatch[1]) : null);
-            cVal.push(valLossMatch ? parseFloat(valLossMatch[1]) : null);
-        }
-        window.lossChartInstance.update();
-    }
-  }
 }
 
 function setProcessStatus(running, scriptKey) {
@@ -328,14 +265,6 @@ window.chooseMergeOutput = async () => {
   const file = await ipcRenderer.invoke('dialog:saveCSV');
   if (file) {
     document.getElementById('mergeOutputPath').value = file;
-  }
-};
-
-window.chooseTrainOut = async () => {
-  const { ipcRenderer } = require('electron');
-  const dir = await ipcRenderer.invoke('dialog:openDirectory');
-  if (dir) {
-    document.getElementById('trainCustomOutPath').value = dir;
   }
 };
 
@@ -555,43 +484,6 @@ function _runScript(scriptKey) {
       const syncOut = document.getElementById('syncCustomOutPath') ? document.getElementById('syncCustomOutPath').value.trim() : "";
       if (syncOut) args.push('--output_dir', syncOut);
   }
-
-    if (scriptKey === 'inference') {
-      const infModel = document.getElementById('infModelPath') ? document.getElementById('infModelPath').value.trim() : "";
-      const infCsv = document.getElementById('infCsvPath') ? document.getElementById('infCsvPath').value.trim() : "";
-      
-      if (infModel) args.push('--model', infModel);
-      if (infCsv) args.push('--csv', infCsv);
-    }
-  
-    if (scriptKey === 'train') {
-        const customTrainData = document.getElementById('trainDataPath') ? document.getElementById('trainDataPath').value.trim() : "";
-        if (customTrainData) args.push('--data', customTrainData);
-        
-        const useVision = document.getElementById('toggle-vision')?.checked ?? false;
-        const useImu = document.getElementById('toggle-imu')?.checked ?? true;
-        
-        const epochs = document.getElementById('train-epochs')?.value;
-        const lr = document.getElementById('train-lr')?.value;
-        const batch = document.getElementById('train-batch')?.value;
-        const checkpoint = document.getElementById('trainResumePath')?.value;
-        const trainOut = document.getElementById('trainCustomOutPath') ? document.getElementById('trainCustomOutPath').value.trim() : "";
-
-        if (useVision) args.push('--use_vision');
-        if (useImu) args.push('--use_imu');
-        
-        if (epochs) args.push('--epochs', epochs);
-        if (lr) args.push('--lr', lr);
-        if (batch) args.push('--batch_size', batch);
-        if (checkpoint) args.push('--checkpoint', checkpoint);
-        if (trainOut) args.push('--output_dir', trainOut);
-
-        const stopBtn = document.getElementById('btn-train-stop');
-        if (stopBtn) stopBtn.classList.remove('hidden');
-        const statsBoard = document.getElementById('training-stats');
-        if (statsBoard) statsBoard.style.display = 'grid';
-        if (window.initLossChart) window.initLossChart();
-    }
 
     logToConsole(`\n$ python3 ${path.basename(targetScript)} ${args.slice(1).join(' ')}\n`);
     setProcessStatus(true, scriptKey);
@@ -967,14 +859,6 @@ function initThreeJS() {
     });
 }
 
-window.chooseInfLabel = async function() {
-  const { ipcRenderer } = require('electron');
-  const file = await ipcRenderer.invoke('dialog:openCSV');
-  if (file) {
-    document.getElementById('infLabelPath').value = file;
-  }
-};
-
 window.convertTimeToUnix = function() {
     const input = document.getElementById('extractStartTime');
     if (!input || !input.value.trim()) return;
@@ -1201,364 +1085,6 @@ window.updateLiveDashboard = function(pred, time) {
     }
 }
 
-window.startAIOverlay = function() {
-    const vidPathEl = document.getElementById('infVideoPath');
-    if(!vidPathEl || !vidPathEl.value.trim()) {
-        showToast('You must select a Reference Video mapping first!', 'error');
-        return;
-    }
-    
-    const vidFile = vidPathEl.value.trim();
-    
-    const vidPlayer = document.getElementById('inf-video');
-    vidPlayer.src = `file://${vidFile}`;
-    vidPlayer.classList.remove('hidden');
-    const idleMsg = document.getElementById('inf-idle-msg');
-    if(idleMsg) idleMsg.classList.add('hidden');
-    
-    showToast('Engaging Physics Array network...', 'success');
-    
-    // Init Phase 2 components
-    setTimeout(() => {
-        // Load GPS route from predictions.json to power the live map
-        let gpsLatlngs = [];
-        let gpsData = [];
-        try {
-            const predPath = require('path').join(__dirname, '../../predictions.json');
-            if (require('fs').existsSync(predPath)) {
-                const preds = JSON.parse(require('fs').readFileSync(predPath, 'utf8'));
-                const validPreds = preds.filter(p => p.lat && p.lng && !isNaN(p.lat) && !isNaN(p.lng));
-                gpsLatlngs = validPreds.map(p => [p.lat, p.lng]);
-                gpsData = validPreds;
-            }
-        } catch(e) {}
-        
-        // Use real GPS coords if available, else fall back to mock
-        const firstLat = gpsLatlngs.length > 0 ? gpsLatlngs[0][0] : 51.3127;
-        const firstLng = gpsLatlngs.length > 0 ? gpsLatlngs[0][1] : 9.4797;
-        
-        if(typeof initLeaflet === 'function') initLeaflet(firstLat, firstLng);
-        
-        if(typeof infMap !== 'undefined' && infMap) {
-            let latlngs = gpsLatlngs;
-            if (latlngs.length < 2) {
-                // Fallback mock route
-                latlngs = [];
-                gpsData = [];
-                let curl = firstLat, curlg = firstLng;
-                for(let i = 0; i < 150; i++) {
-                    latlngs.push([curl, curlg]);
-                    gpsData.push({lat: curl, lng: curlg, surface: 'Unknown'});
-                    curl += (Math.sin(i * 0.1) - 0.5) * 0.0004;
-                    curlg += (Math.cos(i * 0.2) + 0.5) * 0.0004;
-                }
-            }
-            window.infLatlngs = latlngs;
-            
-            // Clear old layers from infMap except the tile layer to avoid duplicates
-            infMap.eachLayer((layer) => {
-                if (!layer._url) { // Not a tile layer
-                    infMap.removeLayer(layer);
-                }
-            });
-            
-            // Draw background trace line
-            L.polyline(latlngs, {color: '#666666', weight: 2, opacity: 0.5}).addTo(infMap);
-            
-            // Draw colored segments
-            for (const pt of gpsData) {
-                let surf = pt.surface || 'Unclassified';
-                if (typeof window.registerSurface === 'function') window.registerSurface(surf);
-                
-                const color = (window.classState && window.classState[surf]) ? window.classState[surf].color : '#10b981';
-                
-                L.circleMarker([pt.lat, pt.lng], {
-                    radius: 3,
-                    fillColor: color,
-                    color: color,
-                    weight: 1,
-                    opacity: 1,
-                    fillOpacity: 0.8
-                }).addTo(infMap);
-            }
-            
-            mapMarker = null; // Reset tracker so it gets re-rendered
-            infMap.fitBounds(L.latLngBounds(latlngs), { padding: [12, 12] });
-            setTimeout(() => infMap.invalidateSize(), 350);
-        }
-    }, 500);
-    
-    // Play video automatically
-    vidPlayer.play();
-    if(typeof initScrubber === 'function') initScrubber(vidPlayer);
-    
-    // Animate UI
-    const overlay = document.getElementById('inf-overlay');
-    if(overlay) {
-        overlay.classList.remove('scale-95', 'opacity-0');
-        overlay.classList.add('scale-100', 'opacity-100');
-    }
-    
-    // Reveal Monitoring Dashboard
-    const dashboard = document.getElementById('inf-monitoring-dashboard');
-    if(dashboard) {
-        dashboard.classList.remove('hidden');
-        setTimeout(window.initLiveDashboard, 300); // Give CSS max bounds time to apply before initing charts
-    }
-    
-    // Load Predictions
-    let predictions = [];
-    try {
-        const predPath = require('path').join(__dirname, '../../predictions.json');
-        if (require('fs').existsSync(predPath)) {
-            predictions = JSON.parse(require('fs').readFileSync(predPath, 'utf8'));
-        }
-    } catch(err) {
-        console.error("Error loading predictions.json", err);
-    }
-    
-    // Load Auto Annotation Labels if provided
-    let frameAnnotations = [];
-    const infLabelInput = document.getElementById('infLabelPath');
-    if (infLabelInput && infLabelInput.value && require('fs').existsSync(infLabelInput.value)) {
-        try {
-            const csvData = require('fs').readFileSync(infLabelInput.value, 'utf8');
-            const lines = csvData.trim().split('\n');
-            let minRawTime = Number.MAX_VALUE;
-
-            if (lines.length > 0) {
-                // Check headers to assign dynamic indices
-                const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
-                
-                // Fallbacks matching old legacy offsets
-                let idxFrame = 0, idxLabel = 1, idxConf = 2, idxX1 = 3, idxY1 = 4, idxX2 = 5, idxY2 = 6;
-                
-                let maybeFrame = headers.findIndex(h => h.includes('image_id') || h.includes('frame'));
-                if (maybeFrame !== -1) idxFrame = maybeFrame;
-                
-                let maybeLabel = headers.findIndex(h => h === 'class_name' || h === 'class');
-                if (maybeLabel === -1) maybeLabel = headers.findIndex(h => h.includes('label') && !h.includes('code'));
-                if (maybeLabel !== -1) idxLabel = maybeLabel;
-                
-                let maybeConf = headers.findIndex(h => h.includes('score') || h.includes('conf'));
-                if (maybeConf !== -1) idxConf = maybeConf;
-                
-                let tmpX1 = headers.findIndex(h => h === 'xmin' || h === 'x1'); if(tmpX1 !== -1) idxX1 = tmpX1;
-                let tmpY1 = headers.findIndex(h => h === 'ymin' || h === 'y1'); if(tmpY1 !== -1) idxY1 = tmpY1;
-                let tmpX2 = headers.findIndex(h => h === 'xmax' || h === 'x2'); if(tmpX2 !== -1) idxX2 = tmpX2;
-                let tmpY2 = headers.findIndex(h => h === 'ymax' || h === 'y2'); if(tmpY2 !== -1) idxY2 = tmpY2;
-
-                // Process data rows
-                lines.slice(1).forEach(line => {
-                    if(!line.trim()) return;
-                    const p = line.split(',').map(v => v.trim());
-                    if(p.length >= 7) {
-                        const frameStr = p[idxFrame] || '';
-                        // Match either frame_123.45.jpg or just 123.45.jpg
-                        const match = frameStr.match(/([\d.]+)\.jpg/);
-                        let rawTime = 0;
-                        if (match) {
-                            // If the match starts with a timestamp
-                            let val = match[1];
-                            if (val.startsWith('frame_')) val = val.replace('frame_', '');
-                            rawTime = parseFloat(val);
-                        }
-                        
-                        if (rawTime > 0) minRawTime = Math.min(minRawTime, rawTime);
-
-                        const x1 = parseFloat(p[idxX1]);
-                        const y1 = parseFloat(p[idxY1]);
-                        const x2 = parseFloat(p[idxX2]);
-                        const y2 = parseFloat(p[idxY2]);
-
-                        let conf = parseFloat(p[idxConf]);
-                        if (isNaN(conf)) conf = 0;
-
-                        frameAnnotations.push({
-                            rawTime: rawTime,
-                            timestamp: 0,
-                            label: p[idxLabel] || "Unknown",
-                            confidence: conf,
-                            x: x1,
-                            y: y1,
-                            w: Math.max(0, x2 - x1),
-                            h: Math.max(0, y2 - y1)
-                        });
-                    }
-                });
-            }
-            // Align timestamps relative to the earliest frame being T=0
-            if (minRawTime !== Number.MAX_VALUE) {
-                frameAnnotations.forEach(a => a.timestamp = Math.max(0, a.rawTime - minRawTime));
-                // VERY IMPORTANT: Sort annotations by timestamp so the binary search works!
-                frameAnnotations.sort((a, b) => a.timestamp - b.timestamp);
-            }
-        } catch(err) {
-            console.error("Error loading Label CSV", err);
-        }
-    }
-
-    if (window.aiInterval) { clearInterval(window.aiInterval); window.aiInterval = null; }
-    if (window.aiFrameCallbackId) {
-        if (vidPlayer.cancelVideoFrameCallback) {
-            vidPlayer.cancelVideoFrameCallback(window.aiFrameCallbackId);
-        } else {
-            cancelAnimationFrame(window.aiFrameCallbackId);
-        }
-        window.aiFrameCallbackId = null;
-    }
-
-    const renderLoop = (now, metadata) => {
-        if (!vidPlayer.paused) {
-           const currentTime = vidPlayer.currentTime; // seconds into the video
-           const videoDuration = vidPlayer.duration || 66; // fallback 66s based on recording
-           
-           // ── Prediction lookup ─────────────────────────────────────────────
-           if (predictions.length > 0) {
-               let currentPred;
-               if (videoDuration && videoDuration > 1) {
-                   const progress = Math.max(0, Math.min(1, currentTime / videoDuration));
-                   const idx = Math.floor(progress * (predictions.length - 1));
-                   currentPred = predictions[idx];
-               } else {
-                   currentPred = predictions.find(p => p.timestamp <= currentTime && (p.timestamp + 1) > currentTime);
-               }
-               if(currentPred) {
-                   window.updateLiveDashboard(currentPred, currentTime);
-               }
-           }
-           
-           // ── Bounding box overlay ──────────────────────────────────────────
-           const canvas = document.getElementById('inf-overlay-canvas');
-           if (canvas) {
-               canvas.classList.remove('hidden');
-               if (canvas.width !== vidPlayer.clientWidth || canvas.height !== vidPlayer.clientHeight) {
-                   canvas.width = vidPlayer.clientWidth;
-                   canvas.height = vidPlayer.clientHeight;
-               }
-               
-               const ctx = canvas.getContext('2d');
-               ctx.clearRect(0, 0, canvas.width, canvas.height);
-               
-               if (frameAnnotations.length > 0) {
-                   const rawVidW = vidPlayer.videoWidth || 1920;
-                   const rawVidH = vidPlayer.videoHeight || 1080;
-                   const scaleX = canvas.width / rawVidW;
-                   const scaleY = canvas.height / rawVidH;
-                   
-                   // ── Sync fix: Option C (Runtime Distance Tracking + Interpolation) ──
-                   const MAX_TRACK_WINDOW = 2.0; // Max seconds between frames to interpolate
-                   
-                   const getCenterDist = (a, b) => {
-                       const cx1 = a.x + a.w/2, cy1 = a.y + a.h/2;
-                       const cx2 = b.x + b.w/2, cy2 = b.y + b.h/2;
-                       return Math.sqrt((cx1-cx2)**2 + (cy1-cy2)**2);
-                   };
-                   const lerp = (start, end, amt) => (1 - amt) * start + amt * end;
-
-                   // 1. Find the exact discrete timestamps immediately before and after currentTime
-                   let prevTime = -1;
-                   let nextTime = Infinity;
-                   for (let i = 0; i < frameAnnotations.length; i++) {
-                       const t = frameAnnotations[i].timestamp;
-                       if (t <= currentTime && t > prevTime) prevTime = t;
-                   }
-                   for (let i = 0; i < frameAnnotations.length; i++) {
-                       const t = frameAnnotations[i].timestamp;
-                       if (t > currentTime) { nextTime = t; break; } // Sorted array, so first match is smallest nextTime
-                   }
-
-                   // 2. Gather annotations exactly at those two timestamps
-                   const prevAnnos = frameAnnotations.filter(a => a.timestamp === prevTime);
-                   const nextAnnos = frameAnnotations.filter(a => a.timestamp === nextTime);
-
-                   const renderBoxes = [];
-                   const drawnNextAnnos = new Set(); // Prevent drawing same future target twice
-
-                   prevAnnos.forEach(past => {
-                       // Find best matching future annotation for the exact same class
-                       let bestFuture = null, bestDist = Infinity;
-                       // Allow connecting boxes that moved across the screen gracefully
-                       // We use up to 60% of the raw video width as a max tracking radius
-                       const maxAllowedDist = rawVidW * 0.6; 
-                       
-                       if (nextTime - prevTime <= MAX_TRACK_WINDOW) {
-                           for (const nxt of nextAnnos) {
-                               if (nxt.label !== past.label || drawnNextAnnos.has(nxt)) continue;
-                               const dist = getCenterDist(past, nxt);
-                               if (dist < maxAllowedDist && dist < bestDist) {
-                                   bestDist = dist;
-                                   bestFuture = nxt;
-                               }
-                           }
-                       }
-
-                       if (bestFuture) {
-                           drawnNextAnnos.add(bestFuture);
-                           // 🚀 Interpolate seamlessly!
-                           const progress = (currentTime - prevTime) / (nextTime - prevTime);
-                           renderBoxes.push({
-                               label: past.label,
-                               x: lerp(past.x, bestFuture.x, progress),
-                               y: lerp(past.y, bestFuture.y, progress),
-                               w: lerp(past.w, bestFuture.w, progress),
-                               h: lerp(past.h, bestFuture.h, progress)
-                           });
-                       } else {
-                           // No match in the future. Just draw it static, but hold it
-                           // for a generous 1.5s so it doesn't flicker instantly on final frames
-                           if (currentTime - prevTime <= 1.5) {
-                               renderBoxes.push({ ...past });
-                           }
-                       }
-                   });
-
-                   // 4. Also draw any upcoming annotations that didn't match (new objects appearing)
-                   // IF they are extremely close in time (e.g., < 0.1s away)
-                   nextAnnos.forEach(nxt => {
-                       if (!drawnNextAnnos.has(nxt) && (nxt.timestamp - currentTime) <= 0.1) {
-                           renderBoxes.push({ ...nxt });
-                       }
-                   });
-
-                   // 5. Render all computed boxes
-                   renderBoxes.forEach(box => {
-                       const drawX = box.x * scaleX, drawY = box.y * scaleY;
-                       const drawW = box.w * scaleX, drawH = box.h * scaleY;
-                       if (drawW < 5 || drawH < 5) return;
-                       
-                       ctx.strokeStyle = '#a855f7';
-                       ctx.lineWidth = 3; // Slightly thicker for easier reading
-                       ctx.strokeRect(drawX, drawY, drawW, drawH);
-                       
-                       const cleanLabel = box.label.trim();
-                       const textW = ctx.measureText(cleanLabel).width + 16;
-                       ctx.fillStyle = 'rgba(168,85,247,0.85)';
-                       ctx.fillRect(drawX, Math.max(0, drawY - 22), textW, 22);
-                       ctx.fillStyle = '#FFFFFF';
-                       ctx.font = 'bold 11px monospace';
-                       ctx.fillText(cleanLabel, drawX + 8, Math.max(14, drawY - 6));
-                   });
-               }
-           }
-        }
-        
-        // Loop again using the best available hardware sync method
-        if (vidPlayer.requestVideoFrameCallback) {
-            window.aiFrameCallbackId = vidPlayer.requestVideoFrameCallback(renderLoop);
-        } else {
-            window.aiFrameCallbackId = requestAnimationFrame(renderLoop);
-        }
-    };
-
-    // Kick off the hardware-synced render loop
-    if (vidPlayer.requestVideoFrameCallback) {
-        window.aiFrameCallbackId = vidPlayer.requestVideoFrameCallback(renderLoop);
-    } else {
-        window.aiFrameCallbackId = requestAnimationFrame(renderLoop);
-    }
-};
-
 // Intercept setProcessStatus to tie in Toasts on command ends
 const parentSetProc = window.setProcessStatus || setProcessStatus;
 window.setProcessStatus = function(running, scriptKey) {
@@ -1570,12 +1096,6 @@ window.setProcessStatus = function(running, scriptKey) {
       // Always forcibly hide progress back to 0 on exit
       const prog = document.getElementById('global-progress');
       if(prog) { prog.classList.add('hidden'); prog.value = 0; }
-      
-      if(scriptKey === 'inference') {
-         const btnInf = document.getElementById('btn-run-inf');
-         if(btnInf) btnInf.classList.remove('hidden');
-         showToast('Inference Array loaded! You can now Launch Visualization.', 'success');
-      }
    }
 };
 
@@ -2371,34 +1891,6 @@ window.chooseSyncDir = async function() {
     if (dir) {
         document.getElementById('syncDataPath').value = dir;
     }
-};
-  window.chooseTrainData = async function() {
-      const { ipcRenderer } = require('electron');
-      const file = await ipcRenderer.invoke('dialog:openCSV');
-      if (file) {
-          document.getElementById('trainDataPath').value = file;
-      }
-  };
-// --- Inference Setup & Handlers ---
-window.chooseInfModel = async function() {
-  const { ipcRenderer } = require('electron');
-  const filePath = await ipcRenderer.invoke('dialog:openModel');
-  if (filePath) document.getElementById('infModelPath').value = filePath;
-};
-
-window.chooseInfCsv = async function() {
-  const { ipcRenderer } = require('electron');
-  const filePath = await ipcRenderer.invoke('dialog:openCSV');
-  if (filePath) document.getElementById('infCsvPath').value = filePath;
-};
-
-window.chooseInfVideo = async function() {
-  const { ipcRenderer } = require('electron');
-  const filePath = await ipcRenderer.invoke('dialog:openVideo');
-  if (filePath) {
-    document.getElementById('infVideoPath').value = filePath;
-    document.getElementById('inf-video').src = `file://${filePath}`;
-  }
 };
 
 // --- App-Based Annotation & Canvas ---
@@ -3352,96 +2844,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-function initLossChart() {
-  const ctx = document.getElementById('lossChart');
-  if (!ctx) return;
-  
-  if (lossChartInstance) {
-    lossChartInstance.destroy();
-  }
-  
-  const Chart = window.Chart; // Assuming added to window via html tag
-  if (!Chart) { appendLog('Note: Chart.js not loaded. Live graphs disabled.'); return; }
-
-  lossChartInstance = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: [],
-      datasets: [
-        { label: 'Train Loss', data: [], borderColor: 'rgb(244, 63, 94)', backgroundColor: 'rgba(244, 63, 94, 0.1)', tension: 0.3, pointRadius: 2, fill: false },
-        { label: 'Val Loss', data: [], borderColor: 'rgb(59, 130, 246)', backgroundColor: 'rgba(59, 130, 246, 0.1)', tension: 0.3, pointRadius: 3, borderDash: [5, 5], fill: true }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: true, labels: { color: '#888' } } },
-      scales: {
-        x: { grid: { color: '#222' }, ticks: { color: '#888', maxTicksLimit: 10 } },
-        y: { grid: { color: '#222' }, ticks: { color: '#888' } }
-      },
-      animation: { duration: 300 }
-    }
-  });
-}
-
-
-window.initLossChart = function() {
-  const ctx = document.getElementById('lossChart');
-  if (!ctx) return;
-  
-  if (window.lossChartInstance) {
-    window.lossChartInstance.destroy();
-  }
-  
-  if (typeof Chart === 'undefined') { console.log('Chart.js not loaded'); return; }
-
-  window.lossChartInstance = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: [],
-      datasets: [
-        { label: 'Train Loss', data: [], borderColor: 'rgb(244, 63, 94)', backgroundColor: 'rgba(244, 63, 94, 0.1)', tension: 0.3, pointRadius: 2, fill: false },
-        { label: 'Val Loss', data: [], borderColor: 'rgb(59, 130, 246)', backgroundColor: 'rgba(59, 130, 246, 0.1)', tension: 0.3, pointRadius: 3, borderDash: [5, 5], fill: true }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: true, labels: { color: '#888' } } },
-      scales: {
-        x: { grid: { color: '#222' }, ticks: { color: '#888', maxTicksLimit: 10 } },
-        y: { grid: { color: '#222' }, ticks: { color: '#888' } }
-      },
-      animation: { duration: 300 }
-    }
-  });
-}
-
-function stopActiveProcess() {
-    if (window.activeTrainingProcess) {
-        window.activeTrainingProcess.kill();
-        logToConsole(`
-[System] Process violently terminated.
-`);
-    }
-}
-
 window.stopClipProcess = function() {
     if (window.activeClipProcess) {
         window.activeClipProcess.kill();
         logToConsole(`\n[System] Auto Annotation aborted safely.\n`);
     }
 }
-
-window.chooseResumeModel = async function() {
-  const { ipcRenderer } = require('electron');
-  const file = await ipcRenderer.invoke('dialog:openModel');
-  if (file) {
-    document.getElementById('trainResumePath').value = file;
-  }
-};
-
 
 
 

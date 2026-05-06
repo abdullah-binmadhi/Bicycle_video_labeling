@@ -11,19 +11,19 @@ if (require('fs').existsSync(preferredPython)) {
 }
 
 // Dynamically locate root based on execution context (raw vs macOS App bundle)
-let rootDir = path.join(__dirname, '../../');
+window.rootDir = path.join(__dirname, '../../');
 if (__dirname.includes('Contents/Resources/app')) {
-  rootDir = path.join(__dirname, '../../../../../../');
+  window.rootDir = path.join(__dirname, '../../../../../../');
 }
 
 const scripts = {
-  'extract': path.join(rootDir, 'data_pipeline/frame_extractor.py'),
-  'roboflow': path.join(rootDir, 'data_pipeline/roboflow_manager.py'),
-  'ensemble': path.join(rootDir, 'data_pipeline/ensemble_auto_labeler.py'),
-  'sync': path.join(rootDir, 'data_pipeline/synchronizer.py'),
-  'merge_labels': path.join(rootDir, 'data_pipeline/merge_annotations.py'),
-  'train': path.join(rootDir, 'train_unified.py'),
-  'inference': path.join(rootDir, 'run_inference.py')
+  'extract': path.join(window.rootDir, 'data_pipeline/frame_extractor.py'),
+  'roboflow': path.join(window.rootDir, 'data_pipeline/roboflow_manager.py'),
+  'ensemble': path.join(window.rootDir, 'data_pipeline/ensemble_auto_labeler.py'),
+  'sync': path.join(window.rootDir, 'data_pipeline/synchronizer.py'),
+  'merge_labels': path.join(window.rootDir, 'data_pipeline/merge_annotations.py'),
+  'train': path.join(window.rootDir, 'train_unified.py'),
+  'inference': path.join(window.rootDir, 'run_inference.py')
 };
 
 let activeProcess = null;
@@ -472,7 +472,7 @@ function _runScript(scriptKey) {
         if (!fs.existsSync(outDir)) { fs.mkdirSync(outDir, { recursive: true }); }
       } else {
         logToConsole("ℹ️ Output directory not explicitly set. Defaulting to 'VideoFrames' folder.\\n");
-        outDir = path.join(rootDir, 'VideoFrames');
+        outDir = path.join(window.rootDir, 'VideoFrames');
         if (!fs.existsSync(outDir)) { fs.mkdirSync(outDir, { recursive: true }); }
       }
     args.push('--video', videoPath);
@@ -3069,7 +3069,7 @@ function setupDatasetGallery() {
 }
 
 function setupClipClasses() {
-    const labelsPath = path.join(rootDir, 'config/labels.json');
+    const labelsPath = path.join(window.rootDir, 'config/labels.json');
     if (!fs.existsSync(labelsPath)) return;
     
     let labelsData;

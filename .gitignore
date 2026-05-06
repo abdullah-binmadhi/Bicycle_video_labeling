@@ -20,3 +20,7 @@ env/
 
 node_modules/
 desktop-app/*.app/
+
+# Build artifacts
+/wheelhouse/
+/desktop-app/resources/
